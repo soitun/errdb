@@ -1,11 +1,7 @@
-Where to find complete Redis documentation?
+Extensible Round Robbin Database
 -------------------------------------------
 
-This README is just a fast "quick start" document. You can find more detailed
-documentation here:
-
-1) http://code.google.com/p/redis
-2) Check the 'doc' directory. doc/README.html is a good starting point :)
+Errdb is cloned from redis:)
 
 Building Redis
 --------------
@@ -80,7 +76,6 @@ then in another terminal try the following:
 
 You can find the list of all the available commands here:
 
-    http://code.google.com/p/redis/wiki/CommandReference
 
 Enjoy!
 
