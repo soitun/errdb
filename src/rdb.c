@@ -588,8 +588,7 @@ robj *rdbLoadObject(int type, FILE *fp) {
     redisLog(REDIS_DEBUG,"LOADING OBJECT %d (at %d)\n",type,ftell(fp));
     if (type == REDIS_STRING) {
         /* Read string value */
-        if ((o = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
-        o = tryObjectEncoding(o);
+        o = rdbLoadEncodedStringObject(fp);
     } else if (type == REDIS_LIST) {
         /* Read list value */
         if ((len = rdbLoadLen(fp,NULL)) == REDIS_RDB_LENERR) return NULL;
@@ -599,10 +598,7 @@ robj *rdbLoadObject(int type, FILE *fp) {
         /* Load every single element of the list */
         while(len--) {
             if ((ele = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
-
-            ele = tryObjectEncoding(ele);
             listAddNodeTail(o->ptr,ele);
-            
         }
     } else {
         redisPanic("Unknown object type");

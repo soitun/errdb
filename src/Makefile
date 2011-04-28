@@ -25,7 +25,7 @@ PREFIX= /usr/local
 INSTALL_BIN= $(PREFIX)/bin
 INSTALL= cp -p
 
-OBJ = adlist.o ae.o anet.o dict.o redis.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o sha1.o release.o networking.o util.o object.o db.o t_string.o t_list.o ts_list.o  config.o dscache.o debug.o  intset.o syncio.o diskstore.o endian.o rdb.o
+OBJ = debug.o adlist.o ae.o anet.o dict.o redis.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o sha1.o release.o networking.o util.o object.o db.o t_string.o ts_list.o  config.o dscache.o  intset.o syncio.o diskstore.o endian.o rdb.o
 BENCHOBJ = ae.o anet.o sds.o adlist.o zmalloc.o
 CLIOBJ = anet.o sds.o adlist.o redis-cli.o zmalloc.o release.o
 
@@ -48,8 +48,6 @@ config.o: config.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  intset.h version.h
 db.o: db.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  intset.h version.h
-debug.o: debug.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h   intset.h version.h sha1.h
 dict.o: dict.c fmacros.h dict.h zmalloc.h
 diskstore.o: diskstore.c redis.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h   intset.h version.h
@@ -74,13 +72,13 @@ sds.o: sds.c sds.h zmalloc.h
 sha1.o: sha1.c sha1.h
 syncio.o: syncio.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h   intset.h version.h
-t_list.o: t_list.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h   intset.h version.h
 ts_list.o: ts_list.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h   intset.h version.h
 t_string.o: t_string.c redis.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h   intset.h version.h
 util.o: util.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+  zmalloc.h anet.h   intset.h version.h
+debug.o: debug.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h   intset.h version.h
 zmalloc.o: zmalloc.c config.h
 

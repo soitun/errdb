@@ -117,49 +117,6 @@ int checkType(redisClient *c, robj *o, int type) {
     return 0;
 }
 
-/* Try to encode a string object in order to save space */
-robj *tryObjectEncoding(robj *o) {
-    long value;
-    sds s = o->ptr;
-
-    if (o->encoding != REDIS_ENCODING_RAW)
-        return o; /* Already encoded */
-
-    /* It's not safe to encode shared objects: shared objects can be shared
-     * everywhere in the "object space" of Redis. Encoded objects can only
-     * appear as "values" (and not, for instance, as keys) */
-     if (o->refcount > 1) return o;
-
-    /* Currently we try to encode only strings */
-    redisAssert(o->type == REDIS_STRING);
-
-    /* Check if we can represent this string as a long integer */
-    if (isStringRepresentableAsLong(s,&value) == REDIS_ERR) return o;
-
-    /* Ok, this object can be encoded...
-     *
-     * Can I use a shared object? Only if the object is inside a given
-     * range and if the back end in use is in-memory. For disk store every
-     * object in memory used as value should be independent.
-     *
-     * Note that we also avoid using shared integers when maxmemory is used
-     * because every object needs to have a private LRU field for the LRU
-     * algorithm to work well. */
-    if (!server.ds_enabled &&
-        server.maxmemory == 0 && value >= 0 && value < REDIS_SHARED_INTEGERS &&
-        pthread_equal(pthread_self(),server.mainthread))
-    {
-        decrRefCount(o);
-        incrRefCount(shared.integers[value]);
-        return shared.integers[value];
-    } else {
-        o->encoding = REDIS_ENCODING_INT;
-        sdsfree(o->ptr);
-        o->ptr = (void*) value;
-        return o;
-    }
-}
-
 /* Get a decoded version of an encoded object (returned as a new object).
  * If the object is already raw-encoded just increment the ref count. */
 robj *getDecodedObject(robj *o) {
