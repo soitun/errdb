@@ -3,7 +3,49 @@
 /*-----------------------------------------------------------------------------
  * List API
  *----------------------------------------------------------------------------*/
-robj *tsListTypeLast(robj *subject) {
+typedef struct tvNode {
+    robj *t;
+    robj *v;
+} tvNode;
+
+size_t robjLen(robj *obj) {
+    size_t len;
+
+    if (obj->encoding == REDIS_ENCODING_RAW) {
+        len = sdslen(obj->ptr);
+    } else {
+        long n = (long)obj->ptr;
+
+        /* Compute how many bytes will take this integer as a radix 10 string */
+        len = 1;
+        if (n < 0) {
+            len++;
+            n = -n;
+        }
+        while((n = n/10) != 0) {
+            len++;
+        }
+    }
+
+    return len;
+}
+
+size_t tvNodeLen(tvNode *tv) {
+    return (size_t)(robjLen(tv->t) + robjLen(tv->v));
+}
+
+tvNode *createTvNode(robj *t, robj *v) {
+    tvNode *n;
+    if ((n = zmalloc(sizeof(*n))) == NULL)
+        return NULL;
+    n->t = t;
+    n->v = v;
+    incrRefCount(t);
+    incrRefCount(v);
+    return n;
+}
+
+tvNode *tsListTypeLast(robj *subject) {
     robj *value = NULL;
     list *list = subject->ptr;
     listNode *ln = listFirst(list);
@@ -14,8 +56,8 @@ robj *tsListTypeLast(robj *subject) {
 }
 
 void tsListInsert(robj *subject, robj *ts, robj *v) {
-    listAddNodeHead(subject->ptr, v);
-    incrRefCount(v);
+    tvNode *tv = createTvNode(ts, v);
+    listAddNodeHead(subject->ptr, tv);
 }
 
 unsigned long listTypeLength(robj *subject) {
@@ -25,6 +67,7 @@ unsigned long listTypeLength(robj *subject) {
         redisPanic("Unknown list encoding");
     }
 }
+
 /* Unblock a client that's waiting in a blocking operation such as BLPOP */
 void unblockClientWaitingData(redisClient *c) {
     dictEntry *de;
@@ -165,7 +208,12 @@ void tsFetchCommand(redisClient *c) {
         listNode *ln = listIndex(o->ptr,start);
 
         while(rangelen--) {
-            addReplyBulk(c,ln->value);
+            tvNode *tv = ln->value;
+            addReplyLen(c,tvNodeLen(tv)+2);
+            addReply(c,tv->t);
+            addReplyString(c, ": ", 2);
+            addReply(c,tv->v);
+            addReply(c,shared.crlf);
             ln = ln->next;
         }
     } else {
@@ -177,11 +225,18 @@ void tsLastCommand(redisClient *c) {
     robj *o = lookupKeyWriteOrReply(c,c->argv[1],shared.nullbulk);
     if (o == NULL || checkType(c,o,REDIS_LIST)) return;
 
-    robj *value = tsListTypeLast(o);
-    if (value == NULL) {
+    tvNode *tv = tsListTypeLast(o);
+    if (tv == NULL) {
         addReply(c,shared.nullbulk);
     } else {
-        addReplyBulk(c,value);
+        addReplyLen(c,tvNodeLen(tv)+2);
+        addReply(c,tv->t);
+        addReplyString(c, ": ", 2);
+        addReply(c,tv->v);
+        addReply(c,shared.crlf);
     }
 }
+
+
+
 

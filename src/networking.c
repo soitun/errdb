@@ -294,6 +294,10 @@ void _addReplyLongLong(redisClient *c, long long ll, char prefix) {
     addReplyString(c,buf,len+3);
 }
 
+void addReplyLen(redisClient *c, size_t l) {
+    _addReplyLongLong(c,l,'$');
+}
+
 void addReplyLongLong(redisClient *c, long long ll) {
     _addReplyLongLong(c,ll,':');
 }

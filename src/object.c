@@ -133,6 +133,7 @@ robj *getDecodedObject(robj *o) {
         dec = createStringObject(buf,strlen(buf));
         return dec;
     } else {
+        printf("fuck %d\n", o->type);
         redisPanic("Unknown encoding type");
     }
 }
