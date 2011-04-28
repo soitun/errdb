@@ -255,12 +255,7 @@ int rdbSaveObject(FILE *fp, robj *o) {
         nwritten += n;
     } else if (o->type == REDIS_LIST) {
         /* Save a list value */
-        if (o->encoding == REDIS_ENCODING_ZIPLIST) {
-            size_t l = ziplistBlobLen((unsigned char*)o->ptr);
-
-            if ((n = rdbSaveRawString(fp,o->ptr,l)) == -1) return -1;
-            nwritten += n;
-        } else if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
+        if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
             list *list = o->ptr;
             listIter li;
             listNode *ln;
@@ -322,29 +317,22 @@ int rdbSaveObject(FILE *fp, robj *o) {
         dictReleaseIterator(di);
     } else if (o->type == REDIS_HASH) {
         /* Save a hash value */
-        if (o->encoding == REDIS_ENCODING_ZIPMAP) {
-            size_t l = zipmapBlobLen((unsigned char*)o->ptr);
+        dictIterator *di = dictGetIterator(o->ptr);
+        dictEntry *de;
 
-            if ((n = rdbSaveRawString(fp,o->ptr,l)) == -1) return -1;
+        if ((n = rdbSaveLen(fp,dictSize((dict*)o->ptr))) == -1) return -1;
+        nwritten += n;
+
+        while((de = dictNext(di)) != NULL) {
+            robj *key = dictGetEntryKey(de);
+            robj *val = dictGetEntryVal(de);
+
+            if ((n = rdbSaveStringObject(fp,key)) == -1) return -1;
             nwritten += n;
-        } else {
-            dictIterator *di = dictGetIterator(o->ptr);
-            dictEntry *de;
-
-            if ((n = rdbSaveLen(fp,dictSize((dict*)o->ptr))) == -1) return -1;
+            if ((n = rdbSaveStringObject(fp,val)) == -1) return -1;
             nwritten += n;
-
-            while((de = dictNext(di)) != NULL) {
-                robj *key = dictGetEntryKey(de);
-                robj *val = dictGetEntryVal(de);
-
-                if ((n = rdbSaveStringObject(fp,key)) == -1) return -1;
-                nwritten += n;
-                if ((n = rdbSaveStringObject(fp,val)) == -1) return -1;
-                nwritten += n;
-            }
-            dictReleaseIterator(di);
         }
+        dictReleaseIterator(di);
     } else {
         redisPanic("Unknown object type");
     }
@@ -380,11 +368,7 @@ int rdbSaveKeyValuePair(FILE *fp, robj *key, robj *val,
     /* Fix the object type if needed, to support saving zipmaps, ziplists,
      * and intsets, directly as blobs of bytes: they are already serialized. */
     vtype = val->type;
-    if (vtype == REDIS_HASH && val->encoding == REDIS_ENCODING_ZIPMAP)
-        vtype = REDIS_HASH_ZIPMAP;
-    else if (vtype == REDIS_LIST && val->encoding == REDIS_ENCODING_ZIPLIST)
-        vtype = REDIS_LIST_ZIPLIST;
-    else if (vtype == REDIS_SET && val->encoding == REDIS_ENCODING_INTSET)
+    if (vtype == REDIS_SET && val->encoding == REDIS_ENCODING_INTSET)
         vtype = REDIS_SET_INTSET;
     /* Save type, key, value */
     if (rdbSaveType(fp,vtype) == -1) return -1;
@@ -395,78 +379,14 @@ int rdbSaveKeyValuePair(FILE *fp, robj *key, robj *val,
 
 /* Save the DB on disk. Return REDIS_ERR on error, REDIS_OK on success */
 int rdbSave(char *filename) {
-    dictIterator *di = NULL;
-    dictEntry *de;
-    FILE *fp;
-    char tmpfile[256];
-    int j;
-    time_t now = time(NULL);
 
     if (server.ds_enabled) {
         cacheForcePointInTime();
         return dsRdbSave(filename);
     }
 
-    snprintf(tmpfile,256,"temp-%d.rdb", (int) getpid());
-    fp = fopen(tmpfile,"w");
-    if (!fp) {
-        redisLog(REDIS_WARNING, "Failed opening .rdb for saving: %s",
-            strerror(errno));
-        return REDIS_ERR;
-    }
-    if (fwrite("REDIS0001",9,1,fp) == 0) goto werr;
-    for (j = 0; j < server.dbnum; j++) {
-        redisDb *db = server.db+j;
-        dict *d = db->dict;
-        if (dictSize(d) == 0) continue;
-        di = dictGetIterator(d);
-        if (!di) {
-            fclose(fp);
-            return REDIS_ERR;
-        }
-
-        /* Write the SELECT DB opcode */
-        if (rdbSaveType(fp,REDIS_SELECTDB) == -1) goto werr;
-        if (rdbSaveLen(fp,j) == -1) goto werr;
-
-        /* Iterate this DB writing every entry */
-        while((de = dictNext(di)) != NULL) {
-            sds keystr = dictGetEntryKey(de);
-            robj key, *o = dictGetEntryVal(de);
-            time_t expire;
-            
-            initStaticStringObject(key,keystr);
-            expire = getExpire(db,&key);
-            if (rdbSaveKeyValuePair(fp,&key,o,expire,now) == -1) goto werr;
-        }
-        dictReleaseIterator(di);
-    }
-    /* EOF opcode */
-    if (rdbSaveType(fp,REDIS_EOF) == -1) goto werr;
-
-    /* Make sure data will not remain on the OS's output buffers */
-    fflush(fp);
-    fsync(fileno(fp));
-    fclose(fp);
-
-    /* Use RENAME to make sure the DB file is changed atomically only
-     * if the generate DB file is ok. */
-    if (rename(tmpfile,filename) == -1) {
-        redisLog(REDIS_WARNING,"Error moving temp DB file on the final destination: %s", strerror(errno));
-        unlink(tmpfile);
-        return REDIS_ERR;
-    }
-    redisLog(REDIS_NOTICE,"DB saved on disk");
-    server.dirty = 0;
-    server.lastsave = time(NULL);
     return REDIS_OK;
 
-werr:
-    fclose(fp);
-    unlink(tmpfile);
-    redisLog(REDIS_WARNING,"Write error saving DB on disk: %s", strerror(errno));
-    if (di) dictReleaseIterator(di);
-    return REDIS_ERR;
 }
 
 int rdbSaveBackground(char *filename) {
@@ -664,7 +584,6 @@ int rdbLoadDoubleValue(FILE *fp, double *val) {
 robj *rdbLoadObject(int type, FILE *fp) {
     robj *o, *ele, *dec;
     size_t len;
-    unsigned int i;
 
     redisLog(REDIS_DEBUG,"LOADING OBJECT %d (at %d)\n",type,ftell(fp));
     if (type == REDIS_STRING) {
@@ -675,180 +594,15 @@ robj *rdbLoadObject(int type, FILE *fp) {
         /* Read list value */
         if ((len = rdbLoadLen(fp,NULL)) == REDIS_RDB_LENERR) return NULL;
 
-        /* Use a real list when there are too many entries */
-        if (len > server.list_max_ziplist_entries) {
-            o = createListObject();
-        } else {
-            o = createZiplistObject();
-        }
+        o = createListObject();
 
         /* Load every single element of the list */
         while(len--) {
             if ((ele = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
 
-            /* If we are using a ziplist and the value is too big, convert
-             * the object to a real list. */
-            if (o->encoding == REDIS_ENCODING_ZIPLIST &&
-                ele->encoding == REDIS_ENCODING_RAW &&
-                sdslen(ele->ptr) > server.list_max_ziplist_value)
-                    listTypeConvert(o,REDIS_ENCODING_LINKEDLIST);
-
-            if (o->encoding == REDIS_ENCODING_ZIPLIST) {
-                dec = getDecodedObject(ele);
-                o->ptr = ziplistPush(o->ptr,dec->ptr,sdslen(dec->ptr),REDIS_TAIL);
-                decrRefCount(dec);
-                decrRefCount(ele);
-            } else {
-                ele = tryObjectEncoding(ele);
-                listAddNodeTail(o->ptr,ele);
-            }
-        }
-    } else if (type == REDIS_SET) {
-        /* Read list/set value */
-        if ((len = rdbLoadLen(fp,NULL)) == REDIS_RDB_LENERR) return NULL;
-
-        /* Use a regular set when there are too many entries. */
-        if (len > server.set_max_intset_entries) {
-            o = createSetObject();
-            /* It's faster to expand the dict to the right size asap in order
-             * to avoid rehashing */
-            if (len > DICT_HT_INITIAL_SIZE)
-                dictExpand(o->ptr,len);
-        } else {
-            o = createIntsetObject();
-        }
-
-        /* Load every single element of the list/set */
-        for (i = 0; i < len; i++) {
-            long long llval;
-            if ((ele = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
             ele = tryObjectEncoding(ele);
-
-            if (o->encoding == REDIS_ENCODING_INTSET) {
-                /* Fetch integer value from element */
-                if (isObjectRepresentableAsLongLong(ele,&llval) == REDIS_OK) {
-                    o->ptr = intsetAdd(o->ptr,llval,NULL);
-                } else {
-                    setTypeConvert(o,REDIS_ENCODING_HT);
-                    dictExpand(o->ptr,len);
-                }
-            }
-
-            /* This will also be called when the set was just converted
-             * to regular hashtable encoded set */
-            if (o->encoding == REDIS_ENCODING_HT) {
-                dictAdd((dict*)o->ptr,ele,NULL);
-            } else {
-                decrRefCount(ele);
-            }
-        }
-    } else if (type == REDIS_ZSET) {
-        /* Read list/set value */
-        size_t zsetlen;
-        zset *zs;
-
-        if ((zsetlen = rdbLoadLen(fp,NULL)) == REDIS_RDB_LENERR) return NULL;
-        o = createZsetObject();
-        zs = o->ptr;
-        /* Load every single element of the list/set */
-        while(zsetlen--) {
-            robj *ele;
-            double score;
-            zskiplistNode *znode;
-
-            if ((ele = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
-            ele = tryObjectEncoding(ele);
-            if (rdbLoadDoubleValue(fp,&score) == -1) return NULL;
-            znode = zslInsert(zs->zsl,score,ele);
-            dictAdd(zs->dict,ele,&znode->score);
-            incrRefCount(ele); /* added to skiplist */
-        }
-    } else if (type == REDIS_HASH) {
-        size_t hashlen;
-
-        if ((hashlen = rdbLoadLen(fp,NULL)) == REDIS_RDB_LENERR) return NULL;
-        o = createHashObject();
-        /* Too many entries? Use an hash table. */
-        if (hashlen > server.hash_max_zipmap_entries)
-            convertToRealHash(o);
-        /* Load every key/value, then set it into the zipmap or hash
-         * table, as needed. */
-        while(hashlen--) {
-            robj *key, *val;
-
-            if ((key = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
-            if ((val = rdbLoadEncodedStringObject(fp)) == NULL) return NULL;
-            /* If we are using a zipmap and there are too big values
-             * the object is converted to real hash table encoding. */
-            if (o->encoding != REDIS_ENCODING_HT &&
-               ((key->encoding == REDIS_ENCODING_RAW &&
-                sdslen(key->ptr) > server.hash_max_zipmap_value) ||
-                (val->encoding == REDIS_ENCODING_RAW &&
-                sdslen(val->ptr) > server.hash_max_zipmap_value)))
-            {
-                    convertToRealHash(o);
-            }
-
-            if (o->encoding == REDIS_ENCODING_ZIPMAP) {
-                unsigned char *zm = o->ptr;
-                robj *deckey, *decval;
-
-                /* We need raw string objects to add them to the zipmap */
-                deckey = getDecodedObject(key);
-                decval = getDecodedObject(val);
-                zm = zipmapSet(zm,deckey->ptr,sdslen(deckey->ptr),
-                                  decval->ptr,sdslen(decval->ptr),NULL);
-                o->ptr = zm;
-                decrRefCount(deckey);
-                decrRefCount(decval);
-                decrRefCount(key);
-                decrRefCount(val);
-            } else {
-                key = tryObjectEncoding(key);
-                val = tryObjectEncoding(val);
-                dictAdd((dict*)o->ptr,key,val);
-            }
-        }
-    } else if (type == REDIS_HASH_ZIPMAP ||
-               type == REDIS_LIST_ZIPLIST ||
-               type == REDIS_SET_INTSET)
-    {
-        robj *aux = rdbLoadStringObject(fp);
-
-        if (aux == NULL) return NULL;
-        o = createObject(REDIS_STRING,NULL); /* string is just placeholder */
-        o->ptr = zmalloc(sdslen(aux->ptr));
-        memcpy(o->ptr,aux->ptr,sdslen(aux->ptr));
-        decrRefCount(aux);
-
-        /* Fix the object encoding, and make sure to convert the encoded
-         * data type into the base type if accordingly to the current
-         * configuration there are too many elements in the encoded data
-         * type. Note that we only check the length and not max element
-         * size as this is an O(N) scan. Eventually everything will get
-         * converted. */
-        switch(type) {
-            case REDIS_HASH_ZIPMAP:
-                o->type = REDIS_HASH;
-                o->encoding = REDIS_ENCODING_ZIPMAP;
-                if (zipmapLen(o->ptr) > server.hash_max_zipmap_entries)
-                    convertToRealHash(o);
-                break;
-            case REDIS_LIST_ZIPLIST:
-                o->type = REDIS_LIST;
-                o->encoding = REDIS_ENCODING_ZIPLIST;
-                if (ziplistLen(o->ptr) > server.list_max_ziplist_entries)
-                    listTypeConvert(o,REDIS_ENCODING_LINKEDLIST);
-                break;
-            case REDIS_SET_INTSET:
-                o->type = REDIS_SET;
-                o->encoding = REDIS_ENCODING_INTSET;
-                if (intsetLen(o->ptr) > server.set_max_intset_entries)
-                    setTypeConvert(o,REDIS_ENCODING_HT);
-                break;
-            default:
-                redisPanic("Unknown enoding");
-                break;
+            listAddNodeTail(o->ptr,ele);
+            
         }
     } else {
         redisPanic("Unknown object type");
@@ -859,112 +613,14 @@ robj *rdbLoadObject(int type, FILE *fp) {
 /* Mark that we are loading in the global state and setup the fields
  * needed to provide loading stats. */
 void startLoading(FILE *fp) {
-    struct stat sb;
-
-    /* Load the DB */
-    server.loading = 1;
-    server.loading_start_time = time(NULL);
-    if (fstat(fileno(fp), &sb) == -1) {
-        server.loading_total_bytes = 1; /* just to avoid division by zero */
-    } else {
-        server.loading_total_bytes = sb.st_size;
-    }
 }
 
 /* Refresh the loading progress info */
 void loadingProgress(off_t pos) {
-    server.loading_loaded_bytes = pos;
 }
 
 /* Loading finished */
 void stopLoading(void) {
-    server.loading = 0;
-}
-
-int rdbLoad(char *filename) {
-    FILE *fp;
-    uint32_t dbid;
-    int type, retval, rdbver;
-    redisDb *db = server.db+0;
-    char buf[1024];
-    time_t expiretime, now = time(NULL);
-    long loops = 0;
-
-    fp = fopen(filename,"r");
-    if (!fp) return REDIS_ERR;
-    if (fread(buf,9,1,fp) == 0) goto eoferr;
-    buf[9] = '\0';
-    if (memcmp(buf,"REDIS",5) != 0) {
-        fclose(fp);
-        redisLog(REDIS_WARNING,"Wrong signature trying to load DB from file");
-        return REDIS_ERR;
-    }
-    rdbver = atoi(buf+5);
-    if (rdbver != 1) {
-        fclose(fp);
-        redisLog(REDIS_WARNING,"Can't handle RDB format version %d",rdbver);
-        return REDIS_ERR;
-    }
-
-    startLoading(fp);
-    while(1) {
-        robj *key, *val;
-        expiretime = -1;
-
-        /* Serve the clients from time to time */
-        if (!(loops++ % 1000)) {
-            loadingProgress(ftello(fp));
-            aeProcessEvents(server.el, AE_FILE_EVENTS|AE_DONT_WAIT);
-        }
-
-        /* Read type. */
-        if ((type = rdbLoadType(fp)) == -1) goto eoferr;
-        if (type == REDIS_EXPIRETIME) {
-            if ((expiretime = rdbLoadTime(fp)) == -1) goto eoferr;
-            /* We read the time so we need to read the object type again */
-            if ((type = rdbLoadType(fp)) == -1) goto eoferr;
-        }
-        if (type == REDIS_EOF) break;
-        /* Handle SELECT DB opcode as a special case */
-        if (type == REDIS_SELECTDB) {
-            if ((dbid = rdbLoadLen(fp,NULL)) == REDIS_RDB_LENERR)
-                goto eoferr;
-            if (dbid >= (unsigned)server.dbnum) {
-                redisLog(REDIS_WARNING,"FATAL: Data file was created with a Redis server configured to handle more than %d databases. Exiting\n", server.dbnum);
-                exit(1);
-            }
-            db = server.db+dbid;
-            continue;
-        }
-        /* Read key */
-        if ((key = rdbLoadStringObject(fp)) == NULL) goto eoferr;
-        /* Read value */
-        if ((val = rdbLoadObject(type,fp)) == NULL) goto eoferr;
-        /* Check if the key already expired */
-        if (expiretime != -1 && expiretime < now) {
-            decrRefCount(key);
-            decrRefCount(val);
-            continue;
-        }
-        /* Add the new object in the hash table */
-        retval = dbAdd(db,key,val);
-        if (retval == REDIS_ERR) {
-            redisLog(REDIS_WARNING,"Loading DB, duplicated key (%s) found! Unrecoverable error, exiting now.", key->ptr);
-            exit(1);
-        }
-        /* Set the expire time if needed */
-        if (expiretime != -1) setExpire(db,key,expiretime);
-
-        decrRefCount(key);
-    }
-    fclose(fp);
-    stopLoading();
-    return REDIS_OK;
-
-eoferr: /* unexpected end of file is handled here with a fatal exit */
-    redisLog(REDIS_WARNING,"Short read or OOM loading DB. Unrecoverable error, aborting now.");
-    exit(1);
-    return REDIS_ERR; /* Just to avoid warning */
 }
 
 /* A background saving child (BGSAVE) terminated its work. Handle this. */
@@ -983,10 +639,6 @@ void backgroundSaveDoneHandler(int exitcode, int bysignal) {
     }
     server.bgsavechildpid = -1;
     server.bgsavethread = (pthread_t) -1;
-    server.bgsavethread_state = REDIS_BGSAVE_THREAD_UNACTIVE;
-    /* Possibly there are slaves waiting for a BGSAVE in order to be served
-     * (the first stage of SYNC is a bulk transfer of dump.rdb) */
-    updateSlavesWaitingBgsave(exitcode == 0 ? REDIS_OK : REDIS_ERR);
 }
 
 void saveCommand(redisClient *c) {

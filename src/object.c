@@ -60,13 +60,6 @@ robj *createListObject(void) {
     return o;
 }
 
-robj *createZiplistObject(void) {
-    unsigned char *zl = ziplistNew();
-    robj *o = createObject(REDIS_LIST,zl);
-    o->encoding = REDIS_ENCODING_ZIPLIST;
-    return o;
-}
-
 robj *createSetObject(void) {
     dict *d = dictCreate(&setDictType,NULL);
     robj *o = createObject(REDIS_SET,d);
@@ -81,24 +74,6 @@ robj *createIntsetObject(void) {
     return o;
 }
 
-robj *createHashObject(void) {
-    /* All the Hashes start as zipmaps. Will be automatically converted
-     * into hash tables if there are enough elements or big elements
-     * inside. */
-    unsigned char *zm = zipmapNew();
-    robj *o = createObject(REDIS_HASH,zm);
-    o->encoding = REDIS_ENCODING_ZIPMAP;
-    return o;
-}
-
-robj *createZsetObject(void) {
-    zset *zs = zmalloc(sizeof(*zs));
-
-    zs->dict = dictCreate(&zsetDictType,NULL);
-    zs->zsl = zslCreate();
-    return createObject(REDIS_ZSET,zs);
-}
-
 void freeStringObject(robj *o) {
     if (o->encoding == REDIS_ENCODING_RAW) {
         sdsfree(o->ptr);
@@ -110,46 +85,8 @@ void freeListObject(robj *o) {
     case REDIS_ENCODING_LINKEDLIST:
         listRelease((list*) o->ptr);
         break;
-    case REDIS_ENCODING_ZIPLIST:
-        zfree(o->ptr);
-        break;
     default:
         redisPanic("Unknown list encoding type");
-    }
-}
-
-void freeSetObject(robj *o) {
-    switch (o->encoding) {
-    case REDIS_ENCODING_HT:
-        dictRelease((dict*) o->ptr);
-        break;
-    case REDIS_ENCODING_INTSET:
-        zfree(o->ptr);
-        break;
-    default:
-        redisPanic("Unknown set encoding type");
-    }
-}
-
-void freeZsetObject(robj *o) {
-    zset *zs = o->ptr;
-
-    dictRelease(zs->dict);
-    zslFree(zs->zsl);
-    zfree(zs);
-}
-
-void freeHashObject(robj *o) {
-    switch (o->encoding) {
-    case REDIS_ENCODING_HT:
-        dictRelease((dict*) o->ptr);
-        break;
-    case REDIS_ENCODING_ZIPMAP:
-        zfree(o->ptr);
-        break;
-    default:
-        redisPanic("Unknown hash encoding type");
-        break;
     }
 }
 
@@ -165,9 +102,6 @@ void decrRefCount(void *obj) {
         switch(o->type) {
         case REDIS_STRING: freeStringObject(o); break;
         case REDIS_LIST: freeListObject(o); break;
-        case REDIS_SET: freeSetObject(o); break;
-        case REDIS_ZSET: freeZsetObject(o); break;
-        case REDIS_HASH: freeHashObject(o); break;
         default: redisPanic("Unknown object type"); break;
         }
         o->ptr = NULL; /* defensive programming. We'll see NULL in traces. */
@@ -398,9 +332,7 @@ char *strEncoding(int encoding) {
     case REDIS_ENCODING_RAW: return "raw";
     case REDIS_ENCODING_INT: return "int";
     case REDIS_ENCODING_HT: return "hashtable";
-    case REDIS_ENCODING_ZIPMAP: return "zipmap";
     case REDIS_ENCODING_LINKEDLIST: return "linkedlist";
-    case REDIS_ENCODING_ZIPLIST: return "ziplist";
     case REDIS_ENCODING_INTSET: return "intset";
     default: return "unknown";
     }

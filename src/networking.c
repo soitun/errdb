@@ -46,14 +46,8 @@ redisClient *createClient(int fd) {
     c->bpop.timeout = 0;
     c->bpop.target = NULL;
     c->io_keys = listCreate();
-    c->watched_keys = listCreate();
     listSetFreeMethod(c->io_keys,decrRefCount);
-    c->pubsub_channels = dictCreate(&setDictType,NULL);
-    c->pubsub_patterns = listCreate();
-    listSetFreeMethod(c->pubsub_patterns,decrRefCount);
-    listSetMatchMethod(c->pubsub_patterns,listMatchObjects);
     listAddNodeTail(server.clients,c);
-    initClientMultiState(c);
     return c;
 }
 
@@ -438,14 +432,6 @@ void freeClient(redisClient *c) {
     if (c->flags & REDIS_BLOCKED)
         unblockClientWaitingData(c);
 
-    /* UNWATCH all the keys */
-    unwatchAllKeys(c);
-    listRelease(c->watched_keys);
-    /* Unsubscribe from all the pubsub channels */
-    pubsubUnsubscribeAllChannels(c,0);
-    pubsubUnsubscribeAllPatterns(c,0);
-    dictRelease(c->pubsub_channels);
-    listRelease(c->pubsub_patterns);
     /* Obvious cleanup */
     aeDeleteFileEvent(server.el,c->fd,AE_READABLE);
     aeDeleteFileEvent(server.el,c->fd,AE_WRITABLE);
@@ -483,34 +469,8 @@ void freeClient(redisClient *c) {
         server.cache_blocked_clients--;
     }
     listRelease(c->io_keys);
-    /* Master/slave cleanup.
-     * Case 1: we lost the connection with a slave. */
-    if (c->flags & REDIS_SLAVE) {
-        if (c->replstate == REDIS_REPL_SEND_BULK && c->repldbfd != -1)
-            close(c->repldbfd);
-        list *l = (c->flags & REDIS_MONITOR) ? server.monitors : server.slaves;
-        ln = listSearchKey(l,c);
-        redisAssert(ln != NULL);
-        listDelNode(l,ln);
-    }
-
-    /* Case 2: we lost the connection with the master. */
-    if (c->flags & REDIS_MASTER) {
-        server.master = NULL;
-        server.replstate = REDIS_REPL_CONNECT;
-        /* Since we lost the connection with the master, we should also
-         * close the connection with all our slaves if we have any, so
-         * when we'll resync with the master the other slaves will sync again
-         * with us as well. Note that also when the slave is not connected
-         * to the master it will keep refusing connections by other slaves. */
-        while (listLength(server.slaves)) {
-            ln = listFirst(server.slaves);
-            freeClient((redisClient*)ln->value);
-        }
-    }
     /* Release memory */
     zfree(c->argv);
-    freeClientMultiState(c);
     zfree(c);
 }
 
@@ -609,11 +569,7 @@ void closeTimedoutClients(void) {
     while ((ln = listNext(&li)) != NULL) {
         c = listNodeValue(ln);
         if (server.maxidletime &&
-            !(c->flags & REDIS_SLAVE) &&    /* no timeout for slaves */
-            !(c->flags & REDIS_MASTER) &&   /* no timeout for masters */
             !(c->flags & REDIS_BLOCKED) &&  /* no timeout for BLPOP */
-            dictSize(c->pubsub_channels) == 0 && /* no timeout for pubsub */
-            listLength(c->pubsub_patterns) == 0 &&
             (now - c->lastinteraction > server.maxidletime))
         {
             redisLog(REDIS_VERBOSE,"Closing idle client");

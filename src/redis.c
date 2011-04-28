@@ -76,6 +76,7 @@ struct redisCommand redisCommandTable[] = {
     {"append",appendCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"strlen",strlenCommand,2,0,NULL,1,1,1,0,0},
     {"del",delCommand,-2,0,NULL,0,0,0,0,0},
+    {"delete",delCommand,-2,0,NULL,0,0,0,0,0},
     {"exists",existsCommand,2,0,NULL,1,1,1,0,0},
     {"setbit",setbitCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"getbit",getbitCommand,3,0,NULL,1,1,1,0,0},
@@ -90,6 +91,12 @@ struct redisCommand redisCommandTable[] = {
     {"rpushx",rpushxCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"lpushx",lpushxCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"linsert",linsertCommand,5,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
+
+    //Time series data
+    {"last",tsLastCommand,2,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
+    {"fetch",tsFetchCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
+    {"insert",tsInsertCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
+
     {"rpop",rpopCommand,2,0,NULL,1,1,1,0,0},
     {"lpop",lpopCommand,2,0,NULL,1,1,1,0,0},
     {"brpop",brpopCommand,-3,0,NULL,1,1,1,0,0},
@@ -102,48 +109,6 @@ struct redisCommand redisCommandTable[] = {
     {"ltrim",ltrimCommand,4,0,NULL,1,1,1,0,0},
     {"lrem",lremCommand,4,0,NULL,1,1,1,0,0},
     {"rpoplpush",rpoplpushCommand,3,REDIS_CMD_DENYOOM,NULL,1,2,1,0,0},
-    {"sadd",saddCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"srem",sremCommand,3,0,NULL,1,1,1,0,0},
-    {"smove",smoveCommand,4,0,NULL,1,2,1,0,0},
-    {"sismember",sismemberCommand,3,0,NULL,1,1,1,0,0},
-    {"scard",scardCommand,2,0,NULL,1,1,1,0,0},
-    {"spop",spopCommand,2,0,NULL,1,1,1,0,0},
-    {"srandmember",srandmemberCommand,2,0,NULL,1,1,1,0,0},
-    {"sinter",sinterCommand,-2,REDIS_CMD_DENYOOM,NULL,1,-1,1,0,0},
-    {"sinterstore",sinterstoreCommand,-3,REDIS_CMD_DENYOOM,NULL,2,-1,1,0,0},
-    {"sunion",sunionCommand,-2,REDIS_CMD_DENYOOM,NULL,1,-1,1,0,0},
-    {"sunionstore",sunionstoreCommand,-3,REDIS_CMD_DENYOOM,NULL,2,-1,1,0,0},
-    {"sdiff",sdiffCommand,-2,REDIS_CMD_DENYOOM,NULL,1,-1,1,0,0},
-    {"sdiffstore",sdiffstoreCommand,-3,REDIS_CMD_DENYOOM,NULL,2,-1,1,0,0},
-    {"smembers",sinterCommand,2,0,NULL,1,1,1,0,0},
-    {"zadd",zaddCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"zincrby",zincrbyCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"zrem",zremCommand,3,0,NULL,1,1,1,0,0},
-    {"zremrangebyscore",zremrangebyscoreCommand,4,0,NULL,1,1,1,0,0},
-    {"zremrangebyrank",zremrangebyrankCommand,4,0,NULL,1,1,1,0,0},
-    {"zunionstore",zunionstoreCommand,-4,REDIS_CMD_DENYOOM,zunionInterBlockClientOnSwappedKeys,0,0,0,0,0},
-    {"zinterstore",zinterstoreCommand,-4,REDIS_CMD_DENYOOM,zunionInterBlockClientOnSwappedKeys,0,0,0,0,0},
-    {"zrange",zrangeCommand,-4,0,NULL,1,1,1,0,0},
-    {"zrangebyscore",zrangebyscoreCommand,-4,0,NULL,1,1,1,0,0},
-    {"zrevrangebyscore",zrevrangebyscoreCommand,-4,0,NULL,1,1,1,0,0},
-    {"zcount",zcountCommand,4,0,NULL,1,1,1,0,0},
-    {"zrevrange",zrevrangeCommand,-4,0,NULL,1,1,1,0,0},
-    {"zcard",zcardCommand,2,0,NULL,1,1,1,0,0},
-    {"zscore",zscoreCommand,3,0,NULL,1,1,1,0,0},
-    {"zrank",zrankCommand,3,0,NULL,1,1,1,0,0},
-    {"zrevrank",zrevrankCommand,3,0,NULL,1,1,1,0,0},
-    {"hset",hsetCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"hsetnx",hsetnxCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"hget",hgetCommand,3,0,NULL,1,1,1,0,0},
-    {"hmset",hmsetCommand,-4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"hmget",hmgetCommand,-3,0,NULL,1,1,1,0,0},
-    {"hincrby",hincrbyCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"hdel",hdelCommand,3,0,NULL,1,1,1,0,0},
-    {"hlen",hlenCommand,2,0,NULL,1,1,1,0,0},
-    {"hkeys",hkeysCommand,2,0,NULL,1,1,1,0,0},
-    {"hvals",hvalsCommand,2,0,NULL,1,1,1,0,0},
-    {"hgetall",hgetallCommand,2,0,NULL,1,1,1,0,0},
-    {"hexists",hexistsCommand,3,0,NULL,1,1,1,0,0},
     {"incrby",incrbyCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"decrby",decrbyCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"getset",getsetCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
@@ -163,31 +128,15 @@ struct redisCommand redisCommandTable[] = {
     {"echo",echoCommand,2,0,NULL,0,0,0,0,0},
     {"save",saveCommand,1,0,NULL,0,0,0,0,0},
     {"bgsave",bgsaveCommand,1,0,NULL,0,0,0,0,0},
-    {"bgrewriteaof",bgrewriteaofCommand,1,0,NULL,0,0,0,0,0},
     {"shutdown",shutdownCommand,1,0,NULL,0,0,0,0,0},
     {"lastsave",lastsaveCommand,1,0,NULL,0,0,0,0,0},
     {"type",typeCommand,2,0,NULL,1,1,1,0,0},
-    {"multi",multiCommand,1,0,NULL,0,0,0,0,0},
-    {"exec",execCommand,1,REDIS_CMD_DENYOOM,execBlockClientOnSwappedKeys,0,0,0,0,0},
-    {"discard",discardCommand,1,0,NULL,0,0,0,0,0},
-    {"sync",syncCommand,1,0,NULL,0,0,0,0,0},
-    {"flushdb",flushdbCommand,1,0,NULL,0,0,0,0,0},
-    {"flushall",flushallCommand,1,0,NULL,0,0,0,0,0},
-    {"sort",sortCommand,-2,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"info",infoCommand,-1,0,NULL,0,0,0,0,0},
     {"monitor",monitorCommand,1,0,NULL,0,0,0,0,0},
     {"ttl",ttlCommand,2,0,NULL,1,1,1,0,0},
     {"persist",persistCommand,2,0,NULL,1,1,1,0,0},
-    {"slaveof",slaveofCommand,3,0,NULL,0,0,0,0,0},
     {"debug",debugCommand,-2,0,NULL,0,0,0,0,0},
-    {"config",configCommand,-2,0,NULL,0,0,0,0,0},
-    {"subscribe",subscribeCommand,-2,0,NULL,0,0,0,0,0},
-    {"unsubscribe",unsubscribeCommand,-1,0,NULL,0,0,0,0,0},
-    {"psubscribe",psubscribeCommand,-2,0,NULL,0,0,0,0,0},
-    {"punsubscribe",punsubscribeCommand,-1,0,NULL,0,0,0,0,0},
-    {"publish",publishCommand,3,REDIS_CMD_FORCE_REPLICATION,NULL,0,0,0,0,0},
-    {"watch",watchCommand,-2,0,NULL,0,0,0,0,0},
-    {"unwatch",unwatchCommand,1,0,NULL,0,0,0,0,0}
+    {"config",configCommand,-2,0,NULL,0,0,0,0,0}
 };
 
 /*============================ Utility functions ============================ */
@@ -596,9 +545,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
     /* Show information about connected clients */
     if (!(loops % 50)) {
-        redisLog(REDIS_VERBOSE,"%d clients connected (%d slaves), %zu bytes in use",
-            listLength(server.clients)-listLength(server.slaves),
-            listLength(server.slaves),
+        redisLog(REDIS_VERBOSE,"%d clients connected, %zu bytes in use",
+            listLength(server.clients),
             zmalloc_used_memory());
     }
 
@@ -612,16 +560,11 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
         pid_t pid;
 
         if ((pid = wait3(&statloc,WNOHANG,NULL)) != 0) {
-            int exitcode = WEXITSTATUS(statloc);
+            //int exitcode = WEXITSTATUS(statloc);
             int bysignal = 0;
             
             if (WIFSIGNALED(statloc)) bysignal = WTERMSIG(statloc);
 
-            if (pid == server.bgsavechildpid) {
-                backgroundSaveDoneHandler(exitcode,bysignal);
-            } else {
-                backgroundRewriteDoneHandler(exitcode,bysignal);
-            }
             updateDictResizePolicy();
         }
     } else if (server.bgsavethread != (pthread_t) -1) {
@@ -659,15 +602,11 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     /* Expire a few keys per cycle, only if this is a master.
      * On slaves we wait for DEL operations synthesized by the master
      * in order to guarantee a strict consistency. */
-    if (server.masterhost == NULL) activeExpireCycle();
+    activeExpireCycle();
 
     /* Remove a few cached objects from memory if we are over the
      * configured memory limit */
     if (server.ds_enabled) cacheCron();
-
-    /* Replication cron function -- used to reconnect to master and
-     * to detect transfer failures. */
-    if (!(loops % 10)) replicationCron();
 
     server.cronloops++;
     return 100;
@@ -719,8 +658,6 @@ void beforeSleep(struct aeEventLoop *eventLoop) {
             processInputBuffer(c);
     }
 
-    /* Write the AOF buffer on disk */
-    flushAppendOnlyFile();
 }
 
 /* =========================== Server initialization ======================== */
@@ -767,10 +704,6 @@ void createSharedObjects(void) {
     shared.select9 = createStringObject("select 9\r\n",10);
     shared.messagebulk = createStringObject("$7\r\nmessage\r\n",13);
     shared.pmessagebulk = createStringObject("$8\r\npmessage\r\n",14);
-    shared.subscribebulk = createStringObject("$9\r\nsubscribe\r\n",15);
-    shared.unsubscribebulk = createStringObject("$11\r\nunsubscribe\r\n",18);
-    shared.psubscribebulk = createStringObject("$10\r\npsubscribe\r\n",17);
-    shared.punsubscribebulk = createStringObject("$12\r\npunsubscribe\r\n",19);
     shared.mbulk3 = createStringObject("*3\r\n",4);
     shared.mbulk4 = createStringObject("*4\r\n",4);
     for (j = 0; j < REDIS_SHARED_INTEGERS; j++) {
@@ -789,21 +722,16 @@ void initServerConfig() {
     server.verbosity = REDIS_VERBOSE;
     server.maxidletime = REDIS_MAXIDLETIME;
     server.saveparams = NULL;
-    server.loading = 0;
     server.logfile = NULL; /* NULL = log on standard output */
     server.syslog_enabled = 0;
     server.syslog_ident = zstrdup("redis");
     server.syslog_facility = LOG_LOCAL0;
     server.daemonize = 0;
-    server.appendonly = 0;
-    server.appendfsync = APPENDFSYNC_EVERYSEC;
-    server.no_appendfsync_on_rewrite = 0;
     server.lastfsync = time(NULL);
     server.appendfd = -1;
     server.appendseldb = -1; /* Make sure the first time will not match */
     server.pidfile = zstrdup("/var/run/redis.pid");
     server.dbfilename = zstrdup("dump.rdb");
-    server.appendfilename = zstrdup("appendonly.aof");
     server.requirepass = NULL;
     server.rdbcompression = 1;
     server.activerehashing = 1;
@@ -816,10 +744,6 @@ void initServerConfig() {
     server.ds_path = sdsnew("/tmp/redis.ds");
     server.cache_max_memory = 64LL*1024*1024; /* 64 MB of RAM */
     server.cache_blocked_clients = 0;
-    server.hash_max_zipmap_entries = REDIS_HASH_MAX_ZIPMAP_ENTRIES;
-    server.hash_max_zipmap_value = REDIS_HASH_MAX_ZIPMAP_VALUE;
-    server.list_max_ziplist_entries = REDIS_LIST_MAX_ZIPLIST_ENTRIES;
-    server.list_max_ziplist_value = REDIS_LIST_MAX_ZIPLIST_VALUE;
     server.set_max_intset_entries = REDIS_SET_MAX_INTSET_ENTRIES;
     server.shutdown_asap = 0;
     server.cache_flush_delay = 0;
@@ -830,15 +754,6 @@ void initServerConfig() {
     appendServerSaveParams(60*60,1);  /* save after 1 hour and 1 change */
     appendServerSaveParams(300,100);  /* save after 5 minutes and 100 changes */
     appendServerSaveParams(60,10000); /* save after 1 minute and 10000 changes */
-    /* Replication related */
-    server.isslave = 0;
-    server.masterauth = NULL;
-    server.masterhost = NULL;
-    server.masterport = 6379;
-    server.master = NULL;
-    server.replstate = REDIS_REPL_NONE;
-    server.repl_serve_stale_data = 1;
-
     /* Double constants initialization */
     R_Zero = 0.0;
     R_PosInf = 1.0/R_Zero;
@@ -868,7 +783,6 @@ void initServer() {
 
     server.mainthread = pthread_self();
     server.clients = listCreate();
-    server.slaves = listCreate();
     server.monitors = listCreate();
     server.unblocked_clients = listCreate();
     server.cache_io_queue = listCreate();
@@ -900,7 +814,6 @@ void initServer() {
         server.db[j].dict = dictCreate(&dbDictType,NULL);
         server.db[j].expires = dictCreate(&keyptrDictType,NULL);
         server.db[j].blocking_keys = dictCreate(&keylistDictType,NULL);
-        server.db[j].watched_keys = dictCreate(&keylistDictType,NULL);
         if (server.ds_enabled) {
             server.db[j].io_keys = dictCreate(&keylistDictType,NULL);
             server.db[j].io_negcache = dictCreate(&setDictType,NULL);
@@ -908,17 +821,11 @@ void initServer() {
         }
         server.db[j].id = j;
     }
-    server.pubsub_channels = dictCreate(&keylistDictType,NULL);
-    server.pubsub_patterns = listCreate();
-    listSetFreeMethod(server.pubsub_patterns,freePubsubPattern);
-    listSetMatchMethod(server.pubsub_patterns,listMatchPubsubPattern);
     server.cronloops = 0;
     server.bgsavechildpid = -1;
     server.bgrewritechildpid = -1;
     server.bgsavethread_state = REDIS_BGSAVE_THREAD_UNACTIVE;
     server.bgsavethread = (pthread_t) -1;
-    server.bgrewritebuf = sdsempty();
-    server.aofbuf = sdsempty();
     server.lastsave = time(NULL);
     server.dirty = 0;
     server.stat_numcommands = 0;
@@ -934,15 +841,6 @@ void initServer() {
         acceptTcpHandler,NULL) == AE_ERR) oom("creating file event");
     if (server.sofd > 0 && aeCreateFileEvent(server.el,server.sofd,AE_READABLE,
         acceptUnixHandler,NULL) == AE_ERR) oom("creating file event");
-
-    if (server.appendonly) {
-        server.appendfd = open(server.appendfilename,O_WRONLY|O_APPEND|O_CREAT,0644);
-        if (server.appendfd == -1) {
-            redisLog(REDIS_WARNING, "Can't open the append-only file: %s",
-                strerror(errno));
-            exit(1);
-        }
-    }
 
     if (server.ds_enabled) dsInit();
     srand(time(NULL)^getpid());
@@ -1000,13 +898,9 @@ void call(redisClient *c, struct redisCommand *cmd) {
     cmd->microseconds += ustime()-start;
     cmd->calls++;
 
-    if (server.appendonly && dirty)
-        feedAppendOnlyFile(cmd,c->db->id,c->argv,c->argc);
-    if ((dirty || cmd->flags & REDIS_CMD_FORCE_REPLICATION) &&
-        listLength(server.slaves))
-        replicationFeedSlaves(server.slaves,c->db->id,c->argv,c->argc);
-    if (listLength(server.monitors))
-        replicationFeedMonitors(server.monitors,c->db->id,c->argv,c->argc);
+    //TODO: ery fix
+    //if (listLength(server.monitors))
+    //    replicationFeedMonitors(server.monitors,c->db->id,c->argv,c->argc);
     server.stat_numcommands++;
 }
 
@@ -1064,44 +958,10 @@ int processCommand(redisClient *c) {
         return REDIS_OK;
     }
 
-    /* Only allow SUBSCRIBE and UNSUBSCRIBE in the context of Pub/Sub */
-    if ((dictSize(c->pubsub_channels) > 0 || listLength(c->pubsub_patterns) > 0)
-        &&
-        cmd->proc != subscribeCommand && cmd->proc != unsubscribeCommand &&
-        cmd->proc != psubscribeCommand && cmd->proc != punsubscribeCommand) {
-        addReplyError(c,"only (P)SUBSCRIBE / (P)UNSUBSCRIBE / QUIT allowed in this context");
-        return REDIS_OK;
-    }
+    if (server.ds_enabled && blockClientOnSwappedKeys(c,cmd))
+        return REDIS_ERR;
+    call(c,cmd);
 
-    /* Only allow INFO and SLAVEOF when slave-serve-stale-data is no and
-     * we are a slave with a broken link with master. */
-    if (server.masterhost && server.replstate != REDIS_REPL_CONNECTED &&
-        server.repl_serve_stale_data == 0 &&
-        cmd->proc != infoCommand && cmd->proc != slaveofCommand)
-    {
-        addReplyError(c,
-            "link with MASTER is down and slave-serve-stale-data is set to no");
-        return REDIS_OK;
-    }
-
-    /* Loading DB? Return an error if the command is not INFO */
-    if (server.loading && cmd->proc != infoCommand) {
-        addReply(c, shared.loadingerr);
-        return REDIS_OK;
-    }
-
-    /* Exec the command */
-    if (c->flags & REDIS_MULTI &&
-        cmd->proc != execCommand && cmd->proc != discardCommand &&
-        cmd->proc != multiCommand && cmd->proc != watchCommand)
-    {
-        queueMultiCommand(c,cmd);
-        addReply(c,shared.queued);
-    } else {
-        if (server.ds_enabled && blockClientOnSwappedKeys(c,cmd))
-            return REDIS_ERR;
-        call(c,cmd);
-    }
     return REDIS_OK;
 }
 
@@ -1119,9 +979,6 @@ int prepareForShutdown() {
     }
     if (server.ds_enabled) {
         /* FIXME: flush all objects on disk */
-    } else if (server.appendonly) {
-        /* Append only file: fsync() the AOF and exit */
-        aof_fsync(server.appendfd);
     } else if (server.saveparamslen > 0) {
         /* Snapshotting. Perform a SYNC SAVE and exit */
         if (rdbSave(server.dbfilename) != REDIS_OK) {
@@ -1241,7 +1098,7 @@ sds genRedisInfoString(char *section) {
             "client_longest_output_list:%lu\r\n"
             "client_biggest_input_buf:%lu\r\n"
             "blocked_clients:%d\r\n",
-            listLength(server.clients)-listLength(server.slaves),
+            listLength(server.clients),
             lol, bib,
             server.bpop_blocked_clients);
     }
@@ -1289,50 +1146,16 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info,"\r\n");
         info = sdscatprintf(info,
             "# Persistence\r\n"
-            "loading:%d\r\n"
-            "aof_enabled:%d\r\n"
             "changes_since_last_save:%lld\r\n"
             "bgsave_in_progress:%d\r\n"
             "last_save_time:%ld\r\n"
             "bgrewriteaof_in_progress:%d\r\n",
-            server.loading,
-            server.appendonly,
             server.dirty,
                 server.bgsavechildpid != -1 ||
                 server.bgsavethread != (pthread_t) -1,
             server.lastsave,
             server.bgrewritechildpid != -1);
 
-        if (server.loading) {
-            double perc;
-            time_t eta, elapsed;
-            off_t remaining_bytes = server.loading_total_bytes-
-                                    server.loading_loaded_bytes;
-
-            perc = ((double)server.loading_loaded_bytes /
-                   server.loading_total_bytes) * 100;
-
-            elapsed = time(NULL)-server.loading_start_time;
-            if (elapsed == 0) {
-                eta = 1; /* A fake 1 second figure if we don't have
-                            enough info */
-            } else {
-                eta = (elapsed*remaining_bytes)/server.loading_loaded_bytes;
-            }
-
-            info = sdscatprintf(info,
-                "loading_start_time:%ld\r\n"
-                "loading_total_bytes:%llu\r\n"
-                "loading_loaded_bytes:%llu\r\n"
-                "loading_loaded_perc:%.2f\r\n"
-                "loading_eta_seconds:%ld\r\n"
-                ,(unsigned long) server.loading_start_time,
-                (unsigned long long) server.loading_total_bytes,
-                (unsigned long long) server.loading_loaded_bytes,
-                perc,
-                eta
-            );
-        }
     }
 
     /* Diskstore */
@@ -1374,54 +1197,13 @@ sds genRedisInfoString(char *section) {
             "expired_keys:%lld\r\n"
             "evicted_keys:%lld\r\n"
             "keyspace_hits:%lld\r\n"
-            "keyspace_misses:%lld\r\n"
-            "pubsub_channels:%ld\r\n"
-            "pubsub_patterns:%u\r\n",
+            "keyspace_misses:%lld\r\n",
             server.stat_numconnections,
             server.stat_numcommands,
             server.stat_expiredkeys,
             server.stat_evictedkeys,
             server.stat_keyspace_hits,
-            server.stat_keyspace_misses,
-            dictSize(server.pubsub_channels),
-            listLength(server.pubsub_patterns));
-    }
-
-    /* Replication */
-    if (allsections || defsections || !strcasecmp(section,"replication")) {
-        if (sections++) info = sdscat(info,"\r\n");
-        info = sdscatprintf(info,
-            "# Replication\r\n"
-            "role:%s\r\n",
-            server.masterhost == NULL ? "master" : "slave");
-        if (server.masterhost) {
-            info = sdscatprintf(info,
-                "master_host:%s\r\n"
-                "master_port:%d\r\n"
-                "master_link_status:%s\r\n"
-                "master_last_io_seconds_ago:%d\r\n"
-                "master_sync_in_progress:%d\r\n"
-                ,server.masterhost,
-                server.masterport,
-                (server.replstate == REDIS_REPL_CONNECTED) ?
-                    "up" : "down",
-                server.master ?
-                ((int)(time(NULL)-server.master->lastinteraction)) : -1,
-                server.replstate == REDIS_REPL_TRANSFER
-            );
-
-            if (server.replstate == REDIS_REPL_TRANSFER) {
-                info = sdscatprintf(info,
-                    "master_sync_left_bytes:%ld\r\n"
-                    "master_sync_last_io_seconds_ago:%d\r\n"
-                    ,(long)server.repl_transfer_left,
-                    (int)(time(NULL)-server.repl_transfer_lastio)
-                );
-            }
-        }
-        info = sdscatprintf(info,
-            "connected_slaves:%d\r\n",
-            listLength(server.slaves));
+            server.stat_keyspace_misses);
     }
 
     /* CPU */
@@ -1688,12 +1470,8 @@ int main(int argc, char **argv) {
     start = ustime();
     if (server.ds_enabled) {
         redisLog(REDIS_NOTICE,"DB not loaded (running with disk back end)");
-    } else if (server.appendonly) {
-        if (loadAppendOnlyFile(server.appendfilename) == REDIS_OK)
-            redisLog(REDIS_NOTICE,"DB loaded from append only file: %.3f seconds",(float)(ustime()-start)/1000000);
     } else {
-        if (rdbLoad(server.dbfilename) == REDIS_OK)
-            redisLog(REDIS_NOTICE,"DB loaded from disk: %.3f seconds",(float)(ustime()-start)/1000000);
+        //ok
     }
     if (server.ipfd > 0)
         redisLog(REDIS_NOTICE,"The server is now ready to accept connections on port %d", server.port);

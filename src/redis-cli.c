@@ -59,7 +59,6 @@ static struct config {
     int interactive;
     int shutdown;
     int monitor_mode;
-    int pubsub_mode;
     int stdinarg; /* get last arg from stdin. (-x option) */
     char *auth;
     int raw_output; /* output mode per command */
@@ -471,8 +470,6 @@ static int cliSendCommand(int argc, char **argv, int repeat) {
     }
     if (!strcasecmp(command,"shutdown")) config.shutdown = 1;
     if (!strcasecmp(command,"monitor")) config.monitor_mode = 1;
-    if (!strcasecmp(command,"subscribe") ||
-        !strcasecmp(command,"psubscribe")) config.pubsub_mode = 1;
 
     /* Setup argument length */
     argvlen = malloc(argc*sizeof(size_t));
@@ -484,14 +481,6 @@ static int cliSendCommand(int argc, char **argv, int repeat) {
         while (config.monitor_mode) {
             if (cliReadReply(output_raw) != REDIS_OK) exit(1);
             fflush(stdout);
-        }
-
-        if (config.pubsub_mode) {
-            if (!config.raw_output)
-                printf("Reading messages... (press Ctrl-C to quit)\n");
-            while (1) {
-                if (cliReadReply(output_raw) != REDIS_OK) exit(1);
-            }
         }
 
         if (cliReadReply(output_raw) != REDIS_OK) {
@@ -716,7 +705,6 @@ int main(int argc, char **argv) {
     config.interactive = 0;
     config.shutdown = 0;
     config.monitor_mode = 0;
-    config.pubsub_mode = 0;
     config.stdinarg = 0;
     config.auth = NULL;
     config.raw_output = !isatty(fileno(stdout)) && (getenv("FAKETTY") == NULL);

@@ -118,49 +118,6 @@ void computeDatasetDigest(unsigned char *final) {
                     decrRefCount(eleobj);
                 }
                 listTypeReleaseIterator(li);
-            } else if (o->type == REDIS_SET) {
-                setTypeIterator *si = setTypeInitIterator(o);
-                robj *ele;
-                while((ele = setTypeNextObject(si)) != NULL) {
-                    xorObjectDigest(digest,ele);
-                    decrRefCount(ele);
-                }
-                setTypeReleaseIterator(si);
-            } else if (o->type == REDIS_ZSET) {
-                zset *zs = o->ptr;
-                dictIterator *di = dictGetIterator(zs->dict);
-                dictEntry *de;
-
-                while((de = dictNext(di)) != NULL) {
-                    robj *eleobj = dictGetEntryKey(de);
-                    double *score = dictGetEntryVal(de);
-                    unsigned char eledigest[20];
-
-                    snprintf(buf,sizeof(buf),"%.17g",*score);
-                    memset(eledigest,0,20);
-                    mixObjectDigest(eledigest,eleobj);
-                    mixDigest(eledigest,buf,strlen(buf));
-                    xorDigest(digest,eledigest,20);
-                }
-                dictReleaseIterator(di);
-            } else if (o->type == REDIS_HASH) {
-                hashTypeIterator *hi;
-                robj *obj;
-
-                hi = hashTypeInitIterator(o);
-                while (hashTypeNext(hi) != REDIS_ERR) {
-                    unsigned char eledigest[20];
-
-                    memset(eledigest,0,20);
-                    obj = hashTypeCurrentObject(hi,REDIS_HASH_KEY);
-                    mixObjectDigest(eledigest,obj);
-                    decrRefCount(obj);
-                    obj = hashTypeCurrentObject(hi,REDIS_HASH_VALUE);
-                    mixObjectDigest(eledigest,obj);
-                    decrRefCount(obj);
-                    xorDigest(digest,eledigest,20);
-                }
-                hashTypeReleaseIterator(hi);
             } else {
                 redisPanic("Unknown object type");
             }
@@ -197,24 +154,7 @@ void debugCommand(redisClient *c) {
             addReply(c,shared.ok);
             return;
         }
-        if (rdbSave(server.dbfilename) != REDIS_OK) {
-            addReply(c,shared.err);
-            return;
-        }
-        emptyDb();
-        if (rdbLoad(server.dbfilename) != REDIS_OK) {
-            addReply(c,shared.err);
-            return;
-        }
         redisLog(REDIS_WARNING,"DB reloaded by DEBUG RELOAD");
-        addReply(c,shared.ok);
-    } else if (!strcasecmp(c->argv[1]->ptr,"loadaof")) {
-        emptyDb();
-        if (loadAppendOnlyFile(server.appendfilename) != REDIS_OK) {
-            addReply(c,shared.err);
-            return;
-        }
-        redisLog(REDIS_WARNING,"Append Only File loaded by DEBUG LOADAOF");
         addReply(c,shared.ok);
     } else if (!strcasecmp(c->argv[1]->ptr,"object") && c->argc == 3) {
         dictEntry *de;

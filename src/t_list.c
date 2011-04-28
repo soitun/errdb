@@ -7,26 +7,11 @@
 /* Check the argument length to see if it requires us to convert the ziplist
  * to a real list. Only check raw-encoded objects because integer encoded
  * objects are never too long. */
-void listTypeTryConversion(robj *subject, robj *value) {
-    if (subject->encoding != REDIS_ENCODING_ZIPLIST) return;
-    if (value->encoding == REDIS_ENCODING_RAW &&
-        sdslen(value->ptr) > server.list_max_ziplist_value)
-            listTypeConvert(subject,REDIS_ENCODING_LINKEDLIST);
-}
 
 void listTypePush(robj *subject, robj *value, int where) {
     /* Check if we need to convert the ziplist */
-    listTypeTryConversion(subject,value);
-    if (subject->encoding == REDIS_ENCODING_ZIPLIST &&
-        ziplistLen(subject->ptr) >= server.list_max_ziplist_entries)
-            listTypeConvert(subject,REDIS_ENCODING_LINKEDLIST);
 
-    if (subject->encoding == REDIS_ENCODING_ZIPLIST) {
-        int pos = (where == REDIS_HEAD) ? ZIPLIST_HEAD : ZIPLIST_TAIL;
-        value = getDecodedObject(value);
-        subject->ptr = ziplistPush(subject->ptr,value->ptr,sdslen(value->ptr),pos);
-        decrRefCount(value);
-    } else if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
         if (where == REDIS_HEAD) {
             listAddNodeHead(subject->ptr,value);
         } else {
@@ -40,23 +25,7 @@ void listTypePush(robj *subject, robj *value, int where) {
 
 robj *listTypePop(robj *subject, int where) {
     robj *value = NULL;
-    if (subject->encoding == REDIS_ENCODING_ZIPLIST) {
-        unsigned char *p;
-        unsigned char *vstr;
-        unsigned int vlen;
-        long long vlong;
-        int pos = (where == REDIS_HEAD) ? 0 : -1;
-        p = ziplistIndex(subject->ptr,pos);
-        if (ziplistGet(p,&vstr,&vlen,&vlong)) {
-            if (vstr) {
-                value = createStringObject((char*)vstr,vlen);
-            } else {
-                value = createStringObjectFromLongLong(vlong);
-            }
-            /* We only need to delete an element when it exists */
-            subject->ptr = ziplistDelete(subject->ptr,&p);
-        }
-    } else if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
         list *list = subject->ptr;
         listNode *ln;
         if (where == REDIS_HEAD) {
@@ -76,9 +45,7 @@ robj *listTypePop(robj *subject, int where) {
 }
 
 unsigned long listTypeLength(robj *subject) {
-    if (subject->encoding == REDIS_ENCODING_ZIPLIST) {
-        return ziplistLen(subject->ptr);
-    } else if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
         return listLength((list*)subject->ptr);
     } else {
         redisPanic("Unknown list encoding");
@@ -91,9 +58,7 @@ listTypeIterator *listTypeInitIterator(robj *subject, int index, unsigned char d
     li->subject = subject;
     li->encoding = subject->encoding;
     li->direction = direction;
-    if (li->encoding == REDIS_ENCODING_ZIPLIST) {
-        li->zi = ziplistIndex(subject->ptr,index);
-    } else if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
         li->ln = listIndex(subject->ptr,index);
     } else {
         redisPanic("Unknown list encoding");
@@ -114,16 +79,7 @@ int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {
     redisAssert(li->subject->encoding == li->encoding);
 
     entry->li = li;
-    if (li->encoding == REDIS_ENCODING_ZIPLIST) {
-        entry->zi = li->zi;
-        if (entry->zi != NULL) {
-            if (li->direction == REDIS_TAIL)
-                li->zi = ziplistNext(li->subject->ptr,li->zi);
-            else
-                li->zi = ziplistPrev(li->subject->ptr,li->zi);
-            return 1;
-        }
-    } else if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
         entry->ln = li->ln;
         if (entry->ln != NULL) {
             if (li->direction == REDIS_TAIL)
@@ -142,19 +98,7 @@ int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {
 robj *listTypeGet(listTypeEntry *entry) {
     listTypeIterator *li = entry->li;
     robj *value = NULL;
-    if (li->encoding == REDIS_ENCODING_ZIPLIST) {
-        unsigned char *vstr;
-        unsigned int vlen;
-        long long vlong;
-        redisAssert(entry->zi != NULL);
-        if (ziplistGet(entry->zi,&vstr,&vlen,&vlong)) {
-            if (vstr) {
-                value = createStringObject((char*)vstr,vlen);
-            } else {
-                value = createStringObjectFromLongLong(vlong);
-            }
-        }
-    } else if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
         redisAssert(entry->ln != NULL);
         value = listNodeValue(entry->ln);
         incrRefCount(value);
@@ -166,23 +110,7 @@ robj *listTypeGet(listTypeEntry *entry) {
 
 void listTypeInsert(listTypeEntry *entry, robj *value, int where) {
     robj *subject = entry->li->subject;
-    if (entry->li->encoding == REDIS_ENCODING_ZIPLIST) {
-        value = getDecodedObject(value);
-        if (where == REDIS_TAIL) {
-            unsigned char *next = ziplistNext(subject->ptr,entry->zi);
-
-            /* When we insert after the current element, but the current element
-             * is the tail of the list, we need to do a push. */
-            if (next == NULL) {
-                subject->ptr = ziplistPush(subject->ptr,value->ptr,sdslen(value->ptr),REDIS_TAIL);
-            } else {
-                subject->ptr = ziplistInsert(subject->ptr,next,value->ptr,sdslen(value->ptr));
-            }
-        } else {
-            subject->ptr = ziplistInsert(subject->ptr,entry->zi,value->ptr,sdslen(value->ptr));
-        }
-        decrRefCount(value);
-    } else if (entry->li->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (entry->li->encoding == REDIS_ENCODING_LINKEDLIST) {
         if (where == REDIS_TAIL) {
             listInsertNode(subject->ptr,entry->ln,value,AL_START_TAIL);
         } else {
@@ -197,10 +125,7 @@ void listTypeInsert(listTypeEntry *entry, robj *value, int where) {
 /* Compare the given object with the entry at the current position. */
 int listTypeEqual(listTypeEntry *entry, robj *o) {
     listTypeIterator *li = entry->li;
-    if (li->encoding == REDIS_ENCODING_ZIPLIST) {
-        redisAssert(o->encoding == REDIS_ENCODING_RAW);
-        return ziplistCompare(entry->zi,o->ptr,sdslen(o->ptr));
-    } else if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
         return equalStringObjects(o,listNodeValue(entry->ln));
     } else {
         redisPanic("Unknown list encoding");
@@ -210,16 +135,7 @@ int listTypeEqual(listTypeEntry *entry, robj *o) {
 /* Delete the element pointed to. */
 void listTypeDelete(listTypeEntry *entry) {
     listTypeIterator *li = entry->li;
-    if (li->encoding == REDIS_ENCODING_ZIPLIST) {
-        unsigned char *p = entry->zi;
-        li->subject->ptr = ziplistDelete(li->subject->ptr,&p);
-
-        /* Update position of the iterator depending on the direction */
-        if (li->direction == REDIS_TAIL)
-            li->zi = p;
-        else
-            li->zi = ziplistPrev(li->subject->ptr,p);
-    } else if (entry->li->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (entry->li->encoding == REDIS_ENCODING_LINKEDLIST) {
         listNode *next;
         if (li->direction == REDIS_TAIL)
             next = entry->ln->next;
@@ -266,7 +182,7 @@ void pushGenericCommand(redisClient *c, int where) {
             addReply(c,shared.cone);
             return;
         }
-        lobj = createZiplistObject();
+        lobj = createListObject();
         dbAdd(c->db,c->argv[1],lobj);
     } else {
         if (lobj->type != REDIS_LIST) {
@@ -312,7 +228,6 @@ void pushxGenericCommand(redisClient *c, robj *refval, robj *val, int where) {
          * the list twice (once to see if the value can be inserted and once
          * to do the actual insert), so we assume this value can be inserted
          * and convert the ziplist to a regular list if necessary. */
-        listTypeTryConversion(subject,val);
 
         /* Seek refval from head to tail */
         iter = listTypeInitIterator(subject,0,REDIS_TAIL);
@@ -327,9 +242,6 @@ void pushxGenericCommand(redisClient *c, robj *refval, robj *val, int where) {
 
         if (inserted) {
             /* Check if the length exceeds the ziplist length threshold. */
-            if (subject->encoding == REDIS_ENCODING_ZIPLIST &&
-                ziplistLen(subject->ptr) > server.list_max_ziplist_entries)
-                    listTypeConvert(subject,REDIS_ENCODING_LINKEDLIST);
             signalModifiedKey(c->db,c->argv[1]);
             server.dirty++;
         } else {
@@ -378,25 +290,7 @@ void lindexCommand(redisClient *c) {
     if (o == NULL || checkType(c,o,REDIS_LIST)) return;
     int index = atoi(c->argv[2]->ptr);
     robj *value = NULL;
-
-    if (o->encoding == REDIS_ENCODING_ZIPLIST) {
-        unsigned char *p;
-        unsigned char *vstr;
-        unsigned int vlen;
-        long long vlong;
-        p = ziplistIndex(o->ptr,index);
-        if (ziplistGet(p,&vstr,&vlen,&vlong)) {
-            if (vstr) {
-                value = createStringObject((char*)vstr,vlen);
-            } else {
-                value = createStringObjectFromLongLong(vlong);
-            }
-            addReplyBulk(c,value);
-            decrRefCount(value);
-        } else {
-            addReply(c,shared.nullbulk);
-        }
-    } else if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
         listNode *ln = listIndex(o->ptr,index);
         if (ln != NULL) {
             value = listNodeValue(ln);
@@ -415,22 +309,7 @@ void lsetCommand(redisClient *c) {
     int index = atoi(c->argv[2]->ptr);
     robj *value = (c->argv[3] = tryObjectEncoding(c->argv[3]));
 
-    listTypeTryConversion(o,value);
-    if (o->encoding == REDIS_ENCODING_ZIPLIST) {
-        unsigned char *p, *zl = o->ptr;
-        p = ziplistIndex(zl,index);
-        if (p == NULL) {
-            addReply(c,shared.outofrangeerr);
-        } else {
-            o->ptr = ziplistDelete(o->ptr,&p);
-            value = getDecodedObject(value);
-            o->ptr = ziplistInsert(o->ptr,p,value->ptr,sdslen(value->ptr));
-            decrRefCount(value);
-            addReply(c,shared.ok);
-            signalModifiedKey(c->db,c->argv[1]);
-            server.dirty++;
-        }
-    } else if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
         listNode *ln = listIndex(o->ptr,index);
         if (ln == NULL) {
             addReply(c,shared.outofrangeerr);
@@ -498,22 +377,7 @@ void lrangeCommand(redisClient *c) {
 
     /* Return the result in form of a multi-bulk reply */
     addReplyMultiBulkLen(c,rangelen);
-    if (o->encoding == REDIS_ENCODING_ZIPLIST) {
-        unsigned char *p = ziplistIndex(o->ptr,start);
-        unsigned char *vstr;
-        unsigned int vlen;
-        long long vlong;
-
-        while(rangelen--) {
-            ziplistGet(p,&vstr,&vlen,&vlong);
-            if (vstr) {
-                addReplyBulkCBuffer(c,vstr,vlen);
-            } else {
-                addReplyBulkLongLong(c,vlong);
-            }
-            p = ziplistNext(o->ptr,p);
-        }
-    } else if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
         listNode *ln = listIndex(o->ptr,start);
 
         while(rangelen--) {
@@ -521,7 +385,7 @@ void lrangeCommand(redisClient *c) {
             ln = ln->next;
         }
     } else {
-        redisPanic("List encoding is not LINKEDLIST nor ZIPLIST!");
+        redisPanic("List encoding is not LINKEDLIST");
     }
 }
 
@@ -556,10 +420,7 @@ void ltrimCommand(redisClient *c) {
     }
 
     /* Remove list elements to perform the trim */
-    if (o->encoding == REDIS_ENCODING_ZIPLIST) {
-        o->ptr = ziplistDeleteRange(o->ptr,0,ltrim);
-        o->ptr = ziplistDeleteRange(o->ptr,-rtrim,rtrim);
-    } else if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
+    if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
         list = o->ptr;
         for (j = 0; j < ltrim; j++) {
             ln = listFirst(list);
@@ -588,10 +449,6 @@ void lremCommand(redisClient *c) {
     subject = lookupKeyWriteOrReply(c,c->argv[1],shared.czero);
     if (subject == NULL || checkType(c,subject,REDIS_LIST)) return;
 
-    /* Make sure obj is raw when we're dealing with a ziplist */
-    if (subject->encoding == REDIS_ENCODING_ZIPLIST)
-        obj = getDecodedObject(obj);
-
     listTypeIterator *li;
     if (toremove < 0) {
         toremove = -toremove;
@@ -609,10 +466,6 @@ void lremCommand(redisClient *c) {
         }
     }
     listTypeReleaseIterator(li);
-
-    /* Clean up raw encoded object */
-    if (subject->encoding == REDIS_ENCODING_ZIPLIST)
-        decrRefCount(obj);
 
     if (listTypeLength(subject) == 0) dbDelete(c->db,c->argv[1]);
     addReplyLongLong(c,removed);
@@ -639,7 +492,7 @@ void rpoplpushHandlePush(redisClient *c, robj *dstkey, robj *dstobj, robj *value
     if (!handleClientsWaitingListPush(c,dstkey,value)) {
         /* Create the list if the key does not exist */
         if (!dstobj) {
-            dstobj = createZiplistObject();
+            dstobj = createListObject();
             dbAdd(c->db,dstkey,dstobj);
         } else {
             signalModifiedKey(c->db,dstkey);

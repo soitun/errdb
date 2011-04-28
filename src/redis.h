@@ -25,8 +25,6 @@
 #include "adlist.h" /* Linked lists */
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */
 #include "anet.h"   /* Networking the easy way */
-#include "zipmap.h" /* Compact string -> string data structure */
-#include "ziplist.h" /* Compact list data structure */
 #include "intset.h" /* Compact integer set structure */
 #include "version.h"
 
@@ -71,8 +69,6 @@
 #define REDIS_HASH 4
 #define REDIS_VMPOINTER 8
 /* Object types only used for persistence in .rdb files */
-#define REDIS_HASH_ZIPMAP 9
-#define REDIS_LIST_ZIPLIST 10
 #define REDIS_SET_INTSET 11
 
 /* Objects encoding. Some kind of objects like Strings and Hashes can be
@@ -81,10 +77,9 @@
 #define REDIS_ENCODING_RAW 0     /* Raw representation */
 #define REDIS_ENCODING_INT 1     /* Encoded as integer */
 #define REDIS_ENCODING_HT 2      /* Encoded as hash table */
-#define REDIS_ENCODING_ZIPMAP 3  /* Encoded as zipmap */
 #define REDIS_ENCODING_LINKEDLIST 4 /* Encoded as regular linked list */
-#define REDIS_ENCODING_ZIPLIST 5 /* Encoded as ziplist */
 #define REDIS_ENCODING_INTSET 6  /* Encoded as intset */
+#define REDIS_ENCODING_TS 8 /* Encoded as time series data*/
 
 /* Object types only used for dumping to disk */
 #define REDIS_EXPIRETIME 253
@@ -192,8 +187,6 @@
 /* Zip structure related defaults */
 #define REDIS_HASH_MAX_ZIPMAP_ENTRIES 512
 #define REDIS_HASH_MAX_ZIPMAP_VALUE 64
-#define REDIS_LIST_MAX_ZIPLIST_ENTRIES 512
-#define REDIS_LIST_MAX_ZIPLIST_VALUE 64
 #define REDIS_SET_MAX_INTSET_ENTRIES 512
 
 /* Sets operations codes */
@@ -243,27 +236,6 @@ typedef struct redisObject {
      * Redis without VM active will not have any overhead. */
 } robj;
 
-/* The VM pointer structure - identifies an object in the swap file.
- *
- * This object is stored in place of the value
- * object in the main key->value hash table representing a database.
- * Note that the first fields (type, storage) are the same as the redisObject
- * structure so that vmPointer strucuters can be accessed even when casted
- * as redisObject structures.
- *
- * This is useful as we don't know if a value object is or not on disk, but we
- * are always able to read obj->storage to check this. For vmPointer
- * structures "type" is set to REDIS_VMPOINTER (even if without this field
- * is still possible to check the kind of object from the value of 'storage').*/
-typedef struct vmPointer {
-    unsigned type:4;
-    unsigned storage:2; /* REDIS_VM_SWAPPED or REDIS_VM_LOADING */
-    unsigned notused:26;
-    unsigned int vtype; /* type of the object stored in the swap file */
-    off_t page;         /* the page at witch the object is stored on disk */
-    off_t usedpages;    /* number of pages used on disk */
-} vmpointer;
-
 /* Macro used to initalize a Redis object allocated on the stack.
  * Note that this macro is taken near the structure definition to make sure
  * we'll update it when the structure is changed, to avoid bugs like
@@ -282,7 +254,6 @@ typedef struct redisDb {
     dict *io_keys;              /* Keys with clients waiting for DS I/O */
     dict *io_negcache;          /* Negative caching for disk store */
     dict *io_queued;            /* Queued IO operations hash table */
-    dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
     int id;
 } redisDb;
 
@@ -334,9 +305,6 @@ typedef struct redisClient {
     blockingState bpop;   /* blocking state */
     list *io_keys;          /* Keys this client is waiting to be loaded from the
                              * swap file in order to continue. */
-    list *watched_keys;     /* Keys WATCHED for MULTI/EXEC CAS */
-    dict *pubsub_channels;  /* channels a client is interested in (SUBSCRIBE) */
-    list *pubsub_patterns;  /* patterns a client is interested in (SUBSCRIBE) */
 
     /* Response buffer */
     int bufpos;
@@ -355,9 +323,8 @@ struct sharedObjectsStruct {
     *outofrangeerr, *loadingerr, *plus,
     *select0, *select1, *select2, *select3, *select4,
     *select5, *select6, *select7, *select8, *select9,
-    *messagebulk, *pmessagebulk, *subscribebulk, *unsubscribebulk, *mbulk3,
-    *mbulk4, *psubscribebulk, *punsubscribebulk,
-    *integers[REDIS_SHARED_INTEGERS];
+    *messagebulk, *pmessagebulk, *mbulk3,
+    *mbulk4, *integers[REDIS_SHARED_INTEGERS];
 };
 
 /* Global server state structure */
@@ -374,13 +341,8 @@ struct redisServer {
     int ipfd;
     int sofd;
     list *clients;
-    list *slaves, *monitors;
+    list *monitors;
     char neterr[ANET_ERR_LEN];
-    /* RDB / AOF loading information */
-    int loading;
-    off_t loading_total_bytes;
-    off_t loading_loaded_bytes;
-    time_t loading_start_time;
     /* Fast pointers to often looked up command */
     struct redisCommand *delCommand, *multiCommand;
     int cronloops;              /* number of times the cron function run */
@@ -398,9 +360,6 @@ struct redisServer {
     int maxidletime;
     int dbnum;
     int daemonize;
-    int appendonly;
-    int appendfsync;
-    int no_appendfsync_on_rewrite;
     int shutdown_asap;
     int activerehashing;
     char *requirepass;
@@ -416,32 +375,15 @@ struct redisServer {
     int bgsavethread_state;
     pthread_mutex_t bgsavethread_mutex;
     pthread_t bgsavethread;
-    sds bgrewritebuf; /* buffer taken by parent during oppend only rewrite */
-    sds aofbuf;       /* AOF buffer, written before entering the event loop */
     struct saveparam *saveparams;
     int saveparamslen;
     char *dbfilename;
     int rdbcompression;
-    char *appendfilename;
     /* Logging */
     char *logfile;
     int syslog_enabled;
     char *syslog_ident;
     int syslog_facility;
-    /* Replication related */
-    int isslave;
-    /* Slave specific fields */
-    char *masterauth;
-    char *masterhost;
-    int masterport;
-    redisClient *master;    /* client that is master for this slave */
-    int replstate;          /* replication status if the instance is a slave */
-    off_t repl_transfer_left;  /* bytes left reading .rdb  */
-    int repl_transfer_s;    /* slave -> master SYNC socket */
-    int repl_transfer_fd;   /* slave -> master SYNC temp file descriptor */
-    char *repl_transfer_tmpfile; /* slave-> master SYNC temp file name */
-    time_t repl_transfer_lastio; /* unix time of the latest read, for timeout */
-    int repl_serve_stale_data; /* Serve stale data when link is down? */
     /* Limits */
     unsigned int maxclients;
     unsigned long long maxmemory;
@@ -463,8 +405,6 @@ struct redisServer {
     char *ds_path;  /* location of the disk store on disk */
     unsigned long long cache_max_memory;
     /* Zip structure config */
-    size_t hash_max_zipmap_entries;
-    size_t hash_max_zipmap_value;
     size_t list_max_ziplist_entries;
     size_t list_max_ziplist_value;
     size_t set_max_intset_entries;
@@ -488,14 +428,6 @@ struct redisServer {
      * awake the main thread. The followings are the two pipe FDs. */
     int io_ready_pipe_read;
     int io_ready_pipe_write;
-    /* Virtual memory stats */
-    unsigned long long vm_stats_used_pages;
-    unsigned long long vm_stats_swapped_objects;
-    unsigned long long vm_stats_swapouts;
-    unsigned long long vm_stats_swapins;
-    /* Pubsub */
-    dict *pubsub_channels; /* Map channels to list of subscribed clients */
-    list *pubsub_patterns; /* A list of pubsub_patterns */
     /* Misc */
     unsigned lruclock:22;        /* clock incrementing every minute, for LRU */
     unsigned lruclock_padding:10;
@@ -725,7 +657,6 @@ robj *getDecodedObject(robj *o);
 size_t stringObjectLen(robj *o);
 robj *createStringObjectFromLongLong(long long value);
 robj *createListObject(void);
-robj *createZiplistObject(void);
 robj *createSetObject(void);
 robj *createIntsetObject(void);
 robj *createHashObject(void);
@@ -749,23 +680,15 @@ int fwriteBulkDouble(FILE *fp, double d);
 int fwriteBulkLongLong(FILE *fp, long long l);
 int fwriteBulkObject(FILE *fp, robj *obj);
 
-/* Replication */
-void replicationFeedSlaves(list *slaves, int dictid, robj **argv, int argc);
-void replicationFeedMonitors(list *monitors, int dictid, robj **argv, int argc);
-int syncWithMaster(void);
-void updateSlavesWaitingBgsave(int bgsaveerr);
-void replicationCron(void);
-
 /* Generic persistence functions */
 void startLoading(FILE *fp);
 void loadingProgress(off_t pos);
 void stopLoading(void);
 
 /* RDB persistence */
-int rdbLoad(char *filename);
+int rdbSave(char *filename);
 int rdbSaveBackground(char *filename);
 void rdbRemoveTempFile(pid_t childpid);
-int rdbSave(char *filename);
 int rdbSaveObject(FILE *fp, robj *o);
 off_t rdbSavedObjectLen(robj *o);
 off_t rdbSavedObjectPages(robj *o);
@@ -955,6 +878,11 @@ void lpushCommand(redisClient *c);
 void rpushCommand(redisClient *c);
 void lpushxCommand(redisClient *c);
 void rpushxCommand(redisClient *c);
+//Time series data
+void tsInsertCommand(redisClient *c);
+void tsFetchCommand(redisClient *c);
+void tsLastCommand(redisClient *c);
+
 void linsertCommand(redisClient *c);
 void lpopCommand(redisClient *c);
 void rpopCommand(redisClient *c);
@@ -964,23 +892,9 @@ void lrangeCommand(redisClient *c);
 void ltrimCommand(redisClient *c);
 void typeCommand(redisClient *c);
 void lsetCommand(redisClient *c);
-void saddCommand(redisClient *c);
-void sremCommand(redisClient *c);
-void smoveCommand(redisClient *c);
-void sismemberCommand(redisClient *c);
-void scardCommand(redisClient *c);
-void spopCommand(redisClient *c);
-void srandmemberCommand(redisClient *c);
-void sinterCommand(redisClient *c);
-void sinterstoreCommand(redisClient *c);
-void sunionCommand(redisClient *c);
-void sunionstoreCommand(redisClient *c);
-void sdiffCommand(redisClient *c);
-void sdiffstoreCommand(redisClient *c);
 void syncCommand(redisClient *c);
 void flushdbCommand(redisClient *c);
 void flushallCommand(redisClient *c);
-void sortCommand(redisClient *c);
 void lremCommand(redisClient *c);
 void rpoplpushCommand(redisClient *c);
 void infoCommand(redisClient *c);
@@ -995,17 +909,6 @@ void slaveofCommand(redisClient *c);
 void debugCommand(redisClient *c);
 void msetCommand(redisClient *c);
 void msetnxCommand(redisClient *c);
-void zaddCommand(redisClient *c);
-void zincrbyCommand(redisClient *c);
-void zrangeCommand(redisClient *c);
-void zrangebyscoreCommand(redisClient *c);
-void zrevrangebyscoreCommand(redisClient *c);
-void zcountCommand(redisClient *c);
-void zrevrangeCommand(redisClient *c);
-void zcardCommand(redisClient *c);
-void zremCommand(redisClient *c);
-void zscoreCommand(redisClient *c);
-void zremrangebyscoreCommand(redisClient *c);
 void multiCommand(redisClient *c);
 void execCommand(redisClient *c);
 void discardCommand(redisClient *c);
@@ -1014,29 +917,7 @@ void brpopCommand(redisClient *c);
 void brpoplpushCommand(redisClient *c);
 void appendCommand(redisClient *c);
 void strlenCommand(redisClient *c);
-void zrankCommand(redisClient *c);
-void zrevrankCommand(redisClient *c);
-void hsetCommand(redisClient *c);
-void hsetnxCommand(redisClient *c);
-void hgetCommand(redisClient *c);
-void hmsetCommand(redisClient *c);
-void hmgetCommand(redisClient *c);
-void hdelCommand(redisClient *c);
-void hlenCommand(redisClient *c);
-void zremrangebyrankCommand(redisClient *c);
-void zunionstoreCommand(redisClient *c);
-void zinterstoreCommand(redisClient *c);
-void hkeysCommand(redisClient *c);
-void hvalsCommand(redisClient *c);
-void hgetallCommand(redisClient *c);
-void hexistsCommand(redisClient *c);
 void configCommand(redisClient *c);
-void hincrbyCommand(redisClient *c);
-void subscribeCommand(redisClient *c);
-void unsubscribeCommand(redisClient *c);
-void psubscribeCommand(redisClient *c);
-void punsubscribeCommand(redisClient *c);
-void publishCommand(redisClient *c);
 void watchCommand(redisClient *c);
 void unwatchCommand(redisClient *c);
 

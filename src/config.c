@@ -184,16 +184,6 @@ void loadServerConfig(char *filename) {
                 err = "maxmemory-samples must be 1 or greater";
                 goto loaderr;
             }
-        } else if (!strcasecmp(argv[0],"slaveof") && argc == 3) {
-            server.masterhost = sdsnew(argv[1]);
-            server.masterport = atoi(argv[2]);
-            server.replstate = REDIS_REPL_CONNECT;
-        } else if (!strcasecmp(argv[0],"masterauth") && argc == 2) {
-        	server.masterauth = zstrdup(argv[1]);
-        } else if (!strcasecmp(argv[0],"slave-serve-stale-data") && argc == 2) {
-            if ((server.repl_serve_stale_data = yesnotoi(argv[1])) == -1) {
-                err = "argument must be 'yes' or 'no'"; goto loaderr;
-            }
         } else if (!strcasecmp(argv[0],"glueoutputbuf")) {
             redisLog(REDIS_WARNING, "Deprecated configuration directive: \"%s\"", argv[0]);
         } else if (!strcasecmp(argv[0],"rdbcompression") && argc == 2) {
@@ -207,29 +197,6 @@ void loadServerConfig(char *filename) {
         } else if (!strcasecmp(argv[0],"daemonize") && argc == 2) {
             if ((server.daemonize = yesnotoi(argv[1])) == -1) {
                 err = "argument must be 'yes' or 'no'"; goto loaderr;
-            }
-        } else if (!strcasecmp(argv[0],"appendonly") && argc == 2) {
-            if ((server.appendonly = yesnotoi(argv[1])) == -1) {
-                err = "argument must be 'yes' or 'no'"; goto loaderr;
-            }
-        } else if (!strcasecmp(argv[0],"appendfilename") && argc == 2) {
-            zfree(server.appendfilename);
-            server.appendfilename = zstrdup(argv[1]);
-        } else if (!strcasecmp(argv[0],"no-appendfsync-on-rewrite")
-                   && argc == 2) {
-            if ((server.no_appendfsync_on_rewrite= yesnotoi(argv[1])) == -1) {
-                err = "argument must be 'yes' or 'no'"; goto loaderr;
-            }
-        } else if (!strcasecmp(argv[0],"appendfsync") && argc == 2) {
-            if (!strcasecmp(argv[1],"no")) {
-                server.appendfsync = APPENDFSYNC_NO;
-            } else if (!strcasecmp(argv[1],"always")) {
-                server.appendfsync = APPENDFSYNC_ALWAYS;
-            } else if (!strcasecmp(argv[1],"everysec")) {
-                server.appendfsync = APPENDFSYNC_EVERYSEC;
-            } else {
-                err = "argument must be 'no', 'always' or 'everysec'";
-                goto loaderr;
             }
         } else if (!strcasecmp(argv[0],"requirepass") && argc == 2) {
             server.requirepass = zstrdup(argv[1]);
@@ -251,10 +218,6 @@ void loadServerConfig(char *filename) {
         } else if (!strcasecmp(argv[0],"cache-flush-delay") && argc == 2) {
             server.cache_flush_delay = atoi(argv[1]);
             if (server.cache_flush_delay < 0) server.cache_flush_delay = 0;
-        } else if (!strcasecmp(argv[0],"hash-max-zipmap-entries") && argc == 2) {
-            server.hash_max_zipmap_entries = memtoll(argv[1], NULL);
-        } else if (!strcasecmp(argv[0],"hash-max-zipmap-value") && argc == 2) {
-            server.hash_max_zipmap_value = memtoll(argv[1], NULL);
         } else if (!strcasecmp(argv[0],"list-max-ziplist-entries") && argc == 2){
             server.list_max_ziplist_entries = memtoll(argv[1], NULL);
         } else if (!strcasecmp(argv[0],"list-max-ziplist-value") && argc == 2) {
@@ -321,9 +284,6 @@ void configSetCommand(redisClient *c) {
     } else if (!strcasecmp(c->argv[2]->ptr,"requirepass")) {
         zfree(server.requirepass);
         server.requirepass = zstrdup(o->ptr);
-    } else if (!strcasecmp(c->argv[2]->ptr,"masterauth")) {
-        zfree(server.masterauth);
-        server.masterauth = zstrdup(o->ptr);
     } else if (!strcasecmp(c->argv[2]->ptr,"maxmemory")) {
         if (getLongLongFromObject(o,&ll) == REDIS_ERR ||
             ll < 0) goto badfmt;
@@ -353,37 +313,6 @@ void configSetCommand(redisClient *c) {
         if (getLongLongFromObject(o,&ll) == REDIS_ERR ||
             ll < 0 || ll > LONG_MAX) goto badfmt;
         server.maxidletime = ll;
-    } else if (!strcasecmp(c->argv[2]->ptr,"appendfsync")) {
-        if (!strcasecmp(o->ptr,"no")) {
-            server.appendfsync = APPENDFSYNC_NO;
-        } else if (!strcasecmp(o->ptr,"everysec")) {
-            server.appendfsync = APPENDFSYNC_EVERYSEC;
-        } else if (!strcasecmp(o->ptr,"always")) {
-            server.appendfsync = APPENDFSYNC_ALWAYS;
-        } else {
-            goto badfmt;
-        }
-    } else if (!strcasecmp(c->argv[2]->ptr,"no-appendfsync-on-rewrite")) {
-        int yn = yesnotoi(o->ptr);
-
-        if (yn == -1) goto badfmt;
-        server.no_appendfsync_on_rewrite = yn;
-    } else if (!strcasecmp(c->argv[2]->ptr,"appendonly")) {
-        int old = server.appendonly;
-        int new = yesnotoi(o->ptr);
-
-        if (new == -1) goto badfmt;
-        if (old != new) {
-            if (new == 0) {
-                stopAppendOnly();
-            } else {
-                if (startAppendOnly() == REDIS_ERR) {
-                    addReplyError(c,
-                        "Unable to turn on AOF. Check server logs.");
-                    return;
-                }
-            }
-        }
     } else if (!strcasecmp(c->argv[2]->ptr,"save")) {
         int vlen, j;
         sds *v = sdssplitlen(o->ptr,sdslen(o->ptr)," ",1,&vlen);
@@ -418,22 +347,11 @@ void configSetCommand(redisClient *c) {
             appendServerSaveParams(seconds, changes);
         }
         sdsfreesplitres(v,vlen);
-    } else if (!strcasecmp(c->argv[2]->ptr,"slave-serve-stale-data")) {
-        int yn = yesnotoi(o->ptr);
-
-        if (yn == -1) goto badfmt;
-        server.repl_serve_stale_data = yn;
     } else if (!strcasecmp(c->argv[2]->ptr,"dir")) {
         if (chdir((char*)o->ptr) == -1) {
             addReplyErrorFormat(c,"Changing directory: %s", strerror(errno));
             return;
         }
-    } else if (!strcasecmp(c->argv[2]->ptr,"hash-max-zipmap-entries")) {
-        if (getLongLongFromObject(o,&ll) == REDIS_ERR || ll < 0) goto badfmt;
-        server.hash_max_zipmap_entries = ll;
-    } else if (!strcasecmp(c->argv[2]->ptr,"hash-max-zipmap-value")) {
-        if (getLongLongFromObject(o,&ll) == REDIS_ERR || ll < 0) goto badfmt;
-        server.hash_max_zipmap_value = ll;
     } else if (!strcasecmp(c->argv[2]->ptr,"list-max-ziplist-entries")) {
         if (getLongLongFromObject(o,&ll) == REDIS_ERR || ll < 0) goto badfmt;
         server.list_max_ziplist_entries = ll;
@@ -486,11 +404,6 @@ void configGetCommand(redisClient *c) {
         addReplyBulkCString(c,server.requirepass);
         matches++;
     }
-    if (stringmatch(pattern,"masterauth",0)) {
-        addReplyBulkCString(c,"masterauth");
-        addReplyBulkCString(c,server.masterauth);
-        matches++;
-    }
     if (stringmatch(pattern,"maxmemory",0)) {
         ll2string(buf,sizeof(buf),server.maxmemory);
         addReplyBulkCString(c,"maxmemory");
@@ -525,29 +438,6 @@ void configGetCommand(redisClient *c) {
         addReplyBulkCString(c,buf);
         matches++;
     }
-    if (stringmatch(pattern,"appendonly",0)) {
-        addReplyBulkCString(c,"appendonly");
-        addReplyBulkCString(c,server.appendonly ? "yes" : "no");
-        matches++;
-    }
-    if (stringmatch(pattern,"no-appendfsync-on-rewrite",0)) {
-        addReplyBulkCString(c,"no-appendfsync-on-rewrite");
-        addReplyBulkCString(c,server.no_appendfsync_on_rewrite ? "yes" : "no");
-        matches++;
-    }
-    if (stringmatch(pattern,"appendfsync",0)) {
-        char *policy;
-
-        switch(server.appendfsync) {
-        case APPENDFSYNC_NO: policy = "no"; break;
-        case APPENDFSYNC_EVERYSEC: policy = "everysec"; break;
-        case APPENDFSYNC_ALWAYS: policy = "always"; break;
-        default: policy = "unknown"; break; /* too harmless to panic */
-        }
-        addReplyBulkCString(c,"appendfsync");
-        addReplyBulkCString(c,policy);
-        matches++;
-    }
     if (stringmatch(pattern,"save",0)) {
         sds buf = sdsempty();
         int j;
@@ -562,21 +452,6 @@ void configGetCommand(redisClient *c) {
         addReplyBulkCString(c,"save");
         addReplyBulkCString(c,buf);
         sdsfree(buf);
-        matches++;
-    }
-    if (stringmatch(pattern,"slave-serve-stale-data",0)) {
-        addReplyBulkCString(c,"slave-serve-stale-data");
-        addReplyBulkCString(c,server.repl_serve_stale_data ? "yes" : "no");
-        matches++;
-    }
-    if (stringmatch(pattern,"hash-max-zipmap-entries",0)) {
-        addReplyBulkCString(c,"hash-max-zipmap-entries");
-        addReplyBulkLongLong(c,server.hash_max_zipmap_entries);
-        matches++;
-    }
-    if (stringmatch(pattern,"hash-max-zipmap-value",0)) {
-        addReplyBulkCString(c,"hash-max-zipmap-value");
-        addReplyBulkLongLong(c,server.hash_max_zipmap_value);
         matches++;
     }
     if (stringmatch(pattern,"list-max-ziplist-entries",0)) {

@@ -238,9 +238,9 @@ robj *dsGet(redisDb *db, robj *key, time_t *expire) {
 
     if ((type = rdbLoadType(fp)) == -1) goto readerr;
     if (type == REDIS_EXPIRETIME) {
-        if ((expiretime = rdbLoadTime(fp)) == -1) goto readerr;
+        //if ((expiretime = rdbLoadTime(fp)) == -1) goto readerr;
         /* We read the time so we need to read the object type again */
-        if ((type = rdbLoadType(fp)) == -1) goto readerr;
+        //if ((type = rdbLoadType(fp)) == -1) goto readerr;
     }
     /* Read key */
     if ((dskey = rdbLoadStringObject(fp)) == NULL) goto readerr;

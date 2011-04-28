@@ -233,13 +233,11 @@ int selectDb(redisClient *c, int id) {
  *----------------------------------------------------------------------------*/
 
 void signalModifiedKey(redisDb *db, robj *key) {
-    touchWatchedKey(db,key);
     if (server.ds_enabled)
         cacheScheduleIO(db,key,REDIS_IO_SAVE);
 }
 
 void signalFlushedDb(int dbid) {
-    touchWatchedKeysOnFlush(dbid);
 }
 
 /*-----------------------------------------------------------------------------
@@ -265,8 +263,6 @@ void flushallCommand(redisClient *c) {
     }
     if (server.ds_enabled)
         dsFlushDb(-1);
-    else
-        rdbSave(server.dbfilename);
     server.dirty++;
 }
 
@@ -500,11 +496,7 @@ time_t getExpire(redisDb *db, robj *key) {
     return (time_t) dictGetEntryVal(de);
 }
 
-/* Propagate expires into slaves and the AOF file.
- * When a key expires in the master, a DEL operation for this key is sent
- * to all the slaves and the AOF file if enabled.
- *
- * This way the key expiry is centralized in one place, and since both
+/*  * This way the key expiry is centralized in one place, and since both
  * AOF and the master->slave link guarantee operation ordering, everything
  * will be consistent even if we allow write operations against expiring
  * keys. */
@@ -515,11 +507,6 @@ void propagateExpire(redisDb *db, robj *key) {
     argv[1] = key;
     incrRefCount(key);
 
-    if (server.appendonly)
-        feedAppendOnlyFile(server.delCommand,db->id,argv,2);
-    if (listLength(server.slaves))
-        replicationFeedSlaves(server.slaves,db->id,argv,2);
-
     decrRefCount(argv[0]);
     decrRefCount(argv[1]);
 }
@@ -528,17 +515,6 @@ int expireIfNeeded(redisDb *db, robj *key) {
     time_t when = getExpire(db,key);
 
     if (when < 0) return 0; /* No expire for this key */
-
-    /* If we are running in the context of a slave, return ASAP:
-     * the slave key expiration is controlled by the master that will
-     * send us synthesized DEL operations for expired keys.
-     *
-     * Still we try to return the right information to the caller, 
-     * that is, 0 if we think the key should be still valid, 1 if
-     * we think the key is expired at this time. */
-    if (server.masterhost != NULL) {
-        return time(NULL) > when;
-    }
 
     /* Return when this key has not expired */
     if (time(NULL) <= when) return 0;
