@@ -1,0 +1,14 @@
+#insert
+insert key timestamp val
+
+#fetch
+fetch key [--resolution|-r resolution] [--start|-s start] [--end|-e end]
+
+#last
+last key [--resolution|-r resolution]
+
+#delete
+delete key
+
+#move
+move key newkey

@@ -1,0 +1,22 @@
+host=1,cpu=1
+host=1,ifcace=eth0 name ts value {inoctets: 1000, outoctets: 1000}
+
+1sixcent0s
+
+opengoss0912
+
+ ./check_ping -H 172.16.158.33 -t 8 -w 200.0,60% -c 2000.0,100% -p 3
+
+/20110409/01.data
+
+/today/01.ma
+	     02
+              03
+
+/yesterday/data
+
+/hour/
+/day/
+
+avg, cor, count, cov, dev, first, last, max, min, prd, sum, var, wavg, wsum
+
