@@ -930,32 +930,6 @@ void zunionInterBlockClientOnSwappedKeys(redisClient *c, struct redisCommand *cm
     }
 }
 
-/* Preload keys needed to execute the entire MULTI/EXEC block.
- *
- * This function is called by blockClientOnSwappedKeys when EXEC is issued,
- * and will block the client when any command requires a swapped out value. */
-void execBlockClientOnSwappedKeys(redisClient *c, struct redisCommand *cmd, int argc, robj **argv) {
-    int i, margc;
-    struct redisCommand *mcmd;
-    robj **margv;
-    REDIS_NOTUSED(cmd);
-    REDIS_NOTUSED(argc);
-    REDIS_NOTUSED(argv);
-
-    if (!(c->flags & REDIS_MULTI)) return;
-    for (i = 0; i < c->mstate.count; i++) {
-        mcmd = c->mstate.commands[i].cmd;
-        margc = c->mstate.commands[i].argc;
-        margv = c->mstate.commands[i].argv;
-
-        if (mcmd->vm_preload_proc != NULL) {
-            mcmd->vm_preload_proc(c,mcmd,margc,margv);
-        } else {
-            waitForMultipleSwappedKeys(c,mcmd,margc,margv);
-        }
-    }
-}
-
 /* Is this client attempting to run a command against swapped keys?
  * If so, block it ASAP, load the keys in background, then resume it.
  *
