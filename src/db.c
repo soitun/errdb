@@ -1,4 +1,4 @@
-#include "redis.h"
+#include "errdb.h"
 
 #include <signal.h>
 
@@ -204,23 +204,14 @@ int dbDelete(redisDb *db, robj *key) {
 /* Empty the whole database.
  * If diskstore is enabled this function will just flush the in-memory cache. */
 long long emptyDb() {
-    int j;
     long long removed = 0;
 
-    for (j = 0; j < server.dbnum; j++) {
-        removed += dictSize(server.db[j].dict);
-        dictEmpty(server.db[j].dict);
-        dictEmpty(server.db[j].expires);
-        if (server.ds_enabled) dictEmpty(server.db[j].io_negcache);
-    }
-    return removed;
-}
+    removed += dictSize(server.db->dict);
+    dictEmpty(server.db->dict);
+    dictEmpty(server.db->expires);
+    if (server.ds_enabled) dictEmpty(server.db->io_negcache);
 
-int selectDb(redisClient *c, int id) {
-    if (id < 0 || id >= server.dbnum)
-        return REDIS_ERR;
-    c->db = &server.db[id];
-    return REDIS_OK;
+    return removed;
 }
 
 /*-----------------------------------------------------------------------------
@@ -300,16 +291,6 @@ void existsCommand(redisClient *c) {
     }
 }
 
-void selectCommand(redisClient *c) {
-    int id = atoi(c->argv[1]->ptr);
-
-    if (selectDb(c,id) == REDIS_ERR) {
-        addReplyError(c,"invalid DB index");
-    } else {
-        addReply(c,shared.ok);
-    }
-}
-
 void randomkeyCommand(redisClient *c) {
     robj *key;
 
@@ -368,9 +349,6 @@ void typeCommand(redisClient *c) {
         switch(o->type) {
         case REDIS_STRING: type = "string"; break;
         case REDIS_LIST: type = "list"; break;
-        case REDIS_SET: type = "set"; break;
-        case REDIS_ZSET: type = "zset"; break;
-        case REDIS_HASH: type = "hash"; break;
         default: type = "unknown"; break;
         }
     }
@@ -419,47 +397,6 @@ void renamenxCommand(redisClient *c) {
     renameGenericCommand(c,1);
 }
 
-void moveCommand(redisClient *c) {
-    robj *o;
-    redisDb *src, *dst;
-    int srcid;
-
-    /* Obtain source and target DB pointers */
-    src = c->db;
-    srcid = c->db->id;
-    if (selectDb(c,atoi(c->argv[2]->ptr)) == REDIS_ERR) {
-        addReply(c,shared.outofrangeerr);
-        return;
-    }
-    dst = c->db;
-    selectDb(c,srcid); /* Back to the source DB */
-
-    /* If the user is moving using as target the same
-     * DB as the source DB it is probably an error. */
-    if (src == dst) {
-        addReply(c,shared.sameobjecterr);
-        return;
-    }
-
-    /* Check if the element exists and get a reference */
-    o = lookupKeyWrite(c->db,c->argv[1]);
-    if (!o) {
-        addReply(c,shared.czero);
-        return;
-    }
-
-    /* Try to add the element to the target DB */
-    if (dbAdd(dst,c->argv[1],o) == REDIS_ERR) {
-        addReply(c,shared.czero);
-        return;
-    }
-    incrRefCount(o);
-
-    /* OK! key moved, free the entry in the source DB */
-    dbDelete(src,c->argv[1]);
-    server.dirty++;
-    addReply(c,shared.cone);
-}
 
 /*-----------------------------------------------------------------------------
  * Expires API

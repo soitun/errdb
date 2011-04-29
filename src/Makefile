@@ -25,16 +25,16 @@ PREFIX= /usr/local
 INSTALL_BIN= $(PREFIX)/bin
 INSTALL= cp -p
 
-OBJ = debug.o adlist.o ae.o anet.o dict.o redis.o sds.o zmalloc.o pqsort.o sha1.o release.o client.o util.o object.o db.o t_string.o ts_list.o  config.o dscache.o  syncio.o diskstore.o endian.o 
+OBJ = debug.o adlist.o ae.o anet.o dict.o errdb.o sds.o zmalloc.o pqsort.o sha1.o release.o client.o util.o object.o db.o t_string.o ts_list.o  config.o dscache.o  syncio.o diskstore.o endian.o 
 BENCHOBJ = ae.o anet.o sds.o adlist.o zmalloc.o
-CLIOBJ = anet.o sds.o adlist.o redis-cli.o zmalloc.o release.o
+CLIOBJ = anet.o sds.o adlist.o errdb-cli.o zmalloc.o release.o
 
-PRGNAME = redis-server
-CLIPRGNAME = redis-cli
+PRGNAME = errdb
+CLIPRGNAME = errdb-cli
 
-all: redis-cli redis-server
+all: errdb-cli errdb
 	@echo ""
-	@echo "Hint: To run 'make test' is a good idea ;)"
+	@echo "Success!"
 	@echo ""
 
 # Deps (use make dep to generate this)
@@ -44,51 +44,51 @@ ae_epoll.o: ae_epoll.c
 ae_kqueue.o: ae_kqueue.c
 ae_select.o: ae_select.c
 anet.o: anet.c fmacros.h anet.h
-config.o: config.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+config.o: config.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
-db.o: db.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+db.o: db.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
 dict.o: dict.c fmacros.h dict.h zmalloc.h
-diskstore.o: diskstore.c redis.h fmacros.h config.h ae.h sds.h dict.h \
+diskstore.o: diskstore.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h   version.h
-dscache.o: dscache.c redis.h fmacros.h config.h ae.h sds.h dict.h \
+dscache.o: dscache.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h  version.h
-client.o: client.c redis.h fmacros.h config.h ae.h sds.h dict.h \
+client.o: client.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h  version.h
-object.o: object.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+object.o: object.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
 pqsort.o: pqsort.c
-redis-cli.o: redis-cli.c fmacros.h version.h ../deps/hiredis/hiredis.h \
+errdb-cli.o: errdb-cli.c fmacros.h version.h ../deps/hierrdb/hierrdb.h \
   sds.h zmalloc.h ../deps/linenoise/linenoise.h help.h
-redis.o: redis.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+errdb.o: errdb.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h version.h
 release.o: release.c release.h
 sds.o: sds.c sds.h zmalloc.h
 sha1.o: sha1.c sha1.h
-syncio.o: syncio.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+syncio.o: syncio.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
-ts_list.o: ts_list.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+ts_list.o: ts_list.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
-t_string.o: t_string.c redis.h fmacros.h config.h ae.h sds.h dict.h \
+t_string.o: t_string.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h  version.h
-util.o: util.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+util.o: util.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h version.h
-debug.o: debug.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
+debug.o: debug.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
 zmalloc.o: zmalloc.c config.h
 
 dependencies:
-	cd ../deps/hiredis && $(MAKE) static ARCH="$(ARCH)"
+	cd ../deps/hierrdb && $(MAKE) static ARCH="$(ARCH)"
 	cd ../deps/linenoise && $(MAKE) ARCH="$(ARCH)"
 
-redis-server: $(OBJ)
+errdb: $(OBJ)
 	$(CC) -o $(PRGNAME) $(CCOPT) $(DEBUG) $(OBJ)
 
-redis-cli: dependencies $(CLIOBJ)
-	$(CC) -o $(CLIPRGNAME) $(CCOPT) $(DEBUG) $(CLIOBJ) ../deps/hiredis/libhiredis.a ../deps/linenoise/linenoise.o
+errdb-cli: dependencies $(CLIOBJ)
+	$(CC) -o $(CLIPRGNAME) $(CCOPT) $(DEBUG) $(CLIOBJ) ../deps/hierrdb/libhierrdb.a ../deps/linenoise/linenoise.o
 
-redis-cli.o:
-	$(CC) -c $(CFLAGS) -I../deps/hiredis -I../deps/linenoise $(DEBUG) $(COMPILE_TIME) $<
+errdb-cli.o:
+	$(CC) -c $(CFLAGS) -I../deps/hierrdb -I../deps/linenoise $(DEBUG) $(COMPILE_TIME) $<
 
 .c.o:
 	$(CC) -c $(CFLAGS) $(DEBUG) $(COMPILE_TIME) $<
@@ -97,9 +97,9 @@ clean:
 	rm -rf $(PRGNAME) $(BENCHPRGNAME) $(CLIPRGNAME) $(CHECKDUMPPRGNAME) $(CHECKAOFPRGNAME) *.o *.gcda *.gcno *.gcov
 
 dep:
-	$(CC) -MM *.c -I ../deps/hiredis -I ../deps/linenoise
+	$(CC) -MM *.c -I ../deps/hierrdb -I ../deps/linenoise
 
-test: redis-server
+test: errdb
 	(cd ..; tclsh8.5 tests/test_helper.tcl --tags "${TAGS}" --file "${FILE}")
 
 log:

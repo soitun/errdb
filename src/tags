@@ -25,48 +25,29 @@ ANET_ERR	anet.h	/^#define ANET_ERR /;"	d
 ANET_ERR_LEN	anet.h	/^#define ANET_ERR_LEN /;"	d
 ANET_H	anet.h	/^#define ANET_H$/;"	d
 ANET_OK	anet.h	/^#define ANET_OK /;"	d
-APPENDFSYNC_ALWAYS	redis.h	/^#define APPENDFSYNC_ALWAYS /;"	d
-APPENDFSYNC_EVERYSEC	redis.h	/^#define APPENDFSYNC_EVERYSEC /;"	d
-APPENDFSYNC_NO	redis.h	/^#define APPENDFSYNC_NO /;"	d
-AVOID_ERRNO	lzfP.h	/^# define AVOID_ERRNO /;"	d
+APPENDFSYNC_ALWAYS	errdb.h	/^#define APPENDFSYNC_ALWAYS /;"	d
+APPENDFSYNC_EVERYSEC	errdb.h	/^#define APPENDFSYNC_EVERYSEC /;"	d
+APPENDFSYNC_NO	errdb.h	/^#define APPENDFSYNC_NO /;"	d
 BIG_ENDIAN	config.h	/^#define	BIG_ENDIAN	/;"	d
 BYTE_ORDER	config.h	/^#define BYTE_ORDER	/;"	d
 BYTE_ORDER	config.h	/^#define BYTE_ORDER /;"	d
-CHECK_INPUT	lzfP.h	/^# define CHECK_INPUT /;"	d
-CLI_HELP_COMMAND	redis-cli.c	/^#define CLI_HELP_COMMAND /;"	d	file:
-CLI_HELP_GROUP	redis-cli.c	/^#define CLI_HELP_GROUP /;"	d	file:
+CLI_HELP_COMMAND	errdb-cli.c	/^#define CLI_HELP_COMMAND /;"	d	file:
+CLI_HELP_GROUP	errdb-cli.c	/^#define CLI_HELP_GROUP /;"	d	file:
 DICT_ERR	dict.h	/^#define DICT_ERR /;"	d
 DICT_HT_INITIAL_SIZE	dict.h	/^#define DICT_HT_INITIAL_SIZE /;"	d
 DICT_NOTUSED	dict.h	/^#define DICT_NOTUSED(/;"	d
 DICT_OK	dict.h	/^#define DICT_OK /;"	d
 DICT_STATS_VECTLEN	dict.c	/^#define DICT_STATS_VECTLEN /;"	d	file:
-FRST	lzf_c.c	/^# define FRST(/;"	d	file:
 HAVE_BACKTRACE	config.h	/^#define HAVE_BACKTRACE /;"	d
 HAVE_EPOLL	config.h	/^#define HAVE_EPOLL /;"	d
 HAVE_KQUEUE	config.h	/^#define HAVE_KQUEUE /;"	d
 HAVE_MALLOC_SIZE	config.h	/^#define HAVE_MALLOC_SIZE /;"	d
 HAVE_PROCFS	config.h	/^#define HAVE_PROCFS /;"	d
 HAVE_TASKINFO	config.h	/^#define HAVE_TASKINFO /;"	d
-HLOG	lzfP.h	/^# define HLOG /;"	d
-HSIZE	lzf_c.c	/^#define HSIZE /;"	d	file:
-IDX	lzf_c.c	/^#  define IDX(/;"	d	file:
-INIT_HTAB	lzfP.h	/^# define INIT_HTAB /;"	d
-INTSET_ENC_INT16	intset.c	/^#define INTSET_ENC_INT16 /;"	d	file:
-INTSET_ENC_INT32	intset.c	/^#define INTSET_ENC_INT32 /;"	d	file:
-INTSET_ENC_INT64	intset.c	/^#define INTSET_ENC_INT64 /;"	d	file:
 IOThreadEntryPoint	dscache.c	/^void *IOThreadEntryPoint(void *arg) {$/;"	f
-LINE_BUFLEN	redis-cli.c	/^#define LINE_BUFLEN /;"	d	file:
+LINE_BUFLEN	errdb-cli.c	/^#define LINE_BUFLEN /;"	d	file:
 LITTLE_ENDIAN	config.h	/^#define	LITTLE_ENDIAN	/;"	d
-LZFP_h	lzfP.h	/^#define LZFP_h$/;"	d
-LZF_H	lzf.h	/^#define LZF_H$/;"	d
-LZF_STATE	lzfP.h	/^typedef const u8 *LZF_STATE[1 << (HLOG)];$/;"	t
-LZF_STATE_ARG	lzfP.h	/^# define LZF_STATE_ARG /;"	d
-LZF_VERSION	lzf.h	/^#define LZF_VERSION /;"	d
 MAX_IO_JOBS_QUEUE	dscache.c	/^#define MAX_IO_JOBS_QUEUE /;"	d	file:
-MAX_LIT	lzf_c.c	/^#define        MAX_LIT /;"	d	file:
-MAX_OFF	lzf_c.c	/^#define        MAX_OFF /;"	d	file:
-MAX_REF	lzf_c.c	/^#define        MAX_REF /;"	d	file:
-NEXT	lzf_c.c	/^# define NEXT(/;"	d	file:
 PDP_ENDIAN	config.h	/^#define	PDP_ENDIAN	/;"	d
 PREFIX_SIZE	zmalloc.c	/^#define PREFIX_SIZE /;"	d	file:
 R0	sha1.c	/^#define R0(/;"	d	file:
@@ -74,141 +55,128 @@ R1	sha1.c	/^#define R1(/;"	d	file:
 R2	sha1.c	/^#define R2(/;"	d	file:
 R3	sha1.c	/^#define R3(/;"	d	file:
 R4	sha1.c	/^#define R4(/;"	d	file:
-REDIS_BGSAVE_THREAD_ACTIVE	redis.h	/^#define REDIS_BGSAVE_THREAD_ACTIVE /;"	d
-REDIS_BGSAVE_THREAD_DONE_ERR	redis.h	/^#define REDIS_BGSAVE_THREAD_DONE_ERR /;"	d
-REDIS_BGSAVE_THREAD_DONE_OK	redis.h	/^#define REDIS_BGSAVE_THREAD_DONE_OK /;"	d
-REDIS_BGSAVE_THREAD_UNACTIVE	redis.h	/^#define REDIS_BGSAVE_THREAD_UNACTIVE /;"	d
-REDIS_BLOCKED	redis.h	/^#define REDIS_BLOCKED /;"	d
-REDIS_CLOSE_AFTER_REPLY	redis.h	/^#define REDIS_CLOSE_AFTER_REPLY /;"	d
-REDIS_CMD_DENYOOM	redis.h	/^#define REDIS_CMD_DENYOOM /;"	d
-REDIS_CMD_FORCE_REPLICATION	redis.h	/^#define REDIS_CMD_FORCE_REPLICATION /;"	d
-REDIS_CONFIGLINE_MAX	redis.h	/^#define REDIS_CONFIGLINE_MAX /;"	d
-REDIS_DEBUG	redis.h	/^#define REDIS_DEBUG /;"	d
-REDIS_DEFAULT_DBNUM	redis.h	/^#define REDIS_DEFAULT_DBNUM /;"	d
-REDIS_DIRTY_CAS	redis.h	/^#define REDIS_DIRTY_CAS /;"	d
-REDIS_ENCODING_HT	redis.h	/^#define REDIS_ENCODING_HT /;"	d
-REDIS_ENCODING_INT	redis.h	/^#define REDIS_ENCODING_INT /;"	d
-REDIS_ENCODING_INTSET	redis.h	/^#define REDIS_ENCODING_INTSET /;"	d
-REDIS_ENCODING_LINKEDLIST	redis.h	/^#define REDIS_ENCODING_LINKEDLIST /;"	d
-REDIS_ENCODING_RAW	redis.h	/^#define REDIS_ENCODING_RAW /;"	d
-REDIS_ENCODING_TS	redis.h	/^#define REDIS_ENCODING_TS /;"	d
-REDIS_EOF	redis.h	/^#define REDIS_EOF /;"	d
-REDIS_ERR	redis.h	/^#define REDIS_ERR /;"	d
-REDIS_EXPIRELOOKUPS_PER_CRON	redis.h	/^#define REDIS_EXPIRELOOKUPS_PER_CRON /;"	d
-REDIS_EXPIRETIME	redis.h	/^#define REDIS_EXPIRETIME /;"	d
+REDIS_BGSAVE_THREAD_ACTIVE	errdb.h	/^#define REDIS_BGSAVE_THREAD_ACTIVE /;"	d
+REDIS_BGSAVE_THREAD_DONE_ERR	errdb.h	/^#define REDIS_BGSAVE_THREAD_DONE_ERR /;"	d
+REDIS_BGSAVE_THREAD_DONE_OK	errdb.h	/^#define REDIS_BGSAVE_THREAD_DONE_OK /;"	d
+REDIS_BGSAVE_THREAD_UNACTIVE	errdb.h	/^#define REDIS_BGSAVE_THREAD_UNACTIVE /;"	d
+REDIS_BLOCKED	errdb.h	/^#define REDIS_BLOCKED /;"	d
+REDIS_CLOSE_AFTER_REPLY	errdb.h	/^#define REDIS_CLOSE_AFTER_REPLY /;"	d
+REDIS_CMD_DENYOOM	errdb.h	/^#define REDIS_CMD_DENYOOM /;"	d
+REDIS_CMD_FORCE_REPLICATION	errdb.h	/^#define REDIS_CMD_FORCE_REPLICATION /;"	d
+REDIS_CONFIGLINE_MAX	errdb.h	/^#define REDIS_CONFIGLINE_MAX /;"	d
+REDIS_DEBUG	errdb.h	/^#define REDIS_DEBUG /;"	d
+REDIS_DEFAULT_DBNUM	errdb.h	/^#define REDIS_DEFAULT_DBNUM /;"	d
+REDIS_DIRTY_CAS	errdb.h	/^#define REDIS_DIRTY_CAS /;"	d
+REDIS_ENCODING_HT	errdb.h	/^#define REDIS_ENCODING_HT /;"	d
+REDIS_ENCODING_INT	errdb.h	/^#define REDIS_ENCODING_INT /;"	d
+REDIS_ENCODING_LINKEDLIST	errdb.h	/^#define REDIS_ENCODING_LINKEDLIST /;"	d
+REDIS_ENCODING_RAW	errdb.h	/^#define REDIS_ENCODING_RAW /;"	d
+REDIS_ENCODING_TS	errdb.h	/^#define REDIS_ENCODING_TS /;"	d
+REDIS_EOF	errdb.h	/^#define REDIS_EOF /;"	d
+REDIS_ERR	errdb.h	/^#define REDIS_ERR /;"	d
+REDIS_EXPIRELOOKUPS_PER_CRON	errdb.h	/^#define REDIS_EXPIRELOOKUPS_PER_CRON /;"	d
+REDIS_EXPIRETIME	errdb.h	/^#define REDIS_EXPIRETIME /;"	d
 REDIS_GIT_DIRTY	release.h	/^#define REDIS_GIT_DIRTY /;"	d
 REDIS_GIT_SHA1	release.h	/^#define REDIS_GIT_SHA1 /;"	d
-REDIS_HASH	redis.h	/^#define REDIS_HASH /;"	d
-REDIS_HASH_KEY	redis.h	/^#define REDIS_HASH_KEY /;"	d
-REDIS_HASH_MAX_ZIPMAP_ENTRIES	redis.h	/^#define REDIS_HASH_MAX_ZIPMAP_ENTRIES /;"	d
-REDIS_HASH_MAX_ZIPMAP_VALUE	redis.h	/^#define REDIS_HASH_MAX_ZIPMAP_VALUE /;"	d
-REDIS_HASH_VALUE	redis.h	/^#define REDIS_HASH_VALUE /;"	d
-REDIS_HEAD	redis.h	/^#define REDIS_HEAD /;"	d
-REDIS_HT_MINFILL	redis.h	/^#define REDIS_HT_MINFILL /;"	d
-REDIS_IOBUF_LEN	redis.h	/^#define REDIS_IOBUF_LEN /;"	d
-REDIS_IOJOB_LOAD	redis.h	/^#define REDIS_IOJOB_LOAD /;"	d
-REDIS_IOJOB_SAVE	redis.h	/^#define REDIS_IOJOB_SAVE /;"	d
-REDIS_IO_ASAP	redis.h	/^#define REDIS_IO_ASAP /;"	d
+REDIS_HASH_KEY	errdb.h	/^#define REDIS_HASH_KEY /;"	d
+REDIS_HASH_VALUE	errdb.h	/^#define REDIS_HASH_VALUE /;"	d
+REDIS_HEAD	errdb.h	/^#define REDIS_HEAD /;"	d
+REDIS_HT_MINFILL	errdb.h	/^#define REDIS_HT_MINFILL /;"	d
+REDIS_IOBUF_LEN	errdb.h	/^#define REDIS_IOBUF_LEN /;"	d
+REDIS_IOJOB_LOAD	errdb.h	/^#define REDIS_IOJOB_LOAD /;"	d
+REDIS_IOJOB_SAVE	errdb.h	/^#define REDIS_IOJOB_SAVE /;"	d
+REDIS_IO_ASAP	errdb.h	/^#define REDIS_IO_ASAP /;"	d
 REDIS_IO_LOAD	dscache.c	/^#define REDIS_IO_LOAD /;"	d	file:
-REDIS_IO_LOAD	redis.h	/^#define REDIS_IO_LOAD /;"	d
+REDIS_IO_LOAD	errdb.h	/^#define REDIS_IO_LOAD /;"	d
 REDIS_IO_LOADINPROG	dscache.c	/^#define REDIS_IO_LOADINPROG /;"	d	file:
-REDIS_IO_LOADINPROG	redis.h	/^#define REDIS_IO_LOADINPROG /;"	d
-REDIS_IO_ONLYLOADS	redis.h	/^#define REDIS_IO_ONLYLOADS /;"	d
+REDIS_IO_LOADINPROG	errdb.h	/^#define REDIS_IO_LOADINPROG /;"	d
+REDIS_IO_ONLYLOADS	errdb.h	/^#define REDIS_IO_ONLYLOADS /;"	d
 REDIS_IO_SAVE	dscache.c	/^#define REDIS_IO_SAVE /;"	d	file:
-REDIS_IO_SAVE	redis.h	/^#define REDIS_IO_SAVE /;"	d
+REDIS_IO_SAVE	errdb.h	/^#define REDIS_IO_SAVE /;"	d
 REDIS_IO_SAVEINPROG	dscache.c	/^#define REDIS_IO_SAVEINPROG /;"	d	file:
-REDIS_IO_SAVEINPROG	redis.h	/^#define REDIS_IO_SAVEINPROG /;"	d
-REDIS_IO_WAIT	redis.h	/^#define REDIS_IO_WAIT /;"	d
-REDIS_LIST	redis.h	/^#define REDIS_LIST /;"	d
-REDIS_LOADBUF_LEN	redis.h	/^#define REDIS_LOADBUF_LEN /;"	d
-REDIS_LRU_CLOCK_MAX	redis.h	/^#define REDIS_LRU_CLOCK_MAX /;"	d
-REDIS_LRU_CLOCK_RESOLUTION	redis.h	/^#define REDIS_LRU_CLOCK_RESOLUTION /;"	d
-REDIS_MASTER	redis.h	/^#define REDIS_MASTER /;"	d
-REDIS_MAXIDLETIME	redis.h	/^#define REDIS_MAXIDLETIME /;"	d
-REDIS_MAXMEMORY_ALLKEYS_LRU	redis.h	/^#define REDIS_MAXMEMORY_ALLKEYS_LRU /;"	d
-REDIS_MAXMEMORY_ALLKEYS_RANDOM	redis.h	/^#define REDIS_MAXMEMORY_ALLKEYS_RANDOM /;"	d
-REDIS_MAXMEMORY_NO_EVICTION	redis.h	/^#define REDIS_MAXMEMORY_NO_EVICTION /;"	d
-REDIS_MAXMEMORY_VOLATILE_LRU	redis.h	/^#define REDIS_MAXMEMORY_VOLATILE_LRU /;"	d
-REDIS_MAXMEMORY_VOLATILE_RANDOM	redis.h	/^#define REDIS_MAXMEMORY_VOLATILE_RANDOM /;"	d
-REDIS_MAXMEMORY_VOLATILE_TTL	redis.h	/^#define REDIS_MAXMEMORY_VOLATILE_TTL /;"	d
-REDIS_MAX_COMPLETED_JOBS_PROCESSED	redis.h	/^#define REDIS_MAX_COMPLETED_JOBS_PROCESSED /;"	d
-REDIS_MAX_LOGMSG_LEN	redis.h	/^#define REDIS_MAX_LOGMSG_LEN /;"	d
-REDIS_MAX_SYNC_TIME	redis.h	/^#define REDIS_MAX_SYNC_TIME /;"	d
-REDIS_MAX_WRITE_PER_EVENT	redis.h	/^#define REDIS_MAX_WRITE_PER_EVENT /;"	d
-REDIS_MONITOR	redis.h	/^#define REDIS_MONITOR /;"	d
-REDIS_MULTI	redis.h	/^#define REDIS_MULTI /;"	d
-REDIS_NOTICE	redis.h	/^#define REDIS_NOTICE /;"	d
-REDIS_NOTUSED	redis-cli.c	/^#define REDIS_NOTUSED(/;"	d	file:
-REDIS_NOTUSED	redis.h	/^#define REDIS_NOTUSED(/;"	d
-REDIS_OK	redis.h	/^#define REDIS_OK /;"	d
-REDIS_OP_DIFF	redis.h	/^#define REDIS_OP_DIFF /;"	d
-REDIS_OP_INTER	redis.h	/^#define REDIS_OP_INTER /;"	d
-REDIS_OP_UNION	redis.h	/^#define REDIS_OP_UNION /;"	d
-REDIS_RDB_14BITLEN	redis.h	/^#define REDIS_RDB_14BITLEN /;"	d
-REDIS_RDB_32BITLEN	redis.h	/^#define REDIS_RDB_32BITLEN /;"	d
-REDIS_RDB_6BITLEN	redis.h	/^#define REDIS_RDB_6BITLEN /;"	d
-REDIS_RDB_ENCVAL	redis.h	/^#define REDIS_RDB_ENCVAL /;"	d
-REDIS_RDB_ENC_INT16	redis.h	/^#define REDIS_RDB_ENC_INT16 /;"	d
-REDIS_RDB_ENC_INT32	redis.h	/^#define REDIS_RDB_ENC_INT32 /;"	d
-REDIS_RDB_ENC_INT8	redis.h	/^#define REDIS_RDB_ENC_INT8 /;"	d
-REDIS_RDB_ENC_LZF	redis.h	/^#define REDIS_RDB_ENC_LZF /;"	d
-REDIS_RDB_LENERR	redis.h	/^#define REDIS_RDB_LENERR /;"	d
-REDIS_REPLY_CHUNK_BYTES	redis.h	/^#define REDIS_REPLY_CHUNK_BYTES /;"	d
-REDIS_REPL_CONNECT	redis.h	/^#define REDIS_REPL_CONNECT /;"	d
-REDIS_REPL_CONNECTED	redis.h	/^#define REDIS_REPL_CONNECTED /;"	d
-REDIS_REPL_NONE	redis.h	/^#define REDIS_REPL_NONE /;"	d
-REDIS_REPL_ONLINE	redis.h	/^#define REDIS_REPL_ONLINE /;"	d
-REDIS_REPL_SEND_BULK	redis.h	/^#define REDIS_REPL_SEND_BULK /;"	d
-REDIS_REPL_TRANSFER	redis.h	/^#define REDIS_REPL_TRANSFER /;"	d
-REDIS_REPL_WAIT_BGSAVE_END	redis.h	/^#define REDIS_REPL_WAIT_BGSAVE_END /;"	d
-REDIS_REPL_WAIT_BGSAVE_START	redis.h	/^#define REDIS_REPL_WAIT_BGSAVE_START /;"	d
-REDIS_REQUEST_MAX_SIZE	redis.h	/^#define REDIS_REQUEST_MAX_SIZE /;"	d
-REDIS_REQ_INLINE	redis.h	/^#define REDIS_REQ_INLINE /;"	d
-REDIS_REQ_MULTIBULK	redis.h	/^#define REDIS_REQ_MULTIBULK /;"	d
-REDIS_SELECTDB	redis.h	/^#define REDIS_SELECTDB /;"	d
-REDIS_SERVERPORT	redis.h	/^#define REDIS_SERVERPORT /;"	d
-REDIS_SET	redis.h	/^#define REDIS_SET /;"	d
-REDIS_SET_INTSET	redis.h	/^#define REDIS_SET_INTSET /;"	d
-REDIS_SET_MAX_INTSET_ENTRIES	redis.h	/^#define REDIS_SET_MAX_INTSET_ENTRIES /;"	d
-REDIS_SHARED_INTEGERS	redis.h	/^#define REDIS_SHARED_INTEGERS /;"	d
-REDIS_SLAVE	redis.h	/^#define REDIS_SLAVE /;"	d
-REDIS_SORTKEY_MAX	redis.h	/^#define REDIS_SORTKEY_MAX /;"	d
-REDIS_SORT_ASC	redis.h	/^#define REDIS_SORT_ASC /;"	d
-REDIS_SORT_DESC	redis.h	/^#define REDIS_SORT_DESC /;"	d
-REDIS_SORT_GET	redis.h	/^#define REDIS_SORT_GET /;"	d
-REDIS_STATIC_ARGS	redis.h	/^#define REDIS_STATIC_ARGS /;"	d
-REDIS_STRING	redis.h	/^#define REDIS_STRING /;"	d
-REDIS_TAIL	redis.h	/^#define REDIS_TAIL /;"	d
-REDIS_THREAD_STACK_SIZE	redis.h	/^#define REDIS_THREAD_STACK_SIZE /;"	d
-REDIS_UNBLOCKED	redis.h	/^#define REDIS_UNBLOCKED /;"	d
-REDIS_VERBOSE	redis.h	/^#define REDIS_VERBOSE /;"	d
+REDIS_IO_SAVEINPROG	errdb.h	/^#define REDIS_IO_SAVEINPROG /;"	d
+REDIS_IO_WAIT	errdb.h	/^#define REDIS_IO_WAIT /;"	d
+REDIS_LIST	errdb.h	/^#define REDIS_LIST /;"	d
+REDIS_LOADBUF_LEN	errdb.h	/^#define REDIS_LOADBUF_LEN /;"	d
+REDIS_LRU_CLOCK_MAX	errdb.h	/^#define REDIS_LRU_CLOCK_MAX /;"	d
+REDIS_LRU_CLOCK_RESOLUTION	errdb.h	/^#define REDIS_LRU_CLOCK_RESOLUTION /;"	d
+REDIS_MASTER	errdb.h	/^#define REDIS_MASTER /;"	d
+REDIS_MAXIDLETIME	errdb.h	/^#define REDIS_MAXIDLETIME /;"	d
+REDIS_MAXMEMORY_ALLKEYS_LRU	errdb.h	/^#define REDIS_MAXMEMORY_ALLKEYS_LRU /;"	d
+REDIS_MAXMEMORY_ALLKEYS_RANDOM	errdb.h	/^#define REDIS_MAXMEMORY_ALLKEYS_RANDOM /;"	d
+REDIS_MAXMEMORY_NO_EVICTION	errdb.h	/^#define REDIS_MAXMEMORY_NO_EVICTION /;"	d
+REDIS_MAXMEMORY_VOLATILE_LRU	errdb.h	/^#define REDIS_MAXMEMORY_VOLATILE_LRU /;"	d
+REDIS_MAXMEMORY_VOLATILE_RANDOM	errdb.h	/^#define REDIS_MAXMEMORY_VOLATILE_RANDOM /;"	d
+REDIS_MAXMEMORY_VOLATILE_TTL	errdb.h	/^#define REDIS_MAXMEMORY_VOLATILE_TTL /;"	d
+REDIS_MAX_COMPLETED_JOBS_PROCESSED	errdb.h	/^#define REDIS_MAX_COMPLETED_JOBS_PROCESSED /;"	d
+REDIS_MAX_LOGMSG_LEN	errdb.h	/^#define REDIS_MAX_LOGMSG_LEN /;"	d
+REDIS_MAX_SYNC_TIME	errdb.h	/^#define REDIS_MAX_SYNC_TIME /;"	d
+REDIS_MAX_WRITE_PER_EVENT	errdb.h	/^#define REDIS_MAX_WRITE_PER_EVENT /;"	d
+REDIS_MONITOR	errdb.h	/^#define REDIS_MONITOR /;"	d
+REDIS_MULTI	errdb.h	/^#define REDIS_MULTI /;"	d
+REDIS_NOTICE	errdb.h	/^#define REDIS_NOTICE /;"	d
+REDIS_NOTUSED	errdb-cli.c	/^#define REDIS_NOTUSED(/;"	d	file:
+REDIS_NOTUSED	errdb.h	/^#define REDIS_NOTUSED(/;"	d
+REDIS_OK	errdb.h	/^#define REDIS_OK /;"	d
+REDIS_OP_DIFF	errdb.h	/^#define REDIS_OP_DIFF /;"	d
+REDIS_OP_INTER	errdb.h	/^#define REDIS_OP_INTER /;"	d
+REDIS_OP_UNION	errdb.h	/^#define REDIS_OP_UNION /;"	d
+REDIS_RDB_14BITLEN	errdb.h	/^#define REDIS_RDB_14BITLEN /;"	d
+REDIS_RDB_32BITLEN	errdb.h	/^#define REDIS_RDB_32BITLEN /;"	d
+REDIS_RDB_6BITLEN	errdb.h	/^#define REDIS_RDB_6BITLEN /;"	d
+REDIS_RDB_ENCVAL	errdb.h	/^#define REDIS_RDB_ENCVAL /;"	d
+REDIS_RDB_ENC_INT16	errdb.h	/^#define REDIS_RDB_ENC_INT16 /;"	d
+REDIS_RDB_ENC_INT32	errdb.h	/^#define REDIS_RDB_ENC_INT32 /;"	d
+REDIS_RDB_ENC_INT8	errdb.h	/^#define REDIS_RDB_ENC_INT8 /;"	d
+REDIS_RDB_ENC_LZF	errdb.h	/^#define REDIS_RDB_ENC_LZF /;"	d
+REDIS_RDB_LENERR	errdb.h	/^#define REDIS_RDB_LENERR /;"	d
+REDIS_REPLY_CHUNK_BYTES	errdb.h	/^#define REDIS_REPLY_CHUNK_BYTES /;"	d
+REDIS_REPL_CONNECT	errdb.h	/^#define REDIS_REPL_CONNECT /;"	d
+REDIS_REPL_CONNECTED	errdb.h	/^#define REDIS_REPL_CONNECTED /;"	d
+REDIS_REPL_NONE	errdb.h	/^#define REDIS_REPL_NONE /;"	d
+REDIS_REPL_ONLINE	errdb.h	/^#define REDIS_REPL_ONLINE /;"	d
+REDIS_REPL_SEND_BULK	errdb.h	/^#define REDIS_REPL_SEND_BULK /;"	d
+REDIS_REPL_TRANSFER	errdb.h	/^#define REDIS_REPL_TRANSFER /;"	d
+REDIS_REPL_WAIT_BGSAVE_END	errdb.h	/^#define REDIS_REPL_WAIT_BGSAVE_END /;"	d
+REDIS_REPL_WAIT_BGSAVE_START	errdb.h	/^#define REDIS_REPL_WAIT_BGSAVE_START /;"	d
+REDIS_REQUEST_MAX_SIZE	errdb.h	/^#define REDIS_REQUEST_MAX_SIZE /;"	d
+REDIS_REQ_INLINE	errdb.h	/^#define REDIS_REQ_INLINE /;"	d
+REDIS_REQ_MULTIBULK	errdb.h	/^#define REDIS_REQ_MULTIBULK /;"	d
+REDIS_SELECTDB	errdb.h	/^#define REDIS_SELECTDB /;"	d
+REDIS_SERVERPORT	errdb.h	/^#define REDIS_SERVERPORT /;"	d
+REDIS_SET	errdb.h	/^#define REDIS_SET /;"	d
+REDIS_SET_INTSET	errdb.h	/^#define REDIS_SET_INTSET /;"	d
+REDIS_SHARED_INTEGERS	errdb.h	/^#define REDIS_SHARED_INTEGERS /;"	d
+REDIS_SLAVE	errdb.h	/^#define REDIS_SLAVE /;"	d
+REDIS_SORTKEY_MAX	errdb.h	/^#define REDIS_SORTKEY_MAX /;"	d
+REDIS_SORT_ASC	errdb.h	/^#define REDIS_SORT_ASC /;"	d
+REDIS_SORT_DESC	errdb.h	/^#define REDIS_SORT_DESC /;"	d
+REDIS_SORT_GET	errdb.h	/^#define REDIS_SORT_GET /;"	d
+REDIS_STATIC_ARGS	errdb.h	/^#define REDIS_STATIC_ARGS /;"	d
+REDIS_STRING	errdb.h	/^#define REDIS_STRING /;"	d
+REDIS_TAIL	errdb.h	/^#define REDIS_TAIL /;"	d
+REDIS_THREAD_STACK_SIZE	errdb.h	/^#define REDIS_THREAD_STACK_SIZE /;"	d
+REDIS_UNBLOCKED	errdb.h	/^#define REDIS_UNBLOCKED /;"	d
+REDIS_VERBOSE	errdb.h	/^#define REDIS_VERBOSE /;"	d
 REDIS_VERSION	version.h	/^#define REDIS_VERSION /;"	d
-REDIS_VMPOINTER	redis.h	/^#define REDIS_VMPOINTER /;"	d
-REDIS_WARNING	redis.h	/^#define REDIS_WARNING /;"	d
-REDIS_ZSET	redis.h	/^#define REDIS_ZSET /;"	d
-R_Nan	redis.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
-R_NegInf	redis.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
-R_PosInf	redis.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
-R_Zero	redis.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
+REDIS_VMPOINTER	errdb.h	/^#define REDIS_VMPOINTER /;"	d
+REDIS_WARNING	errdb.h	/^#define REDIS_WARNING /;"	d
+REDIS_ZSET	errdb.h	/^#define REDIS_ZSET /;"	d
+R_Nan	errdb.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
+R_NegInf	errdb.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
+R_PosInf	errdb.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
+R_Zero	errdb.c	/^double R_Zero, R_PosInf, R_NegInf, R_Nan;$/;"	v
 SDS_ABORT_ON_OOM	sds.c	/^#define SDS_ABORT_ON_OOM$/;"	d	file:
-SET_ERRNO	lzf_d.c	/^# define SET_ERRNO(/;"	d	file:
 SHA1Final	sha1.c	/^void SHA1Final(unsigned char digest[20], SHA1_CTX* context)$/;"	f
 SHA1HANDSOFF	sha1.c	/^#define SHA1HANDSOFF$/;"	d	file:
 SHA1Init	sha1.c	/^void SHA1Init(SHA1_CTX* context)$/;"	f
 SHA1Transform	sha1.c	/^void SHA1Transform(u_int32_t state[5], const unsigned char buffer[64])$/;"	f
 SHA1Update	sha1.c	/^void SHA1Update(SHA1_CTX* context, const unsigned char* data, u_int32_t len)$/;"	f
 SHA1_CTX	sha1.h	/^} SHA1_CTX;$/;"	t	typeref:struct:__anon7
-STANDALONE	lzfP.h	/^#define STANDALONE /;"	d
-STRICT_ALIGN	lzfP.h	/^#  define STRICT_ALIGN /;"	d
-STRICT_ALIGN	lzfP.h	/^#  undef STRICT_ALIGN$/;"	d
-STRICT_ALIGN	lzfP.h	/^# define STRICT_ALIGN /;"	d
 SWAPINIT	pqsort.c	/^#define SWAPINIT(/;"	d	file:
-ULTRA_FAST	lzfP.h	/^# define ULTRA_FAST /;"	d
-VERY_FAST	lzfP.h	/^#  undef VERY_FAST$/;"	d
-VERY_FAST	lzfP.h	/^# define VERY_FAST /;"	d
 ZMALLOC_MAX_ALLOC_STAT	zmalloc.h	/^#define ZMALLOC_MAX_ALLOC_STAT /;"	d
-ZSKIPLIST_MAXLEVEL	redis.h	/^#define ZSKIPLIST_MAXLEVEL /;"	d
-ZSKIPLIST_P	redis.h	/^#define ZSKIPLIST_P /;"	d
+ZSKIPLIST_MAXLEVEL	errdb.h	/^#define ZSKIPLIST_MAXLEVEL /;"	d
+ZSKIPLIST_P	errdb.h	/^#define ZSKIPLIST_P /;"	d
 _BSD_SOURCE	fmacros.h	/^#define _BSD_SOURCE$/;"	d
 _FILE_OFFSET_BITS	fmacros.h	/^#define _FILE_OFFSET_BITS /;"	d
 _LARGEFILE_SOURCE	fmacros.h	/^#define _LARGEFILE_SOURCE$/;"	d
@@ -221,22 +189,20 @@ __AE_H__	ae.h	/^#define __AE_H__$/;"	d
 __CONFIG_H	config.h	/^#define __CONFIG_H$/;"	d
 __DICT_H	dict.h	/^#define __DICT_H$/;"	d
 __ENDIAN_H	endian.h	/^#define __ENDIAN_H$/;"	d
-__INTSET_H	intset.h	/^#define __INTSET_H$/;"	d
+__ERRDB_H	errdb.h	/^#define __ERRDB_H$/;"	d
 __PQSORT_H	pqsort.h	/^#define __PQSORT_H$/;"	d
-__REDIS_H	redis.h	/^#define __REDIS_H$/;"	d
 __REDIS_HELP_H	help.h	/^#define __REDIS_HELP_H$/;"	d
 __SDS_H	sds.h	/^#define __SDS_H$/;"	d
 __TESTHELP_H	testhelp.h	/^#define __TESTHELP_H$/;"	d
 __failed_tests	testhelp.h	/^int __failed_tests = 0;$/;"	v
 __test_num	testhelp.h	/^int __test_num = 0;$/;"	v
-_addReplyError	networking.c	/^void _addReplyError(redisClient *c, char *s, size_t len) {$/;"	f
-_addReplyLongLong	networking.c	/^void _addReplyLongLong(redisClient *c, long long ll, char prefix) {$/;"	f
-_addReplyObjectToList	networking.c	/^void _addReplyObjectToList(redisClient *c, robj *o) {$/;"	f
-_addReplySdsToList	networking.c	/^void _addReplySdsToList(redisClient *c, sds s) {$/;"	f
-_addReplyStatus	networking.c	/^void _addReplyStatus(redisClient *c, char *s, size_t len) {$/;"	f
-_addReplyStringToList	networking.c	/^void _addReplyStringToList(redisClient *c, char *s, size_t len) {$/;"	f
-_addReplyToBuffer	networking.c	/^int _addReplyToBuffer(redisClient *c, char *s, size_t len) {$/;"	f
-_assert	intset.c	/^void _assert(char *estr, char *file, int line) {$/;"	f
+_addReplyError	client.c	/^void _addReplyError(redisClient *c, char *s, size_t len) {$/;"	f
+_addReplyLongLong	client.c	/^void _addReplyLongLong(redisClient *c, long long ll, char prefix) {$/;"	f
+_addReplyObjectToList	client.c	/^void _addReplyObjectToList(redisClient *c, robj *o) {$/;"	f
+_addReplySdsToList	client.c	/^void _addReplySdsToList(redisClient *c, sds s) {$/;"	f
+_addReplyStatus	client.c	/^void _addReplyStatus(redisClient *c, char *s, size_t len) {$/;"	f
+_addReplyStringToList	client.c	/^void _addReplyStringToList(redisClient *c, char *s, size_t len) {$/;"	f
+_addReplyToBuffer	client.c	/^int _addReplyToBuffer(redisClient *c, char *s, size_t len) {$/;"	f
 _dictClear	dict.c	/^int _dictClear(dict *d, dictht *ht)$/;"	f
 _dictExpandIfNeeded	dict.c	/^static int _dictExpandIfNeeded(dict *d)$/;"	f	file:
 _dictInit	dict.c	/^int _dictInit(dict *d, dictType *type,$/;"	f
@@ -245,40 +211,36 @@ _dictNextPower	dict.c	/^static unsigned long _dictNextPower(unsigned long size)$
 _dictPrintStatsHt	dict.c	/^static void _dictPrintStatsHt(dictht *ht) {$/;"	f	file:
 _dictRehashStep	dict.c	/^static void _dictRehashStep(dict *d) {$/;"	f	file:
 _dictReset	dict.c	/^static void _dictReset(dictht *ht)$/;"	f	file:
-_installWriteEvent	networking.c	/^int _installWriteEvent(redisClient *c) {$/;"	f
-_intsetGet	intset.c	/^static int64_t _intsetGet(intset *is, int pos) {$/;"	f	file:
-_intsetGetEncoded	intset.c	/^static int64_t _intsetGetEncoded(intset *is, int pos, uint8_t enc) {$/;"	f	file:
-_intsetSet	intset.c	/^static void _intsetSet(intset *is, int pos, int64_t value) {$/;"	f	file:
-_intsetValueEncoding	intset.c	/^static uint8_t _intsetValueEncoding(int64_t v) {$/;"	f	file:
+_installWriteEvent	client.c	/^int _installWriteEvent(redisClient *c) {$/;"	f
 _pqsort	pqsort.c	/^_pqsort(void *a, size_t n, size_t es,$/;"	f	file:
 _redisAssert	debug.c	/^void _redisAssert(char *estr, char *file, int line) {$/;"	f
 _redisPanic	debug.c	/^void _redisPanic(char *msg, char *file, int line) {$/;"	f
-_redisSortObject	redis.h	/^typedef struct _redisSortObject {$/;"	s
-_redisSortOperation	redis.h	/^typedef struct _redisSortOperation {$/;"	s
+_redisSortObject	errdb.h	/^typedef struct _redisSortObject {$/;"	s
+_redisSortOperation	errdb.h	/^typedef struct _redisSortOperation {$/;"	s
 _rfds	ae_select.c	/^    fd_set _rfds, _wfds;$/;"	m	struct:aeApiState	file:
 _wfds	ae_select.c	/^    fd_set _rfds, _wfds;$/;"	m	struct:aeApiState	file:
-acceptCommonHandler	networking.c	/^static void acceptCommonHandler(int fd) {$/;"	f	file:
-acceptTcpHandler	networking.c	/^void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
-acceptUnixHandler	networking.c	/^void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
-activeExpireCycle	redis.c	/^void activeExpireCycle(void) {$/;"	f
-activerehashing	redis.h	/^    int activerehashing;$/;"	m	struct:redisServer
-addDeferredMultiBulkLength	networking.c	/^void *addDeferredMultiBulkLength(redisClient *c) {$/;"	f
-addReply	networking.c	/^void addReply(redisClient *c, robj *obj) {$/;"	f
-addReplyBulk	networking.c	/^void addReplyBulk(redisClient *c, robj *obj) {$/;"	f
-addReplyBulkCBuffer	networking.c	/^void addReplyBulkCBuffer(redisClient *c, void *p, size_t len) {$/;"	f
-addReplyBulkCString	networking.c	/^void addReplyBulkCString(redisClient *c, char *s) {$/;"	f
-addReplyBulkLen	networking.c	/^void addReplyBulkLen(redisClient *c, robj *obj) {$/;"	f
-addReplyBulkLongLong	networking.c	/^void addReplyBulkLongLong(redisClient *c, long long ll) {$/;"	f
-addReplyDouble	networking.c	/^void addReplyDouble(redisClient *c, double d) {$/;"	f
-addReplyError	networking.c	/^void addReplyError(redisClient *c, char *err) {$/;"	f
-addReplyErrorFormat	networking.c	/^void addReplyErrorFormat(redisClient *c, const char *fmt, ...) {$/;"	f
-addReplyLen	networking.c	/^void addReplyLen(redisClient *c, size_t l) {$/;"	f
-addReplyLongLong	networking.c	/^void addReplyLongLong(redisClient *c, long long ll) {$/;"	f
-addReplyMultiBulkLen	networking.c	/^void addReplyMultiBulkLen(redisClient *c, long length) {$/;"	f
-addReplySds	networking.c	/^void addReplySds(redisClient *c, sds s) {$/;"	f
-addReplyStatus	networking.c	/^void addReplyStatus(redisClient *c, char *status) {$/;"	f
-addReplyStatusFormat	networking.c	/^void addReplyStatusFormat(redisClient *c, const char *fmt, ...) {$/;"	f
-addReplyString	networking.c	/^void addReplyString(redisClient *c, char *s, size_t len) {$/;"	f
+acceptCommonHandler	client.c	/^static void acceptCommonHandler(int fd) {$/;"	f	file:
+acceptTcpHandler	client.c	/^void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
+acceptUnixHandler	client.c	/^void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
+activeExpireCycle	errdb.c	/^void activeExpireCycle(void) {$/;"	f
+activerehashing	errdb.h	/^    int activerehashing;$/;"	m	struct:redisServer
+addDeferredMultiBulkLength	client.c	/^void *addDeferredMultiBulkLength(redisClient *c) {$/;"	f
+addReply	client.c	/^void addReply(redisClient *c, robj *obj) {$/;"	f
+addReplyBulk	client.c	/^void addReplyBulk(redisClient *c, robj *obj) {$/;"	f
+addReplyBulkCBuffer	client.c	/^void addReplyBulkCBuffer(redisClient *c, void *p, size_t len) {$/;"	f
+addReplyBulkCString	client.c	/^void addReplyBulkCString(redisClient *c, char *s) {$/;"	f
+addReplyBulkLen	client.c	/^void addReplyBulkLen(redisClient *c, robj *obj) {$/;"	f
+addReplyBulkLongLong	client.c	/^void addReplyBulkLongLong(redisClient *c, long long ll) {$/;"	f
+addReplyDouble	client.c	/^void addReplyDouble(redisClient *c, double d) {$/;"	f
+addReplyError	client.c	/^void addReplyError(redisClient *c, char *err) {$/;"	f
+addReplyErrorFormat	client.c	/^void addReplyErrorFormat(redisClient *c, const char *fmt, ...) {$/;"	f
+addReplyLen	client.c	/^void addReplyLen(redisClient *c, size_t l) {$/;"	f
+addReplyLongLong	client.c	/^void addReplyLongLong(redisClient *c, long long ll) {$/;"	f
+addReplyMultiBulkLen	client.c	/^void addReplyMultiBulkLen(redisClient *c, long length) {$/;"	f
+addReplySds	client.c	/^void addReplySds(redisClient *c, sds s) {$/;"	f
+addReplyStatus	client.c	/^void addReplyStatus(redisClient *c, char *status) {$/;"	f
+addReplyStatusFormat	client.c	/^void addReplyStatusFormat(redisClient *c, const char *fmt, ...) {$/;"	f
+addReplyString	client.c	/^void addReplyString(redisClient *c, char *s, size_t len) {$/;"	f
 aeAddMillisecondsToNow	ae.c	/^static void aeAddMillisecondsToNow(long long milliseconds, long *sec, long *ms) {$/;"	f	file:
 aeApiAddEvent	ae_epoll.c	/^static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {$/;"	f	file:
 aeApiAddEvent	ae_kqueue.c	/^static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {$/;"	f	file:
@@ -355,42 +317,41 @@ aof_fsync	config.h	/^#define aof_fsync /;"	d
 apidata	ae.h	/^    void *apidata; \/* This is used for polling API specific data *\/$/;"	m	struct:aeEventLoop
 appendCommand	t_string.c	/^void appendCommand(redisClient *c) {$/;"	f
 appendServerSaveParams	config.c	/^void appendServerSaveParams(time_t seconds, int changes) {$/;"	f
-appendfd	redis.h	/^    int appendfd;$/;"	m	struct:redisServer
-appendseldb	redis.h	/^    int appendseldb;$/;"	m	struct:redisServer
-argc	redis-cli.c	/^    int argc;$/;"	m	struct:__anon1	file:
-argc	redis.h	/^    int argc;$/;"	m	struct:multiCmd
-argc	redis.h	/^    int argc;$/;"	m	struct:redisClient
-argv	redis-cli.c	/^    sds *argv;$/;"	m	struct:__anon1	file:
-argv	redis.h	/^    robj **argv;$/;"	m	struct:multiCmd
-argv	redis.h	/^    robj **argv;$/;"	m	struct:redisClient
-arity	redis.h	/^    int arity;$/;"	m	struct:redisCommand
-assert	intset.c	/^#define assert(/;"	d	file:
-auth	redis-cli.c	/^    char *auth;$/;"	m	struct:config	file:
-authCommand	redis.c	/^void authCommand(redisClient *c) {$/;"	f
-authenticated	redis.h	/^    int authenticated;      \/* when requirepass is non-NULL *\/$/;"	m	struct:redisClient
-backward	redis.h	/^    struct zskiplistNode *backward;$/;"	m	struct:zskiplistNode	typeref:struct:zskiplistNode::zskiplistNode
-beforeSleep	redis.c	/^void beforeSleep(struct aeEventLoop *eventLoop) {$/;"	f
+appendfd	errdb.h	/^    int appendfd;$/;"	m	struct:redisServer
+appendseldb	errdb.h	/^    int appendseldb;$/;"	m	struct:redisServer
+argc	errdb-cli.c	/^    int argc;$/;"	m	struct:__anon1	file:
+argc	errdb.h	/^    int argc;$/;"	m	struct:redisClient
+argv	errdb-cli.c	/^    sds *argv;$/;"	m	struct:__anon1	file:
+argv	errdb.h	/^    robj **argv;$/;"	m	struct:redisClient
+arity	errdb.h	/^    int arity;$/;"	m	struct:redisCommand
+auth	errdb-cli.c	/^    char *auth;$/;"	m	struct:config	file:
+authCommand	errdb.c	/^void authCommand(redisClient *c) {$/;"	f
+authenticated	errdb.h	/^    int authenticated;      \/* when requirepass is non-NULL *\/$/;"	m	struct:redisClient
+backgroundSaveDoneHandler	diskstore.c	/^void backgroundSaveDoneHandler(int exitcode, int bysignal) {$/;"	f
+backward	errdb.h	/^    struct zskiplistNode *backward;$/;"	m	struct:zskiplistNode	typeref:struct:zskiplistNode::zskiplistNode
+beforeSleep	errdb.c	/^void beforeSleep(struct aeEventLoop *eventLoop) {$/;"	f
 beforesleep	ae.h	/^    aeBeforeSleepProc *beforesleep;$/;"	m	struct:aeEventLoop
-bgrewritechildpid	redis.h	/^    pid_t bgrewritechildpid;$/;"	m	struct:redisServer
-bgsavechildpid	redis.h	/^    pid_t bgsavechildpid;$/;"	m	struct:redisServer
-bgsavethread	redis.h	/^    pthread_t bgsavethread;$/;"	m	struct:redisServer
-bgsavethread_mutex	redis.h	/^    pthread_mutex_t bgsavethread_mutex;$/;"	m	struct:redisServer
-bgsavethread_state	redis.h	/^    int bgsavethread_state;$/;"	m	struct:redisServer
-bindaddr	redis.h	/^    char *bindaddr;$/;"	m	struct:redisServer
+bgrewritechildpid	errdb.h	/^    pid_t bgrewritechildpid;$/;"	m	struct:redisServer
+bgsaveCommand	diskstore.c	/^void bgsaveCommand(redisClient *c) {$/;"	f
+bgsavechildpid	errdb.h	/^    pid_t bgsavechildpid;$/;"	m	struct:redisServer
+bgsavethread	errdb.h	/^    pthread_t bgsavethread;$/;"	m	struct:redisServer
+bgsavethread_mutex	errdb.h	/^    pthread_mutex_t bgsavethread_mutex;$/;"	m	struct:redisServer
+bgsavethread_state	errdb.h	/^    int bgsavethread_state;$/;"	m	struct:redisServer
+bindaddr	errdb.h	/^    char *bindaddr;$/;"	m	struct:redisServer
 blk	sha1.c	/^#define blk(/;"	d	file:
 blk0	sha1.c	/^#define blk0(/;"	d	file:
 blockClientOnSwappedKeys	dscache.c	/^int blockClientOnSwappedKeys(redisClient *c, struct redisCommand *cmd) {$/;"	f
-blockingState	redis.h	/^typedef struct blockingState {$/;"	s
-blockingState	redis.h	/^} blockingState;$/;"	t	typeref:struct:blockingState
-blocking_keys	redis.h	/^    dict *blocking_keys;        \/* Keys with clients waiting for data (BLPOP) *\/$/;"	m	struct:redisDb
-bpop	redis.h	/^    blockingState bpop;   \/* blocking state *\/$/;"	m	struct:redisClient
-bpop_blocked_clients	redis.h	/^    unsigned int bpop_blocked_clients;$/;"	m	struct:redisServer
-buf	redis.h	/^    char buf[REDIS_REPLY_CHUNK_BYTES];$/;"	m	struct:redisClient
+blockingState	errdb.h	/^typedef struct blockingState {$/;"	s
+blockingState	errdb.h	/^} blockingState;$/;"	t	typeref:struct:blockingState
+blocking_keys	errdb.h	/^    dict *blocking_keys;        \/* Keys with clients waiting for data (BLPOP) *\/$/;"	m	struct:redisDb
+bpop	errdb.h	/^    blockingState bpop;   \/* blocking state *\/$/;"	m	struct:redisClient
+bpop_blocked_clients	errdb.h	/^    unsigned int bpop_blocked_clients;$/;"	m	struct:redisServer
+buf	errdb.h	/^    char buf[REDIS_REPLY_CHUNK_BYTES];$/;"	m	struct:redisClient
 buf	sds.h	/^    char buf[];$/;"	m	struct:sdshdr
 buffer	sha1.h	/^    unsigned char buffer[64];$/;"	m	struct:__anon7
-bufpos	redis.h	/^    int bufpos;$/;"	m	struct:redisClient
-bulklen	redis.h	/^    long bulklen;           \/* length of bulk argument in multi bulk request *\/$/;"	m	struct:redisClient
-bytesToHuman	redis.c	/^void bytesToHuman(char *s, unsigned long long n) {$/;"	f
+bufpos	errdb.h	/^    int bufpos;$/;"	m	struct:redisClient
+bulklen	errdb.h	/^    long bulklen;           \/* length of bulk argument in multi bulk request *\/$/;"	m	struct:redisClient
+bytesToHuman	errdb.c	/^void bytesToHuman(char *s, unsigned long long n) {$/;"	f
 cacheCreateIOJob	dscache.c	/^void cacheCreateIOJob(int type, redisDb *db, robj *key, robj *val, time_t expire) {$/;"	f
 cacheCron	dscache.c	/^void cacheCron(void) {$/;"	f
 cacheForcePointInTime	dscache.c	/^void cacheForcePointInTime(void) {$/;"	f
@@ -403,109 +364,102 @@ cacheScheduleIOGetFlags	dscache.c	/^int cacheScheduleIOGetFlags(redisDb *db, rob
 cacheScheduleIOPushJobs	dscache.c	/^int cacheScheduleIOPushJobs(int flags) {$/;"	f
 cacheSetKeyDoesNotExist	dscache.c	/^void cacheSetKeyDoesNotExist(redisDb *db, robj *key) {$/;"	f
 cacheSetKeyMayExist	dscache.c	/^void cacheSetKeyMayExist(redisDb *db, robj *key) {$/;"	f
-cache_blocked_clients	redis.h	/^    unsigned int cache_blocked_clients;$/;"	m	struct:redisServer
-cache_flush_delay	redis.h	/^    int cache_flush_delay;   \/* seconds to wait before flushing keys *\/$/;"	m	struct:redisServer
-cache_io_queue	redis.h	/^    list *cache_io_queue;    \/* IO operations queue *\/$/;"	m	struct:redisServer
-cache_max_memory	redis.h	/^    unsigned long long cache_max_memory;$/;"	m	struct:redisServer
-call	redis.c	/^void call(redisClient *c, struct redisCommand *cmd) {$/;"	f
+cache_blocked_clients	errdb.h	/^    unsigned int cache_blocked_clients;$/;"	m	struct:redisServer
+cache_flush_delay	errdb.h	/^    int cache_flush_delay;   \/* seconds to wait before flushing keys *\/$/;"	m	struct:redisServer
+cache_io_queue	errdb.h	/^    list *cache_io_queue;    \/* IO operations queue *\/$/;"	m	struct:redisServer
+cache_max_memory	errdb.h	/^    unsigned long long cache_max_memory;$/;"	m	struct:redisServer
+call	errdb.c	/^void call(redisClient *c, struct redisCommand *cmd) {$/;"	f
 calloc	zmalloc.c	/^#define calloc(/;"	d	file:
-calls	redis.h	/^    long long microseconds, calls;$/;"	m	struct:redisCommand
-changes	redis.h	/^    int changes;$/;"	m	struct:saveparam
-checkConsistency	intset.c	/^void checkConsistency(intset *is) {$/;"	f
+calls	errdb.h	/^    long long microseconds, calls;$/;"	m	struct:redisCommand
+changes	errdb.h	/^    int changes;$/;"	m	struct:saveparam
 checkStringLength	t_string.c	/^static int checkStringLength(redisClient *c, long long size) {$/;"	f	file:
 checkType	object.c	/^int checkType(redisClient *c, robj *o, int type) {$/;"	f
-cliAuth	redis-cli.c	/^static int cliAuth() {$/;"	f	file:
-cliConnect	redis-cli.c	/^static int cliConnect(int force) {$/;"	f	file:
-cliFormatReplyRaw	redis-cli.c	/^static sds cliFormatReplyRaw(redisReply *r) {$/;"	f	file:
-cliFormatReplyTTY	redis-cli.c	/^static sds cliFormatReplyTTY(redisReply *r, char *prefix) {$/;"	f	file:
-cliInitHelp	redis-cli.c	/^static void cliInitHelp() {$/;"	f	file:
-cliOutputCommandHelp	redis-cli.c	/^static void cliOutputCommandHelp(struct commandHelp *help, int group) {$/;"	f	file:
-cliOutputGenericHelp	redis-cli.c	/^static void cliOutputGenericHelp() {$/;"	f	file:
-cliOutputHelp	redis-cli.c	/^static void cliOutputHelp(int argc, char **argv) {$/;"	f	file:
-cliPrintContextErrorAndExit	redis-cli.c	/^static void cliPrintContextErrorAndExit() {$/;"	f	file:
-cliReadReply	redis-cli.c	/^static int cliReadReply(int output_raw_strings) {$/;"	f	file:
-cliRefreshPrompt	redis-cli.c	/^static void cliRefreshPrompt(void) {$/;"	f	file:
-cliSelect	redis-cli.c	/^static int cliSelect() {$/;"	f	file:
-cliSendCommand	redis-cli.c	/^static int cliSendCommand(int argc, char **argv, int repeat) {$/;"	f	file:
-cliVersion	redis-cli.c	/^static sds cliVersion() {$/;"	f	file:
-client	redis.h	/^    redisClient *client;$/;"	m	struct:pubsubPattern
+cliAuth	errdb-cli.c	/^static int cliAuth() {$/;"	f	file:
+cliConnect	errdb-cli.c	/^static int cliConnect(int force) {$/;"	f	file:
+cliFormatReplyRaw	errdb-cli.c	/^static sds cliFormatReplyRaw(redisReply *r) {$/;"	f	file:
+cliFormatReplyTTY	errdb-cli.c	/^static sds cliFormatReplyTTY(redisReply *r, char *prefix) {$/;"	f	file:
+cliInitHelp	errdb-cli.c	/^static void cliInitHelp() {$/;"	f	file:
+cliOutputCommandHelp	errdb-cli.c	/^static void cliOutputCommandHelp(struct commandHelp *help, int group) {$/;"	f	file:
+cliOutputGenericHelp	errdb-cli.c	/^static void cliOutputGenericHelp() {$/;"	f	file:
+cliOutputHelp	errdb-cli.c	/^static void cliOutputHelp(int argc, char **argv) {$/;"	f	file:
+cliPrintContextErrorAndExit	errdb-cli.c	/^static void cliPrintContextErrorAndExit() {$/;"	f	file:
+cliReadReply	errdb-cli.c	/^static int cliReadReply(int output_raw_strings) {$/;"	f	file:
+cliRefreshPrompt	errdb-cli.c	/^static void cliRefreshPrompt(void) {$/;"	f	file:
+cliSelect	errdb-cli.c	/^static int cliSelect() {$/;"	f	file:
+cliSendCommand	errdb-cli.c	/^static int cliSendCommand(int argc, char **argv, int repeat) {$/;"	f	file:
+cliVersion	errdb-cli.c	/^static sds cliVersion() {$/;"	f	file:
+client	errdb.h	/^    redisClient *client;$/;"	m	struct:pubsubPattern
 clientData	ae.h	/^    void *clientData;$/;"	m	struct:aeFileEvent
 clientData	ae.h	/^    void *clientData;$/;"	m	struct:aeTimeEvent
-clients	redis.h	/^    list *clients;$/;"	m	struct:redisServer
-closeTimedoutClients	networking.c	/^void closeTimedoutClients(void) {$/;"	f
-cmd	redis.h	/^    struct redisCommand *cmd;$/;"	m	struct:multiCmd	typeref:struct:multiCmd::redisCommand
-cmpobj	redis.h	/^        robj *cmpobj;$/;"	m	union:_redisSortObject::__anon2
-cnegone	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-colon	redis.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
+clients	errdb.h	/^    list *clients;$/;"	m	struct:redisServer
+closeTimedoutClients	client.c	/^void closeTimedoutClients(void) {$/;"	f
+cmpobj	errdb.h	/^        robj *cmpobj;$/;"	m	union:_redisSortObject::__anon2
+cnegone	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+colon	errdb.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
 commandGroups	help.h	/^static char *commandGroups[] = {$/;"	v
 commandHelp	help.h	/^struct commandHelp {$/;"	s
 commandHelp	help.h	/^} commandHelp[] = {$/;"	v	typeref:struct:commandHelp
-commandTable	redis.c	/^struct redisCommand *commandTable;$/;"	v	typeref:struct:redisCommand
-commandTableDictType	redis.c	/^dictType commandTableDictType = {$/;"	v
-commands	redis.h	/^    dict *commands;             \/* Command table hahs table *\/$/;"	m	struct:redisServer
-commands	redis.h	/^    multiCmd *commands;     \/* Array of MULTI commands *\/$/;"	m	struct:multiState
+commandTable	errdb.c	/^struct redisCommand *commandTable;$/;"	v	typeref:struct:redisCommand
+commandTableDictType	errdb.c	/^dictType commandTableDictType = {$/;"	v
+commands	errdb.h	/^    dict *commands;             \/* Command table hahs table *\/$/;"	m	struct:redisServer
 compareStringObjects	object.c	/^int compareStringObjects(robj *a, robj *b) {$/;"	f
-completionCallback	redis-cli.c	/^static void completionCallback(const char *buf, linenoiseCompletions *lc) {$/;"	f	file:
+completionCallback	errdb-cli.c	/^static void completionCallback(const char *buf, linenoiseCompletions *lc) {$/;"	f	file:
 computeDatasetDigest	debug.c	/^void computeDatasetDigest(unsigned char *final) {$/;"	f
 computeObjectSwappability	dscache.c	/^double computeObjectSwappability(robj *o) {$/;"	f
-cone	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-config	redis-cli.c	/^static struct config {$/;"	s	file:
-config	redis-cli.c	/^} config;$/;"	v	typeref:struct:config	file:
+cone	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+config	errdb-cli.c	/^static struct config {$/;"	s	file:
+config	errdb-cli.c	/^} config;$/;"	v	typeref:struct:config	file:
 configCommand	config.c	/^void configCommand(redisClient *c) {$/;"	f
 configGetCommand	config.c	/^void configGetCommand(redisClient *c) {$/;"	f
 configSetCommand	config.c	/^void configSetCommand(redisClient *c) {$/;"	f
-contents	intset.h	/^    int8_t contents[];$/;"	m	struct:intset
-context	redis-cli.c	/^static redisContext *context;$/;"	v	file:
-convertToSds	redis-cli.c	/^static char **convertToSds(int count, char** args) {$/;"	f	file:
-count	redis.h	/^    int count;              \/* Number of blocking keys *\/$/;"	m	struct:blockingState
-count	redis.h	/^    int count;              \/* Total number of MULTI commands *\/$/;"	m	struct:multiState
+context	errdb-cli.c	/^static redisContext *context;$/;"	v	file:
+convertToSds	errdb-cli.c	/^static char **convertToSds(int count, char** args) {$/;"	f	file:
+count	errdb.h	/^    int count;              \/* Number of blocking keys *\/$/;"	m	struct:blockingState
 count	sha1.h	/^    u_int32_t count[2];$/;"	m	struct:__anon7
 create256dir	diskstore.c	/^int create256dir(char *prefix) {$/;"	f
-createClient	networking.c	/^redisClient *createClient(int fd) {$/;"	f
-createIntsetObject	object.c	/^robj *createIntsetObject(void) {$/;"	f
+createClient	client.c	/^redisClient *createClient(int fd) {$/;"	f
 createListObject	object.c	/^robj *createListObject(void) {$/;"	f
 createObject	object.c	/^robj *createObject(int type, void *ptr) {$/;"	f
-createPidFile	redis.c	/^void createPidFile(void) {$/;"	f
-createSet	intset.c	/^intset *createSet(int bits, int size) {$/;"	f
+createPidFile	errdb.c	/^void createPidFile(void) {$/;"	f
 createSetObject	object.c	/^robj *createSetObject(void) {$/;"	f
-createSharedObjects	redis.c	/^void createSharedObjects(void) {$/;"	f
+createSharedObjects	errdb.c	/^void createSharedObjects(void) {$/;"	f
 createStringObject	object.c	/^robj *createStringObject(char *ptr, size_t len) {$/;"	f
 createStringObjectFromLongLong	object.c	/^robj *createStringObjectFromLongLong(long long value) {$/;"	f
 createTvNode	ts_list.c	/^tvNode *createTvNode(robj *t, robj *v) {$/;"	f
-crlf	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-cronloops	redis.h	/^    int cronloops;              \/* number of times the cron function run *\/$/;"	m	struct:redisServer
-ctime	redis.h	/^    time_t ctime; \/* This is the creation time of the entry. *\/$/;"	m	struct:ioop
-czero	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+crlf	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+cronloops	errdb.h	/^    int cronloops;              \/* number of times the cron function run *\/$/;"	m	struct:redisServer
+ctime	errdb.h	/^    time_t ctime; \/* This is the creation time of the entry. *\/$/;"	m	struct:ioop
+czero	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
 d	dict.h	/^    dict *d;$/;"	m	struct:dictIterator
-daemonize	redis.c	/^void daemonize(void) {$/;"	f
-daemonize	redis.h	/^    int daemonize;$/;"	m	struct:redisServer
-db	redis.h	/^    redisDb *db;$/;"	m	struct:ioop
-db	redis.h	/^    redisDb *db;$/;"	m	struct:redisClient
-db	redis.h	/^    redisDb *db;$/;"	m	struct:redisServer
-db	redis.h	/^    redisDb *db;\/* Redis database *\/$/;"	m	struct:iojob
+daemonize	errdb.c	/^void daemonize(void) {$/;"	f
+daemonize	errdb.h	/^    int daemonize;$/;"	m	struct:redisServer
+db	errdb.h	/^    redisDb *db;$/;"	m	struct:ioop
+db	errdb.h	/^    redisDb *db;$/;"	m	struct:redisClient
+db	errdb.h	/^    redisDb *db;$/;"	m	struct:redisServer
+db	errdb.h	/^    redisDb *db;\/* Redis database *\/$/;"	m	struct:iojob
 dbAdd	db.c	/^int dbAdd(redisDb *db, robj *key, robj *val) {$/;"	f
 dbDelete	db.c	/^int dbDelete(redisDb *db, robj *key) {$/;"	f
-dbDictType	redis.c	/^dictType dbDictType = {$/;"	v
+dbDictType	errdb.c	/^dictType dbDictType = {$/;"	v
 dbExists	db.c	/^int dbExists(redisDb *db, robj *key) {$/;"	f
 dbRandomKey	db.c	/^robj *dbRandomKey(redisDb *db) {$/;"	f
 dbReplace	db.c	/^int dbReplace(redisDb *db, robj *key, robj *val) {$/;"	f
-dbfilename	redis.h	/^    char *dbfilename;$/;"	m	struct:redisServer
-dbnum	redis-cli.c	/^    int dbnum;$/;"	m	struct:config	file:
-dbnum	redis.h	/^    int dbnum;$/;"	m	struct:redisServer
+dbfilename	errdb.h	/^    char *dbfilename;$/;"	m	struct:redisServer
+dbnum	errdb-cli.c	/^    int dbnum;$/;"	m	struct:config	file:
+dbnum	errdb.h	/^    int dbnum;$/;"	m	struct:redisServer
 dbsizeCommand	db.c	/^void dbsizeCommand(redisClient *c) {$/;"	f
-de	redis.h	/^    dictEntry *de;$/;"	m	struct:__anon6
+de	errdb.h	/^    dictEntry *de;$/;"	m	struct:__anon6
 debugCommand	debug.c	/^void debugCommand(redisClient *c) {$/;"	f
 decrCommand	t_string.c	/^void decrCommand(redisClient *c) {$/;"	f
 decrRefCount	object.c	/^void decrRefCount(void *obj) {$/;"	f
 decrbyCommand	t_string.c	/^void decrbyCommand(redisClient *c) {$/;"	f
 delCommand	db.c	/^void delCommand(redisClient *c) {$/;"	f
-delCommand	redis.h	/^    struct redisCommand *delCommand, *multiCommand;$/;"	m	struct:redisServer	typeref:struct:redisServer::redisCommand
-di	redis.h	/^    dictIterator *di;$/;"	m	struct:__anon5
-di	redis.h	/^    dictIterator *di;$/;"	m	struct:__anon6
+delCommand	errdb.h	/^    struct redisCommand *delCommand, *multiCommand;$/;"	m	struct:redisServer	typeref:struct:redisServer::redisCommand
+di	errdb.h	/^    dictIterator *di;$/;"	m	struct:__anon5
+di	errdb.h	/^    dictIterator *di;$/;"	m	struct:__anon6
 dict	dict.h	/^typedef struct dict {$/;"	s
 dict	dict.h	/^} dict;$/;"	t	typeref:struct:dict
-dict	redis.h	/^    dict *dict;                 \/* The keyspace for this DB *\/$/;"	m	struct:redisDb
-dict	redis.h	/^    dict *dict;$/;"	m	struct:zset
+dict	errdb.h	/^    dict *dict;                 \/* The keyspace for this DB *\/$/;"	m	struct:redisDb
+dict	errdb.h	/^    dict *dict;$/;"	m	struct:zset
 dictAdd	dict.c	/^int dictAdd(dict *d, void *key, void *val)$/;"	f
 dictCompareHashKeys	dict.h	/^#define dictCompareHashKeys(/;"	d
 dictCreate	dict.c	/^dict *dictCreate(dictType *type,$/;"	f
@@ -514,8 +468,8 @@ dictDeleteNoFree	dict.c	/^int dictDeleteNoFree(dict *ht, const void *key) {$/;"	
 dictDisableResize	dict.c	/^void dictDisableResize(void) {$/;"	f
 dictEmpty	dict.c	/^void dictEmpty(dict *d) {$/;"	f
 dictEnableResize	dict.c	/^void dictEnableResize(void) {$/;"	f
-dictEncObjHash	redis.c	/^unsigned int dictEncObjHash(const void *key) {$/;"	f
-dictEncObjKeyCompare	redis.c	/^int dictEncObjKeyCompare(void *privdata, const void *key1,$/;"	f
+dictEncObjHash	errdb.c	/^unsigned int dictEncObjHash(const void *key) {$/;"	f
+dictEncObjKeyCompare	errdb.c	/^int dictEncObjKeyCompare(void *privdata, const void *key1,$/;"	f
 dictEntry	dict.h	/^typedef struct dictEntry {$/;"	s
 dictEntry	dict.h	/^} dictEntry;$/;"	t	typeref:struct:dictEntry
 dictExpand	dict.c	/^int dictExpand(dict *d, unsigned long size)$/;"	f
@@ -536,39 +490,39 @@ dictIntHashFunction	dict.c	/^unsigned int dictIntHashFunction(unsigned int key)$
 dictIsRehashing	dict.h	/^#define dictIsRehashing(/;"	d
 dictIterator	dict.h	/^typedef struct dictIterator {$/;"	s
 dictIterator	dict.h	/^} dictIterator;$/;"	t	typeref:struct:dictIterator
-dictListDestructor	redis.c	/^void dictListDestructor(void *privdata, void *val)$/;"	f
+dictListDestructor	errdb.c	/^void dictListDestructor(void *privdata, void *val)$/;"	f
 dictNext	dict.c	/^dictEntry *dictNext(dictIterator *iter)$/;"	f
-dictObjHash	redis.c	/^unsigned int dictObjHash(const void *key) {$/;"	f
-dictObjKeyCompare	redis.c	/^int dictObjKeyCompare(void *privdata, const void *key1,$/;"	f
+dictObjHash	errdb.c	/^unsigned int dictObjHash(const void *key) {$/;"	f
+dictObjKeyCompare	errdb.c	/^int dictObjKeyCompare(void *privdata, const void *key1,$/;"	f
 dictPrintStats	dict.c	/^void dictPrintStats(dict *d) {$/;"	f
-dictRedisObjectDestructor	redis.c	/^void dictRedisObjectDestructor(void *privdata, void *val)$/;"	f
+dictRedisObjectDestructor	errdb.c	/^void dictRedisObjectDestructor(void *privdata, void *val)$/;"	f
 dictRehash	dict.c	/^int dictRehash(dict *d, int n) {$/;"	f
 dictRehashMilliseconds	dict.c	/^int dictRehashMilliseconds(dict *d, int ms) {$/;"	f
 dictRelease	dict.c	/^void dictRelease(dict *d)$/;"	f
 dictReleaseIterator	dict.c	/^void dictReleaseIterator(dictIterator *iter)$/;"	f
 dictReplace	dict.c	/^int dictReplace(dict *d, void *key, void *val)$/;"	f
 dictResize	dict.c	/^int dictResize(dict *d)$/;"	f
-dictSdsCaseHash	redis.c	/^unsigned int dictSdsCaseHash(const void *key) {$/;"	f
-dictSdsDestructor	redis.c	/^void dictSdsDestructor(void *privdata, void *val)$/;"	f
-dictSdsHash	redis.c	/^unsigned int dictSdsHash(const void *key) {$/;"	f
-dictSdsKeyCaseCompare	redis.c	/^int dictSdsKeyCaseCompare(void *privdata, const void *key1,$/;"	f
-dictSdsKeyCompare	redis.c	/^int dictSdsKeyCompare(void *privdata, const void *key1,$/;"	f
+dictSdsCaseHash	errdb.c	/^unsigned int dictSdsCaseHash(const void *key) {$/;"	f
+dictSdsDestructor	errdb.c	/^void dictSdsDestructor(void *privdata, void *val)$/;"	f
+dictSdsHash	errdb.c	/^unsigned int dictSdsHash(const void *key) {$/;"	f
+dictSdsKeyCaseCompare	errdb.c	/^int dictSdsKeyCaseCompare(void *privdata, const void *key1,$/;"	f
+dictSdsKeyCompare	errdb.c	/^int dictSdsKeyCompare(void *privdata, const void *key1,$/;"	f
 dictSetHashKey	dict.h	/^#define dictSetHashKey(/;"	d
 dictSetHashVal	dict.h	/^#define dictSetHashVal(/;"	d
 dictSize	dict.h	/^#define dictSize(/;"	d
 dictSlots	dict.h	/^#define dictSlots(/;"	d
 dictType	dict.h	/^typedef struct dictType {$/;"	s
 dictType	dict.h	/^} dictType;$/;"	t	typeref:struct:dictType
-dictVanillaFree	redis.c	/^void dictVanillaFree(void *privdata, void *val)$/;"	f
+dictVanillaFree	errdb.c	/^void dictVanillaFree(void *privdata, void *val)$/;"	f
 dict_can_resize	dict.c	/^static int dict_can_resize = 1;$/;"	v	file:
 dict_force_resize_ratio	dict.c	/^static unsigned int dict_force_resize_ratio = 5;$/;"	v	file:
 dictht	dict.h	/^typedef struct dictht {$/;"	s
 dictht	dict.h	/^} dictht;$/;"	t	typeref:struct:dictht
-dictid	redis.h	/^    int dictid;$/;"	m	struct:redisClient
+dictid	errdb.h	/^    int dictid;$/;"	m	struct:redisClient
 direction	adlist.h	/^    int direction;$/;"	m	struct:listIter
-direction	redis.h	/^    unsigned char direction; \/* Iteration direction *\/$/;"	m	struct:__anon3
-dirty	redis.h	/^    long long dirty;            \/* changes to DB from the last save *\/$/;"	m	struct:redisServer
-dirty_before_bgsave	redis.h	/^    long long dirty_before_bgsave; \/* used to restore dirty on failed BGSAVE *\/$/;"	m	struct:redisServer
+direction	errdb.h	/^    unsigned char direction; \/* Iteration direction *\/$/;"	m	struct:__anon3
+dirty	errdb.h	/^    long long dirty;            \/* changes to DB from the last save *\/$/;"	m	struct:redisServer
+dirty_before_bgsave	errdb.h	/^    long long dirty_before_bgsave; \/* used to restore dirty on failed BGSAVE *\/$/;"	m	struct:redisServer
 dontWaitForSwappedKey	dscache.c	/^int dontWaitForSwappedKey(redisClient *c, robj *key) {$/;"	f
 dsClose	diskstore.c	/^int dsClose(void) {$/;"	f
 dsDel	diskstore.c	/^int dsDel(redisDb *db, robj *key) {$/;"	f
@@ -585,68 +539,62 @@ dsRdbSaveBackground	diskstore.c	/^int dsRdbSaveBackground(char *filename) {$/;"	
 dsRdbSaveSetState	diskstore.c	/^void dsRdbSaveSetState(int state) {$/;"	f
 dsRdbSave_thread	diskstore.c	/^void *dsRdbSave_thread(void *arg) {$/;"	f
 dsSet	diskstore.c	/^int dsSet(redisDb *db, robj *key, robj *val, time_t expire) {$/;"	f
-ds_enabled	redis.h	/^    int ds_enabled; \/* backend disk in redis.conf *\/$/;"	m	struct:redisServer
-ds_path	redis.h	/^    char *ds_path;  \/* location of the disk store on disk *\/$/;"	m	struct:redisServer
+ds_enabled	errdb.h	/^    int ds_enabled; \/* backend disk in redis.conf *\/$/;"	m	struct:redisServer
+ds_path	errdb.h	/^    char *ds_path;  \/* location of the disk store on disk *\/$/;"	m	struct:redisServer
 dup	adlist.h	/^    void *(*dup)(void *ptr);$/;"	m	struct:list
-dupClientReplyValue	networking.c	/^void *dupClientReplyValue(void *o) {$/;"	f
-dupLastObjectIfNeeded	networking.c	/^robj *dupLastObjectIfNeeded(list *reply) {$/;"	f
+dupClientReplyValue	client.c	/^void *dupClientReplyValue(void *o) {$/;"	f
+dupLastObjectIfNeeded	client.c	/^robj *dupLastObjectIfNeeded(list *reply) {$/;"	f
 dupStringObject	object.c	/^robj *dupStringObject(robj *o) {$/;"	f
-echoCommand	redis.c	/^void echoCommand(redisClient *c) {$/;"	f
-el	redis.h	/^    aeEventLoop *el;$/;"	m	struct:redisServer
+echoCommand	errdb.c	/^void echoCommand(redisClient *c) {$/;"	f
+el	errdb.h	/^    aeEventLoop *el;$/;"	m	struct:redisServer
 emptyDb	db.c	/^long long emptyDb() {$/;"	f
-emptybulk	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-emptymultibulk	redis.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
-encoding	intset.h	/^    uint32_t encoding;$/;"	m	struct:intset
-encoding	redis.h	/^    int encoding;$/;"	m	struct:__anon5
-encoding	redis.h	/^    int encoding;$/;"	m	struct:__anon6
-encoding	redis.h	/^    unsigned char encoding;$/;"	m	struct:__anon3
-encoding	redis.h	/^    unsigned encoding:4;$/;"	m	struct:redisObject
+emptybulk	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+emptymultibulk	errdb.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
+encoding	errdb.h	/^    int encoding;$/;"	m	struct:__anon5
+encoding	errdb.h	/^    int encoding;$/;"	m	struct:__anon6
+encoding	errdb.h	/^    unsigned char encoding;$/;"	m	struct:__anon3
+encoding	errdb.h	/^    unsigned encoding:4;$/;"	m	struct:redisObject
 entry	dict.h	/^    dictEntry *entry, *nextEntry;$/;"	m	struct:dictIterator
 epfd	ae_epoll.c	/^    int epfd;$/;"	m	struct:aeApiState	file:
 equalStringObjects	object.c	/^int equalStringObjects(robj *a, robj *b) {$/;"	f
-err	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-error	intset.c	/^void error(char *err) {$/;"	f
+err	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
 estimateObjectIdleTime	object.c	/^unsigned long estimateObjectIdleTime(robj *o) {$/;"	f
 events	ae.h	/^    aeFileEvent events[AE_SETSIZE]; \/* Registered events *\/$/;"	m	struct:aeEventLoop
 events	ae_epoll.c	/^    struct epoll_event events[AE_SETSIZE];$/;"	m	struct:aeApiState	typeref:struct:aeApiState::epoll_event	file:
 events	ae_kqueue.c	/^    struct kevent events[AE_SETSIZE];$/;"	m	struct:aeApiState	typeref:struct:aeApiState::kevent	file:
-execBlockClientOnSwappedKeys	dscache.c	/^void execBlockClientOnSwappedKeys(redisClient *c, struct redisCommand *cmd, int argc, robj **argv) {$/;"	f
 existsCommand	db.c	/^void existsCommand(redisClient *c) {$/;"	f
-expect	lzf_c.c	/^# define expect(/;"	d	file:
-expect_false	lzf_c.c	/^#define expect_false(/;"	d	file:
-expect_true	lzf_c.c	/^#define expect_true(/;"	d	file:
-expire	redis.h	/^    time_t expire; \/* Expire time for this key on REDIS_IOJOB_LOAD *\/$/;"	m	struct:iojob
+expire	errdb.h	/^    time_t expire; \/* Expire time for this key on REDIS_IOJOB_LOAD *\/$/;"	m	struct:iojob
 expireCommand	db.c	/^void expireCommand(redisClient *c) {$/;"	f
 expireGenericCommand	db.c	/^void expireGenericCommand(redisClient *c, robj *key, robj *param, long offset) {$/;"	f
 expireIfNeeded	db.c	/^int expireIfNeeded(redisDb *db, robj *key) {$/;"	f
 expireatCommand	db.c	/^void expireatCommand(redisClient *c) {$/;"	f
-expires	redis.h	/^    dict *expires;              \/* Timeout of keys with a timeout set *\/$/;"	m	struct:redisDb
+expires	errdb.h	/^    dict *expires;              \/* Timeout of keys with a timeout set *\/$/;"	m	struct:redisDb
 fd	ae.h	/^    int fd;$/;"	m	struct:aeFiredEvent
-fd	redis.h	/^    int fd;$/;"	m	struct:redisClient
+fd	errdb.h	/^    int fd;$/;"	m	struct:redisClient
 finalizerProc	ae.h	/^    aeEventFinalizerProc *finalizerProc;$/;"	m	struct:aeTimeEvent
 fired	ae.h	/^    aeFiredEvent fired[AE_SETSIZE]; \/* Fired events *\/$/;"	m	struct:aeEventLoop
-flags	redis.h	/^    int flags;              \/* REDIS_SLAVE | REDIS_MONITOR | REDIS_MULTI ... *\/$/;"	m	struct:redisClient
-flags	redis.h	/^    int flags;$/;"	m	struct:redisCommand
+flags	errdb.h	/^    int flags;              \/* REDIS_SLAVE | REDIS_MONITOR | REDIS_MULTI ... *\/$/;"	m	struct:redisClient
+flags	errdb.h	/^    int flags;$/;"	m	struct:redisCommand
 flushallCommand	db.c	/^void flushallCommand(redisClient *c) {$/;"	f
 flushdbCommand	db.c	/^void flushdbCommand(redisClient *c) {$/;"	f
-forward	redis.h	/^        struct zskiplistNode *forward;$/;"	m	struct:zskiplistNode::zskiplistLevel	typeref:struct:zskiplistNode::zskiplistLevel::zskiplistNode
+forward	errdb.h	/^        struct zskiplistNode *forward;$/;"	m	struct:zskiplistNode::zskiplistLevel	typeref:struct:zskiplistNode::zskiplistLevel::zskiplistNode
 free	adlist.h	/^    void (*free)(void *ptr);$/;"	m	struct:list
 free	sds.h	/^    int free;$/;"	m	struct:sdshdr
 free	zmalloc.c	/^#define free(/;"	d	file:
-freeClient	networking.c	/^void freeClient(redisClient *c) {$/;"	f
-freeClientArgv	networking.c	/^static void freeClientArgv(redisClient *c) {$/;"	f	file:
+freeClient	client.c	/^void freeClient(redisClient *c) {$/;"	f
+freeClientArgv	client.c	/^static void freeClientArgv(redisClient *c) {$/;"	f	file:
 freeIOJob	dscache.c	/^void freeIOJob(iojob *j) {$/;"	f
 freeListObject	object.c	/^void freeListObject(robj *o) {$/;"	f
-freeMemoryIfNeeded	redis.c	/^void freeMemoryIfNeeded(void) {$/;"	f
+freeMemoryIfNeeded	errdb.c	/^void freeMemoryIfNeeded(void) {$/;"	f
 freeStringObject	object.c	/^void freeStringObject(robj *o) {$/;"	f
-full	redis-cli.c	/^    sds full;$/;"	m	struct:__anon1	file:
+full	errdb-cli.c	/^    sds full;$/;"	m	struct:__anon1	file:
 fwriteBulkDouble	syncio.c	/^int fwriteBulkDouble(FILE *fp, double d) {$/;"	f
 fwriteBulkLongLong	syncio.c	/^int fwriteBulkLongLong(FILE *fp, long long l) {$/;"	f
 fwriteBulkObject	syncio.c	/^int fwriteBulkObject(FILE *fp, robj *obj) {$/;"	f
 fwriteBulkString	syncio.c	/^int fwriteBulkString(FILE *fp, char *s, unsigned long len) {$/;"	f
-genRedisInfoString	redis.c	/^sds genRedisInfoString(char *section) {$/;"	f
+genRedisInfoString	errdb.c	/^sds genRedisInfoString(char *section) {$/;"	f
 getBitOffsetFromArgument	t_string.c	/^static int getBitOffsetFromArgument(redisClient *c, robj *o, size_t *offset) {$/;"	f	file:
-getClientsMaxBuffers	networking.c	/^void getClientsMaxBuffers(unsigned long *longest_output_list,$/;"	f
+getClientsMaxBuffers	client.c	/^void getClientsMaxBuffers(unsigned long *longest_output_list,$/;"	f
 getCommand	t_string.c	/^void getCommand(redisClient *c) {$/;"	f
 getDecodedObject	object.c	/^robj *getDecodedObject(robj *o) {$/;"	f
 getDoubleFromObject	object.c	/^int getDoubleFromObject(robj *o, double *target) {$/;"	f
@@ -656,77 +604,61 @@ getGenericCommand	t_string.c	/^int getGenericCommand(redisClient *c) {$/;"	f
 getLongFromObjectOrReply	object.c	/^int getLongFromObjectOrReply(redisClient *c, robj *o, long *target, const char *msg) {$/;"	f
 getLongLongFromObject	object.c	/^int getLongLongFromObject(robj *o, long long *target) {$/;"	f
 getLongLongFromObjectOrReply	object.c	/^int getLongLongFromObjectOrReply(redisClient *c, robj *o, long long *target, const char *msg) {$/;"	f
-getMcontextEip	redis.c	/^static void *getMcontextEip(ucontext_t *uc) {$/;"	f	file:
+getMcontextEip	errdb.c	/^static void *getMcontextEip(ucontext_t *uc) {$/;"	f	file:
 getbitCommand	t_string.c	/^void getbitCommand(redisClient *c) {$/;"	f
 getrangeCommand	t_string.c	/^void getrangeCommand(redisClient *c) {$/;"	f
 getsetCommand	t_string.c	/^void getsetCommand(redisClient *c) {$/;"	f
 group	help.h	/^  int group;$/;"	m	struct:commandHelp
 handleClientsBlockedOnSwappedKey	dscache.c	/^void handleClientsBlockedOnSwappedKey(redisDb *db, robj *key) {$/;"	f
-hashDictType	redis.c	/^dictType hashDictType = {$/;"	v
-hashDictType	redis.h	/^dictType hashDictType;$/;"	v
+hashDictType	errdb.c	/^dictType hashDictType = {$/;"	v
+hashDictType	errdb.h	/^dictType hashDictType;$/;"	v
 hashFunction	dict.h	/^    unsigned int (*hashFunction)(const void *key);$/;"	m	struct:dictType
-hashTypeIterator	redis.h	/^} hashTypeIterator;$/;"	t	typeref:struct:__anon6
+hashTypeIterator	errdb.h	/^} hashTypeIterator;$/;"	t	typeref:struct:__anon6
 head	adlist.h	/^    listNode *head;$/;"	m	struct:list
-header	redis.h	/^    struct zskiplistNode *header, *tail;$/;"	m	struct:zskiplist	typeref:struct:zskiplist::zskiplistNode
-helpEntries	redis-cli.c	/^static helpEntry *helpEntries;$/;"	v	file:
-helpEntriesLen	redis-cli.c	/^static int helpEntriesLen;$/;"	v	file:
-helpEntry	redis-cli.c	/^} helpEntry;$/;"	t	typeref:struct:__anon1	file:
+header	errdb.h	/^    struct zskiplistNode *header, *tail;$/;"	m	struct:zskiplist	typeref:struct:zskiplist::zskiplistNode
+helpEntries	errdb-cli.c	/^static helpEntry *helpEntries;$/;"	v	file:
+helpEntriesLen	errdb-cli.c	/^static int helpEntriesLen;$/;"	v	file:
+helpEntry	errdb-cli.c	/^} helpEntry;$/;"	t	typeref:struct:__anon1	file:
 hex_digit_to_int	sds.c	/^int hex_digit_to_int(char c) {$/;"	f
-hostip	redis-cli.c	/^    char *hostip;$/;"	m	struct:config	file:
-hostport	redis-cli.c	/^    int hostport;$/;"	m	struct:config	file:
-hostsocket	redis-cli.c	/^    char *hostsocket;$/;"	m	struct:config	file:
+hostip	errdb-cli.c	/^    char *hostip;$/;"	m	struct:config	file:
+hostport	errdb-cli.c	/^    int hostport;$/;"	m	struct:config	file:
+hostsocket	errdb-cli.c	/^    char *hostsocket;$/;"	m	struct:config	file:
 ht	dict.h	/^    dictht ht[2];$/;"	m	struct:dict
-htNeedsResize	redis.c	/^int htNeedsResize(dict *dict) {$/;"	f
+htNeedsResize	errdb.c	/^int htNeedsResize(dict *dict) {$/;"	f
 id	ae.h	/^    long long id; \/* time event identifier. *\/$/;"	m	struct:aeTimeEvent
-id	redis.h	/^    int id;$/;"	m	struct:redisDb
-ii	redis.h	/^    int ii; \/* intset iterator *\/$/;"	m	struct:__anon5
+id	errdb.h	/^    int id;$/;"	m	struct:redisDb
+ii	errdb.h	/^    int ii; \/* intset iterator *\/$/;"	m	struct:__anon5
 incrCommand	t_string.c	/^void incrCommand(redisClient *c) {$/;"	f
 incrDecrCommand	t_string.c	/^void incrDecrCommand(redisClient *c, long long incr) {$/;"	f
 incrRefCount	object.c	/^void incrRefCount(robj *o) {$/;"	f
 incrbyCommand	t_string.c	/^void incrbyCommand(redisClient *c) {$/;"	f
-incrementallyRehash	redis.c	/^void incrementallyRehash(void) {$/;"	f
+incrementallyRehash	errdb.c	/^void incrementallyRehash(void) {$/;"	f
 index	dict.h	/^    int index;$/;"	m	struct:dictIterator
-infoCommand	redis.c	/^void infoCommand(redisClient *c) {$/;"	f
-initServer	redis.c	/^void initServer() {$/;"	f
-initServerConfig	redis.c	/^void initServerConfig() {$/;"	f
-initStaticStringObject	redis.h	/^#define initStaticStringObject(/;"	d
-inline	lzf_c.c	/^# define inline /;"	d	file:
-integers	redis.h	/^    *mbulk4, *integers[REDIS_SHARED_INTEGERS];$/;"	m	struct:sharedObjectsStruct
-interactive	redis-cli.c	/^    int interactive;$/;"	m	struct:config	file:
-intset	intset.h	/^typedef struct intset {$/;"	s
-intset	intset.h	/^} intset;$/;"	t	typeref:struct:intset
-intsetAdd	intset.c	/^intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {$/;"	f
-intsetBlobLen	intset.c	/^size_t intsetBlobLen(intset *is) {$/;"	f
-intsetFind	intset.c	/^uint8_t intsetFind(intset *is, int64_t value) {$/;"	f
-intsetGet	intset.c	/^uint8_t intsetGet(intset *is, uint32_t pos, int64_t *value) {$/;"	f
-intsetLen	intset.c	/^uint32_t intsetLen(intset *is) {$/;"	f
-intsetMoveTail	intset.c	/^static void intsetMoveTail(intset *is, uint32_t from, uint32_t to) {$/;"	f	file:
-intsetNew	intset.c	/^intset *intsetNew(void) {$/;"	f
-intsetRandom	intset.c	/^int64_t intsetRandom(intset *is) {$/;"	f
-intsetRemove	intset.c	/^intset *intsetRemove(intset *is, int64_t value, int *success) {$/;"	f
-intsetRepr	intset.c	/^void intsetRepr(intset *is) {$/;"	f
-intsetResize	intset.c	/^static intset *intsetResize(intset *is, uint32_t len) {$/;"	f	file:
-intsetSearch	intset.c	/^static uint8_t intsetSearch(intset *is, int64_t value, uint32_t *pos) {$/;"	f	file:
-intsetUpgradeAndAdd	intset.c	/^static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {$/;"	f	file:
-io_active_threads	redis.h	/^    int io_active_threads; \/* Number of running I\/O threads *\/$/;"	m	struct:redisServer
-io_condvar	redis.h	/^    pthread_cond_t io_condvar; \/* I\/O threads conditional variable *\/$/;"	m	struct:redisServer
-io_keys	redis.h	/^    dict *io_keys;              \/* Keys with clients waiting for DS I\/O *\/$/;"	m	struct:redisDb
-io_keys	redis.h	/^    list *io_keys;          \/* Keys this client is waiting to be loaded from the$/;"	m	struct:redisClient
-io_mutex	redis.h	/^    pthread_mutex_t io_mutex; \/* lock to access io_jobs\/io_done\/io_thread_job *\/$/;"	m	struct:redisServer
-io_negcache	redis.h	/^    dict *io_negcache;          \/* Negative caching for disk store *\/$/;"	m	struct:redisDb
-io_newjobs	redis.h	/^    list *io_newjobs; \/* List of VM I\/O jobs yet to be processed *\/$/;"	m	struct:redisServer
-io_processed	redis.h	/^    list *io_processed; \/* List of VM I\/O jobs already processed *\/$/;"	m	struct:redisServer
-io_processing	redis.h	/^    list *io_processing; \/* List of VM I\/O jobs being processed *\/$/;"	m	struct:redisServer
-io_queued	redis.h	/^    dict *io_queued;            \/* Queued IO operations hash table *\/$/;"	m	struct:redisDb
-io_ready_clients	redis.h	/^    list *io_ready_clients; \/* Clients ready to be unblocked. All keys loaded *\/$/;"	m	struct:redisServer
-io_ready_pipe_read	redis.h	/^    int io_ready_pipe_read;$/;"	m	struct:redisServer
-io_ready_pipe_write	redis.h	/^    int io_ready_pipe_write;$/;"	m	struct:redisServer
-io_threads_attr	redis.h	/^    pthread_attr_t io_threads_attr; \/* attributes for threads creation *\/$/;"	m	struct:redisServer
-iojob	redis.h	/^typedef struct iojob {$/;"	s
-iojob	redis.h	/^} iojob;$/;"	t	typeref:struct:iojob
-ioop	redis.h	/^typedef struct ioop {$/;"	s
-ioop	redis.h	/^} ioop;$/;"	t	typeref:struct:ioop
-ipfd	redis.h	/^    int ipfd;$/;"	m	struct:redisServer
+infoCommand	errdb.c	/^void infoCommand(redisClient *c) {$/;"	f
+initServer	errdb.c	/^void initServer() {$/;"	f
+initServerConfig	errdb.c	/^void initServerConfig() {$/;"	f
+initStaticStringObject	errdb.h	/^#define initStaticStringObject(/;"	d
+integers	errdb.h	/^    *mbulk4, *integers[REDIS_SHARED_INTEGERS];$/;"	m	struct:sharedObjectsStruct
+interactive	errdb-cli.c	/^    int interactive;$/;"	m	struct:config	file:
+io_active_threads	errdb.h	/^    int io_active_threads; \/* Number of running I\/O threads *\/$/;"	m	struct:redisServer
+io_condvar	errdb.h	/^    pthread_cond_t io_condvar; \/* I\/O threads conditional variable *\/$/;"	m	struct:redisServer
+io_keys	errdb.h	/^    dict *io_keys;              \/* Keys with clients waiting for DS I\/O *\/$/;"	m	struct:redisDb
+io_keys	errdb.h	/^    list *io_keys;          \/* Keys this client is waiting to be loaded from the$/;"	m	struct:redisClient
+io_mutex	errdb.h	/^    pthread_mutex_t io_mutex; \/* lock to access io_jobs\/io_done\/io_thread_job *\/$/;"	m	struct:redisServer
+io_negcache	errdb.h	/^    dict *io_negcache;          \/* Negative caching for disk store *\/$/;"	m	struct:redisDb
+io_newjobs	errdb.h	/^    list *io_newjobs; \/* List of VM I\/O jobs yet to be processed *\/$/;"	m	struct:redisServer
+io_processed	errdb.h	/^    list *io_processed; \/* List of VM I\/O jobs already processed *\/$/;"	m	struct:redisServer
+io_processing	errdb.h	/^    list *io_processing; \/* List of VM I\/O jobs being processed *\/$/;"	m	struct:redisServer
+io_queued	errdb.h	/^    dict *io_queued;            \/* Queued IO operations hash table *\/$/;"	m	struct:redisDb
+io_ready_clients	errdb.h	/^    list *io_ready_clients; \/* Clients ready to be unblocked. All keys loaded *\/$/;"	m	struct:redisServer
+io_ready_pipe_read	errdb.h	/^    int io_ready_pipe_read;$/;"	m	struct:redisServer
+io_ready_pipe_write	errdb.h	/^    int io_ready_pipe_write;$/;"	m	struct:redisServer
+io_threads_attr	errdb.h	/^    pthread_attr_t io_threads_attr; \/* attributes for threads creation *\/$/;"	m	struct:redisServer
+iojob	errdb.h	/^typedef struct iojob {$/;"	s
+iojob	errdb.h	/^} iojob;$/;"	t	typeref:struct:iojob
+ioop	errdb.h	/^typedef struct ioop {$/;"	s
+ioop	errdb.h	/^} ioop;$/;"	t	typeref:struct:ioop
+ipfd	errdb.h	/^    int ipfd;$/;"	m	struct:redisServer
 isObjectRepresentableAsLongLong	util.c	/^int isObjectRepresentableAsLongLong(robj *o, long long *llongval) {$/;"	f
 isStringRepresentableAsLong	util.c	/^int isStringRepresentableAsLong(sds s, long *longval) {$/;"	f
 isStringRepresentableAsLongLong	util.c	/^int isStringRepresentableAsLongLong(sds s, long long *llongval) {$/;"	f
@@ -739,29 +671,28 @@ isnan	solarisfixes.h	/^#define isnan(/;"	d
 isnan	solarisfixes.h	/^#undef isnan$/;"	d
 iterators	dict.h	/^    int iterators; \/* number of iterators currently running *\/$/;"	m	struct:dict
 key	dict.h	/^    void *key;$/;"	m	struct:dictEntry
-key	redis.h	/^    robj *key;  \/* This I\/O request is about this key *\/$/;"	m	struct:iojob
-key	redis.h	/^    robj *key;$/;"	m	struct:ioop
+key	errdb.h	/^    robj *key;  \/* This I\/O request is about this key *\/$/;"	m	struct:iojob
+key	errdb.h	/^    robj *key;$/;"	m	struct:ioop
 keyCompare	dict.h	/^    int (*keyCompare)(void *privdata, const void *key1, const void *key2);$/;"	m	struct:dictType
 keyDestructor	dict.h	/^    void (*keyDestructor)(void *privdata, void *key);$/;"	m	struct:dictType
 keyDup	dict.h	/^    void *(*keyDup)(void *privdata, const void *key);$/;"	m	struct:dictType
-keylistDictType	redis.c	/^dictType keylistDictType = {$/;"	v
-keyptrDictType	redis.c	/^dictType keyptrDictType = {$/;"	v
-keys	redis.h	/^    robj **keys;            \/* The key we are waiting to terminate a blocking$/;"	m	struct:blockingState
+keylistDictType	errdb.c	/^dictType keylistDictType = {$/;"	v
+keyptrDictType	errdb.c	/^dictType keyptrDictType = {$/;"	v
+keys	errdb.h	/^    robj **keys;            \/* The key we are waiting to terminate a blocking$/;"	m	struct:blockingState
 keysCommand	db.c	/^void keysCommand(redisClient *c) {$/;"	f
 kqfd	ae_kqueue.c	/^    int kqfd;$/;"	m	struct:aeApiState	file:
-lastfsync	redis.h	/^    time_t lastfsync;$/;"	m	struct:redisServer
-lastinteraction	redis.h	/^    time_t lastinteraction; \/* time of the last interaction, used for timeout *\/$/;"	m	struct:redisClient
-lastsave	redis.h	/^    time_t lastsave;                \/* Unix time of last save succeeede *\/$/;"	m	struct:redisServer
+lastfsync	errdb.h	/^    time_t lastfsync;$/;"	m	struct:redisServer
+lastinteraction	errdb.h	/^    time_t lastinteraction; \/* time of the last interaction, used for timeout *\/$/;"	m	struct:redisClient
+lastsave	errdb.h	/^    time_t lastsave;                \/* Unix time of last save succeeede *\/$/;"	m	struct:redisServer
 lastsaveCommand	db.c	/^void lastsaveCommand(redisClient *c) {$/;"	f
 len	adlist.h	/^    unsigned int len;$/;"	m	struct:list
 len	sds.h	/^    int len;$/;"	m	struct:sdshdr
-length	intset.h	/^    uint32_t length;$/;"	m	struct:intset
-length	redis.h	/^    unsigned long length;$/;"	m	struct:zskiplist
-level	redis.h	/^    int level;$/;"	m	struct:zskiplist
-level	redis.h	/^    } level[];$/;"	m	struct:zskiplistNode	typeref:struct:zskiplistNode::zskiplistLevel
-li	redis.h	/^    listTypeIterator *li;$/;"	m	struct:__anon4
-linuxOvercommitMemoryValue	redis.c	/^int linuxOvercommitMemoryValue(void) {$/;"	f
-linuxOvercommitMemoryWarning	redis.c	/^void linuxOvercommitMemoryWarning(void) {$/;"	f
+length	errdb.h	/^    unsigned long length;$/;"	m	struct:zskiplist
+level	errdb.h	/^    int level;$/;"	m	struct:zskiplist
+level	errdb.h	/^    } level[];$/;"	m	struct:zskiplistNode	typeref:struct:zskiplistNode::zskiplistLevel
+li	errdb.h	/^    listTypeIterator *li;$/;"	m	struct:__anon4
+linuxOvercommitMemoryValue	errdb.c	/^int linuxOvercommitMemoryValue(void) {$/;"	f
+linuxOvercommitMemoryWarning	errdb.c	/^void linuxOvercommitMemoryWarning(void) {$/;"	f
 list	adlist.h	/^typedef struct list {$/;"	s
 list	adlist.h	/^} list;$/;"	t	typeref:struct:list
 listAddNodeHead	adlist.c	/^list *listAddNodeHead(list *list, void *value)$/;"	f
@@ -780,7 +711,7 @@ listIter	adlist.h	/^typedef struct listIter {$/;"	s
 listIter	adlist.h	/^} listIter;$/;"	t	typeref:struct:listIter
 listLast	adlist.h	/^#define listLast(/;"	d
 listLength	adlist.h	/^#define listLength(/;"	d
-listMatchObjects	networking.c	/^int listMatchObjects(void *a, void *b) {$/;"	f
+listMatchObjects	client.c	/^int listMatchObjects(void *a, void *b) {$/;"	f
 listNext	adlist.c	/^listNode *listNext(listIter *iter)$/;"	f
 listNextNode	adlist.h	/^#define listNextNode(/;"	d
 listNode	adlist.h	/^typedef struct listNode {$/;"	s
@@ -795,55 +726,53 @@ listSearchKey	adlist.c	/^listNode *listSearchKey(list *list, void *key)$/;"	f
 listSetDupMethod	adlist.h	/^#define listSetDupMethod(/;"	d
 listSetFreeMethod	adlist.h	/^#define listSetFreeMethod(/;"	d
 listSetMatchMethod	adlist.h	/^#define listSetMatchMethod(/;"	d
-listTypeEntry	redis.h	/^} listTypeEntry;$/;"	t	typeref:struct:__anon4
+listTypeEntry	errdb.h	/^} listTypeEntry;$/;"	t	typeref:struct:__anon4
 listTypeGet	ts_list.c	/^robj *listTypeGet(listTypeEntry *entry) {$/;"	f
 listTypeInitIterator	ts_list.c	/^listTypeIterator *listTypeInitIterator(robj *subject, int index, unsigned char direction) {$/;"	f
-listTypeIterator	redis.h	/^} listTypeIterator;$/;"	t	typeref:struct:__anon3
+listTypeIterator	errdb.h	/^} listTypeIterator;$/;"	t	typeref:struct:__anon3
 listTypeLength	ts_list.c	/^unsigned long listTypeLength(robj *subject) {$/;"	f
 listTypeNext	ts_list.c	/^int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {$/;"	f
 listTypeReleaseIterator	ts_list.c	/^void listTypeReleaseIterator(listTypeIterator *li) {$/;"	f
-list_max_ziplist_entries	redis.h	/^    size_t list_max_ziplist_entries;$/;"	m	struct:redisServer
-list_max_ziplist_value	redis.h	/^    size_t list_max_ziplist_value;$/;"	m	struct:redisServer
+list_max_ziplist_entries	errdb.h	/^    size_t list_max_ziplist_entries;$/;"	m	struct:redisServer
+list_max_ziplist_value	errdb.h	/^    size_t list_max_ziplist_value;$/;"	m	struct:redisServer
 ll2string	util.c	/^int ll2string(char *s, size_t len, long long value) {$/;"	f
 llenCommand	ts_list.c	/^void llenCommand(redisClient *c) {$/;"	f
-ln	redis.h	/^    listNode *ln;       \/* Entry in linked list *\/$/;"	m	struct:__anon4
-ln	redis.h	/^    listNode *ln;$/;"	m	struct:__anon3
+ln	errdb.h	/^    listNode *ln;       \/* Entry in linked list *\/$/;"	m	struct:__anon4
+ln	errdb.h	/^    listNode *ln;$/;"	m	struct:__anon3
 loadServerConfig	config.c	/^void loadServerConfig(char *filename) {$/;"	f
-loadingerr	redis.h	/^    *outofrangeerr, *loadingerr, *plus,$/;"	m	struct:sharedObjectsStruct
+loadingProgress	diskstore.c	/^void loadingProgress(off_t pos) {$/;"	f
+loadingerr	errdb.h	/^    *outofrangeerr, *loadingerr, *plus,$/;"	m	struct:sharedObjectsStruct
 lockThreadedIO	dscache.c	/^void lockThreadedIO(void) {$/;"	f
-logfile	redis.h	/^    char *logfile;$/;"	m	struct:redisServer
-lookupCommand	redis.c	/^struct redisCommand *lookupCommand(sds name) {$/;"	f
-lookupCommandByCString	redis.c	/^struct redisCommand *lookupCommandByCString(char *s) {$/;"	f
+logfile	errdb.h	/^    char *logfile;$/;"	m	struct:redisServer
+lookupCommand	errdb.c	/^struct redisCommand *lookupCommand(sds name) {$/;"	f
+lookupCommandByCString	errdb.c	/^struct redisCommand *lookupCommandByCString(char *s) {$/;"	f
 lookupKey	db.c	/^robj *lookupKey(redisDb *db, robj *key) {$/;"	f
 lookupKeyRead	db.c	/^robj *lookupKeyRead(redisDb *db, robj *key) {$/;"	f
 lookupKeyReadOrReply	db.c	/^robj *lookupKeyReadOrReply(redisClient *c, robj *key, robj *reply) {$/;"	f
 lookupKeyWrite	db.c	/^robj *lookupKeyWrite(redisDb *db, robj *key) {$/;"	f
 lookupKeyWriteOrReply	db.c	/^robj *lookupKeyWriteOrReply(redisClient *c, robj *key, robj *reply) {$/;"	f
 lookupWaitBusyKey	db.c	/^void lookupWaitBusyKey(redisDb *db, robj *key) {$/;"	f
-lru	redis.h	/^    unsigned lru:22;        \/* lru time (relative to server.lruclock) *\/$/;"	m	struct:redisObject
-lruclock	redis.h	/^    unsigned lruclock:22;        \/* clock incrementing every minute, for LRU *\/$/;"	m	struct:redisServer
-lruclock_padding	redis.h	/^    unsigned lruclock_padding:10;$/;"	m	struct:redisServer
-lzf_compress	lzf_c.c	/^lzf_compress (const void *const in_data, unsigned int in_len,$/;"	f
-lzf_decompress	lzf_d.c	/^lzf_decompress (const void *const in_data,  unsigned int in_len,$/;"	f
+lru	errdb.h	/^    unsigned lru:22;        \/* lru time (relative to server.lruclock) *\/$/;"	m	struct:redisObject
+lruclock	errdb.h	/^    unsigned lruclock:22;        \/* clock incrementing every minute, for LRU *\/$/;"	m	struct:redisServer
+lruclock_padding	errdb.h	/^    unsigned lruclock_padding:10;$/;"	m	struct:redisServer
 main	endian.c	/^int main(void) {$/;"	f
-main	intset.c	/^int main(int argc, char **argv) {$/;"	f
-main	redis-cli.c	/^int main(int argc, char **argv) {$/;"	f
-main	redis.c	/^int main(int argc, char **argv) {$/;"	f
+main	errdb-cli.c	/^int main(int argc, char **argv) {$/;"	f
+main	errdb.c	/^int main(int argc, char **argv) {$/;"	f
 main	sds.c	/^int main(void) {$/;"	f
-mainthread	redis.h	/^    pthread_t mainthread;$/;"	m	struct:redisServer
+mainthread	errdb.h	/^    pthread_t mainthread;$/;"	m	struct:redisServer
 malloc	zmalloc.c	/^#define malloc(/;"	d	file:
 mask	ae.h	/^    int mask; \/* one of AE_(READABLE|WRITABLE) *\/$/;"	m	struct:aeFileEvent
 mask	ae.h	/^    int mask;$/;"	m	struct:aeFiredEvent
 match	adlist.h	/^    int (*match)(void *ptr, void *key);$/;"	m	struct:list
-maxclients	redis.h	/^    unsigned int maxclients;$/;"	m	struct:redisServer
+maxclients	errdb.h	/^    unsigned int maxclients;$/;"	m	struct:redisServer
 maxfd	ae.h	/^    int maxfd;$/;"	m	struct:aeEventLoop
-maxidletime	redis.h	/^    int maxidletime;$/;"	m	struct:redisServer
-maxmemory	redis.h	/^    unsigned long long maxmemory;$/;"	m	struct:redisServer
-maxmemory_policy	redis.h	/^    int maxmemory_policy;$/;"	m	struct:redisServer
-maxmemory_samples	redis.h	/^    int maxmemory_samples;$/;"	m	struct:redisServer
-mb_delim	redis-cli.c	/^    sds mb_delim;$/;"	m	struct:config	file:
-mbulk3	redis.h	/^    *messagebulk, *pmessagebulk, *mbulk3,$/;"	m	struct:sharedObjectsStruct
-mbulk4	redis.h	/^    *mbulk4, *integers[REDIS_SHARED_INTEGERS];$/;"	m	struct:sharedObjectsStruct
+maxidletime	errdb.h	/^    int maxidletime;$/;"	m	struct:redisServer
+maxmemory	errdb.h	/^    unsigned long long maxmemory;$/;"	m	struct:redisServer
+maxmemory_policy	errdb.h	/^    int maxmemory_policy;$/;"	m	struct:redisServer
+maxmemory_samples	errdb.h	/^    int maxmemory_samples;$/;"	m	struct:redisServer
+mb_delim	errdb-cli.c	/^    sds mb_delim;$/;"	m	struct:config	file:
+mbulk3	errdb.h	/^    *messagebulk, *pmessagebulk, *mbulk3,$/;"	m	struct:sharedObjectsStruct
+mbulk4	errdb.h	/^    *mbulk4, *integers[REDIS_SHARED_INTEGERS];$/;"	m	struct:sharedObjectsStruct
 med3	pqsort.c	/^med3(char *a, char *b, char *c,$/;"	f	file:
 memrev16	endian.c	/^void memrev16(void *p) {$/;"	f
 memrev16ifbe	endian.h	/^#define memrev16ifbe(/;"	d
@@ -852,149 +781,160 @@ memrev32ifbe	endian.h	/^#define memrev32ifbe(/;"	d
 memrev64	endian.c	/^void memrev64(void *p) {$/;"	f
 memrev64ifbe	endian.h	/^#define memrev64ifbe(/;"	d
 memtoll	util.c	/^long long memtoll(const char *p, int *err) {$/;"	f
-messagebulk	redis.h	/^    *messagebulk, *pmessagebulk, *mbulk3,$/;"	m	struct:sharedObjectsStruct
+messagebulk	errdb.h	/^    *messagebulk, *pmessagebulk, *mbulk3,$/;"	m	struct:sharedObjectsStruct
 mgetCommand	t_string.c	/^void mgetCommand(redisClient *c) {$/;"	f
-microseconds	redis.h	/^    long long microseconds, calls;$/;"	m	struct:redisCommand
+microseconds	errdb.h	/^    long long microseconds, calls;$/;"	m	struct:redisCommand
 min	pqsort.c	/^#define min(/;"	d	file:
 mixDigest	debug.c	/^void mixDigest(unsigned char *digest, void *ptr, size_t len) {$/;"	f
 mixObjectDigest	debug.c	/^void mixObjectDigest(unsigned char *digest, robj *o) {$/;"	f
-monitorCommand	redis.c	/^void monitorCommand(redisClient *c) {$/;"	f
-monitor_mode	redis-cli.c	/^    int monitor_mode;$/;"	m	struct:config	file:
-monitors	redis.h	/^    list *monitors;$/;"	m	struct:redisServer
+monitorCommand	errdb.c	/^void monitorCommand(redisClient *c) {$/;"	f
+monitor_mode	errdb-cli.c	/^    int monitor_mode;$/;"	m	struct:config	file:
+monitors	errdb.h	/^    list *monitors;$/;"	m	struct:redisServer
 moveCommand	db.c	/^void moveCommand(redisClient *c) {$/;"	f
 msetCommand	t_string.c	/^void msetCommand(redisClient *c) {$/;"	f
 msetGenericCommand	t_string.c	/^void msetGenericCommand(redisClient *c, int nx) {$/;"	f
 msetnxCommand	t_string.c	/^void msetnxCommand(redisClient *c) {$/;"	f
-mstate	redis.h	/^    multiState mstate;      \/* MULTI\/EXEC state *\/$/;"	m	struct:redisClient
-mstime	redis-cli.c	/^static long long mstime(void) {$/;"	f	file:
-multiCmd	redis.h	/^typedef struct multiCmd {$/;"	s
-multiCmd	redis.h	/^} multiCmd;$/;"	t	typeref:struct:multiCmd
-multiCommand	redis.h	/^    struct redisCommand *delCommand, *multiCommand;$/;"	m	struct:redisServer	typeref:struct:redisServer::
-multiState	redis.h	/^typedef struct multiState {$/;"	s
-multiState	redis.h	/^} multiState;$/;"	t	typeref:struct:multiState
-multibulklen	redis.h	/^    int multibulklen;       \/* number of multi bulk arguments left to read *\/$/;"	m	struct:redisClient
+mstime	errdb-cli.c	/^static long long mstime(void) {$/;"	f	file:
+multiCommand	errdb.h	/^    struct redisCommand *delCommand, *multiCommand;$/;"	m	struct:redisServer	typeref:struct:redisServer::
+multibulklen	errdb.h	/^    int multibulklen;       \/* number of multi bulk arguments left to read *\/$/;"	m	struct:redisClient
+name	errdb.h	/^    char *name;$/;"	m	struct:redisCommand
+name	errdb.h	/^    char *name;$/;"	m	struct:redisFunctionSym
 name	help.h	/^  char *name;$/;"	m	struct:commandHelp
-name	redis.h	/^    char *name;$/;"	m	struct:redisCommand
-name	redis.h	/^    char *name;$/;"	m	struct:redisFunctionSym
 negativeCacheEvictOneEntry	dscache.c	/^int negativeCacheEvictOneEntry(void) {$/;"	f
-neterr	redis.h	/^    char neterr[ANET_ERR_LEN];$/;"	m	struct:redisServer
+neterr	errdb.h	/^    char neterr[ANET_ERR_LEN];$/;"	m	struct:redisServer
 next	adlist.h	/^    listNode *next;$/;"	m	struct:listIter
 next	adlist.h	/^    struct listNode *next;$/;"	m	struct:listNode	typeref:struct:listNode::listNode
 next	ae.h	/^    struct aeTimeEvent *next;$/;"	m	struct:aeTimeEvent	typeref:struct:aeTimeEvent::aeTimeEvent
 next	dict.h	/^    struct dictEntry *next;$/;"	m	struct:dictEntry	typeref:struct:dictEntry::dictEntry
 nextEntry	dict.h	/^    dictEntry *entry, *nextEntry;$/;"	m	struct:dictIterator
-nokeyerr	redis.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
-noninteractive	redis-cli.c	/^static int noninteractive(int argc, char **argv) {$/;"	f	file:
-notused	redis.h	/^    unsigned notused:2;     \/* Not used *\/$/;"	m	struct:redisObject
-nullbulk	redis.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
-nullmultibulk	redis.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
-obj	redis.h	/^    robj *obj;$/;"	m	struct:_redisSortObject
-obj	redis.h	/^    robj *obj;$/;"	m	struct:zskiplistNode
-ok	intset.c	/^void ok(void) {$/;"	f
-ok	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-oom	redis.c	/^void oom(const char *msg) {$/;"	f
-org	redis-cli.c	/^    struct commandHelp *org;$/;"	m	struct:__anon1	typeref:struct:__anon1::commandHelp	file:
-outofrangeerr	redis.h	/^    *outofrangeerr, *loadingerr, *plus,$/;"	m	struct:sharedObjectsStruct
+nokeyerr	errdb.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
+noninteractive	errdb-cli.c	/^static int noninteractive(int argc, char **argv) {$/;"	f	file:
+notused	errdb.h	/^    unsigned notused:2;     \/* Not used *\/$/;"	m	struct:redisObject
+nullbulk	errdb.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
+nullmultibulk	errdb.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
+obj	errdb.h	/^    robj *obj;$/;"	m	struct:_redisSortObject
+obj	errdb.h	/^    robj *obj;$/;"	m	struct:zskiplistNode
+ok	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+oom	errdb.c	/^void oom(const char *msg) {$/;"	f
+org	errdb-cli.c	/^    struct commandHelp *org;$/;"	m	struct:__anon1	typeref:struct:__anon1::commandHelp	file:
+outofrangeerr	errdb.h	/^    *outofrangeerr, *loadingerr, *plus,$/;"	m	struct:sharedObjectsStruct
 params	help.h	/^  char *params;$/;"	m	struct:commandHelp
-parseOptions	redis-cli.c	/^static int parseOptions(int argc, char **argv) {$/;"	f	file:
-pattern	redis.h	/^    robj *pattern;$/;"	m	struct:_redisSortOperation
-pattern	redis.h	/^    robj *pattern;$/;"	m	struct:pubsubPattern
+parseOptions	errdb-cli.c	/^static int parseOptions(int argc, char **argv) {$/;"	f	file:
+pattern	errdb.h	/^    robj *pattern;$/;"	m	struct:_redisSortOperation
+pattern	errdb.h	/^    robj *pattern;$/;"	m	struct:pubsubPattern
 persistCommand	db.c	/^void persistCommand(redisClient *c) {$/;"	f
-pidfile	redis.h	/^    char *pidfile;$/;"	m	struct:redisServer
-pingCommand	redis.c	/^void pingCommand(redisClient *c) {$/;"	f
-plus	redis.h	/^    *outofrangeerr, *loadingerr, *plus,$/;"	m	struct:sharedObjectsStruct
-pmessagebulk	redis.h	/^    *messagebulk, *pmessagebulk, *mbulk3,$/;"	m	struct:sharedObjectsStruct
-pointer	redis.h	/^    unsigned long pointer;$/;"	m	struct:redisFunctionSym
-pong	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-populateCommandTable	redis.c	/^void populateCommandTable(void) {$/;"	f
-port	redis.h	/^    int port;$/;"	m	struct:redisServer
+pidfile	errdb.h	/^    char *pidfile;$/;"	m	struct:redisServer
+pingCommand	errdb.c	/^void pingCommand(redisClient *c) {$/;"	f
+plus	errdb.h	/^    *outofrangeerr, *loadingerr, *plus,$/;"	m	struct:sharedObjectsStruct
+pmessagebulk	errdb.h	/^    *messagebulk, *pmessagebulk, *mbulk3,$/;"	m	struct:sharedObjectsStruct
+pointer	errdb.h	/^    unsigned long pointer;$/;"	m	struct:redisFunctionSym
+pong	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+populateCommandTable	errdb.c	/^void populateCommandTable(void) {$/;"	f
+port	errdb.h	/^    int port;$/;"	m	struct:redisServer
 pqsort	pqsort.c	/^pqsort(void *a, size_t n, size_t es,$/;"	f
-prepareForShutdown	redis.c	/^int prepareForShutdown() {$/;"	f
+prepareForShutdown	errdb.c	/^int prepareForShutdown() {$/;"	f
 prev	adlist.h	/^    struct listNode *prev;$/;"	m	struct:listNode	typeref:struct:listNode::listNode
 privdata	dict.h	/^    void *privdata;$/;"	m	struct:dict
-proc	redis.h	/^    redisCommandProc *proc;$/;"	m	struct:redisCommand
+proc	errdb.h	/^    redisCommandProc *proc;$/;"	m	struct:redisCommand
 processActiveIOJobs	dscache.c	/^int processActiveIOJobs(int max) {$/;"	f
 processAllPendingIOJobs	dscache.c	/^void processAllPendingIOJobs(void) {$/;"	f
-processCommand	redis.c	/^int processCommand(redisClient *c) {$/;"	f
-processInlineBuffer	networking.c	/^int processInlineBuffer(redisClient *c) {$/;"	f
-processInputBuffer	networking.c	/^void processInputBuffer(redisClient *c) {$/;"	f
-processMultibulkBuffer	networking.c	/^int processMultibulkBuffer(redisClient *c) {$/;"	f
+processCommand	errdb.c	/^int processCommand(redisClient *c) {$/;"	f
+processInlineBuffer	client.c	/^int processInlineBuffer(redisClient *c) {$/;"	f
+processInputBuffer	client.c	/^void processInputBuffer(redisClient *c) {$/;"	f
+processMultibulkBuffer	client.c	/^int processMultibulkBuffer(redisClient *c) {$/;"	f
 processPendingIOJobs	dscache.c	/^int processPendingIOJobs(int max) {$/;"	f
 processTimeEvents	ae.c	/^static int processTimeEvents(aeEventLoop *eventLoop) {$/;"	f	file:
-prompt	redis-cli.c	/^    char prompt[32];$/;"	m	struct:config	file:
+prompt	errdb-cli.c	/^    char prompt[32];$/;"	m	struct:config	file:
 propagateExpire	db.c	/^void propagateExpire(redisDb *db, robj *key) {$/;"	f
-ptr	redis.h	/^    void *ptr;$/;"	m	struct:redisObject
-pubsubPattern	redis.h	/^typedef struct pubsubPattern {$/;"	s
-pubsubPattern	redis.h	/^} pubsubPattern;$/;"	t	typeref:struct:pubsubPattern
-querybuf	redis.h	/^    sds querybuf;$/;"	m	struct:redisClient
+ptr	errdb.h	/^    void *ptr;$/;"	m	struct:redisObject
+pubsubPattern	errdb.h	/^typedef struct pubsubPattern {$/;"	s
+pubsubPattern	errdb.h	/^} pubsubPattern;$/;"	t	typeref:struct:pubsubPattern
+querybuf	errdb.h	/^    sds querybuf;$/;"	m	struct:redisClient
 queueIOJob	dscache.c	/^void queueIOJob(iojob *j) {$/;"	f
-queued	redis.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
+queued	errdb.h	/^    *colon, *nullbulk, *nullmultibulk, *queued,$/;"	m	struct:sharedObjectsStruct
 randomkeyCommand	db.c	/^void randomkeyCommand(redisClient *c) {$/;"	f
-raw_output	redis-cli.c	/^    int raw_output; \/* output mode per command *\/$/;"	m	struct:config	file:
+raw_output	errdb-cli.c	/^    int raw_output; \/* output mode per command *\/$/;"	m	struct:config	file:
+rdbEncodeInteger	diskstore.c	/^int rdbEncodeInteger(long long value, unsigned char *enc) {$/;"	f
 rdbGenericLoadStringObject	diskstore.c	/^robj *rdbGenericLoadStringObject(FILE*fp, int encode) {$/;"	f
+rdbLoadDoubleValue	diskstore.c	/^int rdbLoadDoubleValue(FILE *fp, double *val) {$/;"	f
+rdbLoadEncodedStringObject	diskstore.c	/^robj *rdbLoadEncodedStringObject(FILE *fp) {$/;"	f
 rdbLoadIntegerObject	diskstore.c	/^robj *rdbLoadIntegerObject(FILE *fp, int enctype, int encode) {$/;"	f
 rdbLoadLen	diskstore.c	/^uint32_t rdbLoadLen(FILE *fp, int *isencoded) {$/;"	f
-rdbLoadLzfStringObject	diskstore.c	/^robj *rdbLoadLzfStringObject(FILE*fp) {$/;"	f
 rdbLoadObject	diskstore.c	/^robj *rdbLoadObject(int type, FILE *fp) {$/;"	f
 rdbLoadStringObject	diskstore.c	/^robj *rdbLoadStringObject(FILE *fp) {$/;"	f
+rdbLoadTime	diskstore.c	/^time_t rdbLoadTime(FILE *fp) {$/;"	f
 rdbLoadType	diskstore.c	/^int rdbLoadType(FILE *fp) {$/;"	f
+rdbRemoveTempFile	diskstore.c	/^void rdbRemoveTempFile(pid_t childpid) {$/;"	f
+rdbSave	diskstore.c	/^int rdbSave(char *filename) {$/;"	f
+rdbSaveBackground	diskstore.c	/^int rdbSaveBackground(char *filename) {$/;"	f
+rdbSaveDoubleValue	diskstore.c	/^int rdbSaveDoubleValue(FILE *fp, double val) {$/;"	f
 rdbSaveKeyValuePair	diskstore.c	/^int rdbSaveKeyValuePair(FILE *fp, robj *key, robj *val,$/;"	f
 rdbSaveLen	diskstore.c	/^int rdbSaveLen(FILE *fp, uint32_t len) {$/;"	f
-rdbcompression	redis.h	/^    int rdbcompression;$/;"	m	struct:redisServer
-readArgFromStdin	redis-cli.c	/^static sds readArgFromStdin(void) {$/;"	f	file:
-readQueryFromClient	networking.c	/^void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
+rdbSaveLongLongAsStringObject	diskstore.c	/^int rdbSaveLongLongAsStringObject(FILE *fp, long long value) {$/;"	f
+rdbSaveObject	diskstore.c	/^int rdbSaveObject(FILE *fp, robj *o) {$/;"	f
+rdbSaveRawString	diskstore.c	/^int rdbSaveRawString(FILE *fp, unsigned char *s, size_t len) {$/;"	f
+rdbSaveStringObject	diskstore.c	/^int rdbSaveStringObject(FILE *fp, robj *obj) {$/;"	f
+rdbSaveTime	diskstore.c	/^int rdbSaveTime(FILE *fp, time_t t) {$/;"	f
+rdbSaveType	diskstore.c	/^int rdbSaveType(FILE *fp, unsigned char type) {$/;"	f
+rdbSavedObjectLen	diskstore.c	/^off_t rdbSavedObjectLen(robj *o) {$/;"	f
+rdbTryIntegerEncoding	diskstore.c	/^int rdbTryIntegerEncoding(char *s, size_t len, unsigned char *enc) {$/;"	f
+rdbWriteRaw	diskstore.c	/^static int rdbWriteRaw(FILE *fp, void *p, size_t len) {$/;"	f	file:
+rdbcompression	errdb.h	/^    int rdbcompression;$/;"	m	struct:redisServer
+readArgFromStdin	errdb-cli.c	/^static sds readArgFromStdin(void) {$/;"	f	file:
+readQueryFromClient	client.c	/^void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
 realloc	zmalloc.c	/^#define realloc(/;"	d	file:
-redisAssert	redis.h	/^#define redisAssert(/;"	d
-redisClient	redis.h	/^typedef struct redisClient {$/;"	s
-redisClient	redis.h	/^} redisClient;$/;"	t	typeref:struct:redisClient
-redisCommand	redis.h	/^struct redisCommand {$/;"	s
-redisCommandProc	redis.h	/^typedef void redisCommandProc(redisClient *c);$/;"	t
-redisCommandTable	redis.c	/^struct redisCommand redisCommandTable[] = {$/;"	v	typeref:struct:redisCommand
-redisDb	redis.h	/^typedef struct redisDb {$/;"	s
-redisDb	redis.h	/^} redisDb;$/;"	t	typeref:struct:redisDb
-redisFunctionSym	redis.h	/^struct redisFunctionSym {$/;"	s
+redisAssert	errdb.h	/^#define redisAssert(/;"	d
+redisClient	errdb.h	/^typedef struct redisClient {$/;"	s
+redisClient	errdb.h	/^} redisClient;$/;"	t	typeref:struct:redisClient
+redisCommand	errdb.h	/^struct redisCommand {$/;"	s
+redisCommandProc	errdb.h	/^typedef void redisCommandProc(redisClient *c);$/;"	t
+redisCommandTable	errdb.c	/^struct redisCommand redisCommandTable[] = {$/;"	v	typeref:struct:redisCommand
+redisDb	errdb.h	/^typedef struct redisDb {$/;"	s
+redisDb	errdb.h	/^} redisDb;$/;"	t	typeref:struct:redisDb
+redisFunctionSym	errdb.h	/^struct redisFunctionSym {$/;"	s
 redisGitDirty	release.c	/^char *redisGitDirty(void) {$/;"	f
 redisGitSHA1	release.c	/^char *redisGitSHA1(void) {$/;"	f
-redisLog	redis.c	/^void redisLog(int level, const char *fmt, ...) {$/;"	f
-redisLogRaw	redis.c	/^void redisLogRaw(int level, const char *msg) {$/;"	f
-redisObject	redis.h	/^typedef struct redisObject {$/;"	s
-redisPanic	redis.h	/^#define redisPanic(/;"	d
-redisServer	redis.h	/^struct redisServer {$/;"	s
-redisSortObject	redis.h	/^} redisSortObject;$/;"	t	typeref:struct:_redisSortObject
-redisSortOperation	redis.h	/^} redisSortOperation;$/;"	t	typeref:struct:_redisSortOperation
-redisVmPreloadProc	redis.h	/^typedef void redisVmPreloadProc(redisClient *c, struct redisCommand *cmd, int argc, robj **argv);$/;"	t
+redisLog	errdb.c	/^void redisLog(int level, const char *fmt, ...) {$/;"	f
+redisLogRaw	errdb.c	/^void redisLogRaw(int level, const char *msg) {$/;"	f
+redisObject	errdb.h	/^typedef struct redisObject {$/;"	s
+redisPanic	errdb.h	/^#define redisPanic(/;"	d
+redisServer	errdb.h	/^struct redisServer {$/;"	s
+redisSortObject	errdb.h	/^} redisSortObject;$/;"	t	typeref:struct:_redisSortObject
+redisSortOperation	errdb.h	/^} redisSortOperation;$/;"	t	typeref:struct:_redisSortOperation
+redisVmPreloadProc	errdb.h	/^typedef void redisVmPreloadProc(redisClient *c, struct redisCommand *cmd, int argc, robj **argv);$/;"	t
 redis_fstat	config.h	/^#define redis_fstat /;"	d
 redis_malloc_size	config.h	/^#define redis_malloc_size(/;"	d
 redis_stat	config.h	/^#define redis_stat /;"	d
-refcount	redis.h	/^    int refcount;$/;"	m	struct:redisObject
+refcount	errdb.h	/^    int refcount;$/;"	m	struct:redisObject
 rehashidx	dict.h	/^    int rehashidx; \/* rehashing not in progress if rehashidx == -1 *\/$/;"	m	struct:dict
 removeExpire	db.c	/^int removeExpire(redisDb *db, robj *key) {$/;"	f
 renameCommand	db.c	/^void renameCommand(redisClient *c) {$/;"	f
 renameGenericCommand	db.c	/^void renameGenericCommand(redisClient *c, int nx) {$/;"	f
 renamenxCommand	db.c	/^void renamenxCommand(redisClient *c) {$/;"	f
-repeat	redis-cli.c	/^    long repeat;$/;"	m	struct:config	file:
-repl	redis-cli.c	/^static void repl() {$/;"	f	file:
-repldbfd	redis.h	/^    int repldbfd;           \/* replication DB file descriptor *\/$/;"	m	struct:redisClient
-repldboff	redis.h	/^    long repldboff;         \/* replication DB file offset *\/$/;"	m	struct:redisClient
-repldbsize	redis.h	/^    off_t repldbsize;       \/* replication DB file size *\/$/;"	m	struct:redisClient
-replstate	redis.h	/^    int replstate;          \/* replication state if this is a slave *\/$/;"	m	struct:redisClient
-reply	redis.h	/^    list *reply;$/;"	m	struct:redisClient
-reqtype	redis.h	/^    int reqtype;$/;"	m	struct:redisClient
-requirepass	redis.h	/^    char *requirepass;$/;"	m	struct:redisServer
-resetClient	networking.c	/^void resetClient(redisClient *c) {$/;"	f
-resetCommandTableStats	redis.c	/^void resetCommandTableStats(void) {$/;"	f
+repeat	errdb-cli.c	/^    long repeat;$/;"	m	struct:config	file:
+repl	errdb-cli.c	/^static void repl() {$/;"	f	file:
+repldbfd	errdb.h	/^    int repldbfd;           \/* replication DB file descriptor *\/$/;"	m	struct:redisClient
+repldboff	errdb.h	/^    long repldboff;         \/* replication DB file offset *\/$/;"	m	struct:redisClient
+repldbsize	errdb.h	/^    off_t repldbsize;       \/* replication DB file size *\/$/;"	m	struct:redisClient
+replstate	errdb.h	/^    int replstate;          \/* replication state if this is a slave *\/$/;"	m	struct:redisClient
+reply	errdb.h	/^    list *reply;$/;"	m	struct:redisClient
+reqtype	errdb.h	/^    int reqtype;$/;"	m	struct:redisClient
+requirepass	errdb.h	/^    char *requirepass;$/;"	m	struct:redisServer
+resetClient	client.c	/^void resetClient(redisClient *c) {$/;"	f
+resetCommandTableStats	errdb.c	/^void resetCommandTableStats(void) {$/;"	f
 resetServerSaveParams	config.c	/^void resetServerSaveParams() {$/;"	f
 rfds	ae_select.c	/^    fd_set rfds, wfds;$/;"	m	struct:aeApiState	file:
 rfileProc	ae.h	/^    aeFileProc *rfileProc;$/;"	m	struct:aeFileEvent
-robj	redis.h	/^} robj;$/;"	t	typeref:struct:redisObject
+robj	errdb.h	/^} robj;$/;"	t	typeref:struct:redisObject
 robjLen	ts_list.c	/^size_t robjLen(robj *obj) {$/;"	f
 rol	sha1.c	/^#define rol(/;"	d	file:
-sameobjecterr	redis.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
-saveparam	redis.h	/^struct saveparam {$/;"	s
-saveparams	redis.h	/^    struct saveparam *saveparams;$/;"	m	struct:redisServer	typeref:struct:redisServer::saveparam
-saveparamslen	redis.h	/^    int saveparamslen;$/;"	m	struct:redisServer
-score	redis.h	/^        double score;$/;"	m	union:_redisSortObject::__anon2
-score	redis.h	/^    double score;$/;"	m	struct:zskiplistNode
+sameobjecterr	errdb.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
+saveCommand	diskstore.c	/^void saveCommand(redisClient *c) {$/;"	f
+saveparam	errdb.h	/^struct saveparam {$/;"	s
+saveparams	errdb.h	/^    struct saveparam *saveparams;$/;"	m	struct:redisServer	typeref:struct:redisServer::saveparam
+saveparamslen	errdb.h	/^    int saveparamslen;$/;"	m	struct:redisServer
+score	errdb.h	/^        double score;$/;"	m	union:_redisSortObject::__anon2
+score	errdb.h	/^    double score;$/;"	m	struct:zskiplistNode
 sds	sds.h	/^typedef char *sds;$/;"	t
 sdsMakeRoomFor	sds.c	/^static sds sdsMakeRoomFor(sds s, size_t addlen) {$/;"	f	file:
 sdsOomAbort	sds.c	/^static void sdsOomAbort(void) {$/;"	f	file:
@@ -1024,73 +964,75 @@ sdstolower	sds.c	/^void sdstolower(sds s) {$/;"	f
 sdstoupper	sds.c	/^void sdstoupper(sds s) {$/;"	f
 sdstrim	sds.c	/^sds sdstrim(sds s, const char *cset) {$/;"	f
 sdsupdatelen	sds.c	/^void sdsupdatelen(sds s) {$/;"	f
-seconds	redis.h	/^    time_t seconds;$/;"	m	struct:saveparam
-select0	redis.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
-select1	redis.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
-select2	redis.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
-select3	redis.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
-select4	redis.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
-select5	redis.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
-select6	redis.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
-select7	redis.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
-select8	redis.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
-select9	redis.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
+seconds	errdb.h	/^    time_t seconds;$/;"	m	struct:saveparam
+select0	errdb.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
+select1	errdb.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
+select2	errdb.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
+select3	errdb.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
+select4	errdb.h	/^    *select0, *select1, *select2, *select3, *select4,$/;"	m	struct:sharedObjectsStruct
+select5	errdb.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
+select6	errdb.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
+select7	errdb.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
+select8	errdb.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
+select9	errdb.h	/^    *select5, *select6, *select7, *select8, *select9,$/;"	m	struct:sharedObjectsStruct
 selectCommand	db.c	/^void selectCommand(redisClient *c) {$/;"	f
 selectDb	db.c	/^int selectDb(redisClient *c, int id) {$/;"	f
-sendReplyToClient	networking.c	/^void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
-sentlen	redis.h	/^    int sentlen;$/;"	m	struct:redisClient
-server	redis.c	/^struct redisServer server; \/* server global state *\/$/;"	v	typeref:struct:redisServer
-serverCron	redis.c	/^int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {$/;"	f
+sendReplyToClient	client.c	/^void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask) {$/;"	f
+sentlen	errdb.h	/^    int sentlen;$/;"	m	struct:redisClient
+server	errdb.c	/^struct redisServer server; \/* server global state *\/$/;"	v	typeref:struct:redisServer
+serverCron	errdb.c	/^int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {$/;"	f
 setCommand	t_string.c	/^void setCommand(redisClient *c) {$/;"	f
-setDeferredMultiBulkLength	networking.c	/^void setDeferredMultiBulkLength(redisClient *c, void *node, long length) {$/;"	f
-setDictType	redis.c	/^dictType setDictType = {$/;"	v
+setDeferredMultiBulkLength	client.c	/^void setDeferredMultiBulkLength(redisClient *c, void *node, long length) {$/;"	f
+setDictType	errdb.c	/^dictType setDictType = {$/;"	v
 setExpire	db.c	/^void setExpire(redisDb *db, robj *key, time_t when) {$/;"	f
 setGenericCommand	t_string.c	/^void setGenericCommand(redisClient *c, int nx, robj *key, robj *val, robj *expire) {$/;"	f
-setProtocolError	networking.c	/^static void setProtocolError(redisClient *c, int pos) {$/;"	f	file:
-setTypeIterator	redis.h	/^} setTypeIterator;$/;"	t	typeref:struct:__anon5
-set_max_intset_entries	redis.h	/^    size_t set_max_intset_entries;$/;"	m	struct:redisServer
+setProtocolError	client.c	/^static void setProtocolError(redisClient *c, int pos) {$/;"	f	file:
+setTypeIterator	errdb.h	/^} setTypeIterator;$/;"	t	typeref:struct:__anon5
+set_max_intset_entries	errdb.h	/^    size_t set_max_intset_entries;$/;"	m	struct:redisServer
 setbitCommand	t_string.c	/^void setbitCommand(redisClient *c) {$/;"	f
 setexCommand	t_string.c	/^void setexCommand(redisClient *c) {$/;"	f
 setnxCommand	t_string.c	/^void setnxCommand(redisClient *c) {$/;"	f
 setrangeCommand	t_string.c	/^void setrangeCommand(redisClient *c) {$/;"	f
-setupSignalHandlers	redis.c	/^void setupSignalHandlers(void) {$/;"	f
-shared	redis.c	/^struct sharedObjectsStruct shared;$/;"	v	typeref:struct:sharedObjectsStruct
-sharedObjectsStruct	redis.h	/^struct sharedObjectsStruct {$/;"	s
-shutdown	redis-cli.c	/^    int shutdown;$/;"	m	struct:config	file:
+setupSignalHandlers	errdb.c	/^void setupSignalHandlers(void) {$/;"	f
+shared	errdb.c	/^struct sharedObjectsStruct shared;$/;"	v	typeref:struct:sharedObjectsStruct
+sharedObjectsStruct	errdb.h	/^struct sharedObjectsStruct {$/;"	s
+shutdown	errdb-cli.c	/^    int shutdown;$/;"	m	struct:config	file:
 shutdownCommand	db.c	/^void shutdownCommand(redisClient *c) {$/;"	f
-shutdown_asap	redis.h	/^    int shutdown_asap;$/;"	m	struct:redisServer
+shutdown_asap	errdb.h	/^    int shutdown_asap;$/;"	m	struct:redisServer
 signalFlushedDb	db.c	/^void signalFlushedDb(int dbid) {$/;"	f
 signalModifiedKey	db.c	/^void signalModifiedKey(redisDb *db, robj *key) {$/;"	f
-sigsegvHandler	redis.c	/^static void sigsegvHandler(int sig, siginfo_t *info, void *secret) {$/;"	f	file:
-sigtermHandler	redis.c	/^static void sigtermHandler(int sig) {$/;"	f	file:
+sigsegvHandler	errdb.c	/^static void sigsegvHandler(int sig, siginfo_t *info, void *secret) {$/;"	f	file:
+sigtermHandler	errdb.c	/^static void sigtermHandler(int sig) {$/;"	f	file:
 since	help.h	/^  char *since;$/;"	m	struct:commandHelp
 size	dict.h	/^    unsigned long size;$/;"	m	struct:dictht
 sizemask	dict.h	/^    unsigned long sizemask;$/;"	m	struct:dictht
-slaveseldb	redis.h	/^    int slaveseldb;         \/* slave selected db, if this client is a slave *\/$/;"	m	struct:redisClient
-sofd	redis.h	/^    int sofd;$/;"	m	struct:redisServer
-sort_alpha	redis.h	/^    int sort_alpha;$/;"	m	struct:redisServer
-sort_bypattern	redis.h	/^    int sort_bypattern;$/;"	m	struct:redisServer
-sort_desc	redis.h	/^    int sort_desc;$/;"	m	struct:redisServer
-space	redis.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
-span	redis.h	/^        unsigned int span;$/;"	m	struct:zskiplistNode::zskiplistLevel
+slaveseldb	errdb.h	/^    int slaveseldb;         \/* slave selected db, if this client is a slave *\/$/;"	m	struct:redisClient
+sofd	errdb.h	/^    int sofd;$/;"	m	struct:redisServer
+sort_alpha	errdb.h	/^    int sort_alpha;$/;"	m	struct:redisServer
+sort_bypattern	errdb.h	/^    int sort_bypattern;$/;"	m	struct:redisServer
+sort_desc	errdb.h	/^    int sort_desc;$/;"	m	struct:redisServer
+space	errdb.h	/^    robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,$/;"	m	struct:sharedObjectsStruct
+span	errdb.h	/^        unsigned int span;$/;"	m	struct:zskiplistNode::zskiplistLevel
 spawnIOThread	dscache.c	/^void spawnIOThread(void) {$/;"	f
-stat_evictedkeys	redis.h	/^    long long stat_evictedkeys;     \/* number of evicted keys (maxmemory) *\/$/;"	m	struct:redisServer
-stat_expiredkeys	redis.h	/^    long long stat_expiredkeys;     \/* number of expired keys *\/$/;"	m	struct:redisServer
-stat_keyspace_hits	redis.h	/^    long long stat_keyspace_hits;   \/* number of successful lookups of keys *\/$/;"	m	struct:redisServer
-stat_keyspace_misses	redis.h	/^    long long stat_keyspace_misses; \/* number of failed lookups of keys *\/$/;"	m	struct:redisServer
-stat_numcommands	redis.h	/^    long long stat_numcommands;     \/* number of processed commands *\/$/;"	m	struct:redisServer
-stat_numconnections	redis.h	/^    long long stat_numconnections;  \/* number of connections received *\/$/;"	m	struct:redisServer
-stat_starttime	redis.h	/^    time_t stat_starttime;          \/* server start time *\/$/;"	m	struct:redisServer
+startLoading	diskstore.c	/^void startLoading(FILE *fp) {$/;"	f
+stat_evictedkeys	errdb.h	/^    long long stat_evictedkeys;     \/* number of evicted keys (maxmemory) *\/$/;"	m	struct:redisServer
+stat_expiredkeys	errdb.h	/^    long long stat_expiredkeys;     \/* number of expired keys *\/$/;"	m	struct:redisServer
+stat_keyspace_hits	errdb.h	/^    long long stat_keyspace_hits;   \/* number of successful lookups of keys *\/$/;"	m	struct:redisServer
+stat_keyspace_misses	errdb.h	/^    long long stat_keyspace_misses; \/* number of failed lookups of keys *\/$/;"	m	struct:redisServer
+stat_numcommands	errdb.h	/^    long long stat_numcommands;     \/* number of processed commands *\/$/;"	m	struct:redisServer
+stat_numconnections	errdb.h	/^    long long stat_numconnections;  \/* number of connections received *\/$/;"	m	struct:redisServer
+stat_starttime	errdb.h	/^    time_t stat_starttime;          \/* server start time *\/$/;"	m	struct:redisServer
 state	sha1.h	/^    u_int32_t state[5];$/;"	m	struct:__anon7
-stdinarg	redis-cli.c	/^    int stdinarg; \/* get last arg from stdin. (-x option) *\/$/;"	m	struct:config	file:
+stdinarg	errdb-cli.c	/^    int stdinarg; \/* get last arg from stdin. (-x option) *\/$/;"	m	struct:config	file:
 stop	ae.h	/^    int stop;$/;"	m	struct:aeEventLoop
+stopLoading	diskstore.c	/^void stopLoading(void) {$/;"	f
 strEncoding	object.c	/^char *strEncoding(int encoding) {$/;"	f
 stringObjectLen	object.c	/^size_t stringObjectLen(robj *o) {$/;"	f
 stringmatch	util.c	/^int stringmatch(const char *pattern, const char *string, int nocase) {$/;"	f
 stringmatchlen	util.c	/^int stringmatchlen(const char *pattern, int patternLen,$/;"	f
 strlenCommand	t_string.c	/^void strlenCommand(redisClient *c) {$/;"	f
-subject	redis.h	/^    robj *subject;$/;"	m	struct:__anon3
-subject	redis.h	/^    robj *subject;$/;"	m	struct:__anon5
+subject	errdb.h	/^    robj *subject;$/;"	m	struct:__anon3
+subject	errdb.h	/^    robj *subject;$/;"	m	struct:__anon5
 summary	help.h	/^  char *summary;$/;"	m	struct:commandHelp
 swap	pqsort.c	/^#define swap(/;"	d	file:
 swapcode	pqsort.c	/^#define swapcode(/;"	d	file:
@@ -1098,24 +1040,24 @@ swapfunc	pqsort.c	/^swapfunc(char *a, char *b, size_t n, int swaptype)$/;"	f	fil
 syncRead	syncio.c	/^int syncRead(int fd, char *ptr, ssize_t size, int timeout) {$/;"	f
 syncReadLine	syncio.c	/^int syncReadLine(int fd, char *ptr, ssize_t size, int timeout) {$/;"	f
 syncWrite	syncio.c	/^int syncWrite(int fd, char *ptr, ssize_t size, int timeout) {$/;"	f
-syntaxerr	redis.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
-syslog_enabled	redis.h	/^    int syslog_enabled;$/;"	m	struct:redisServer
-syslog_facility	redis.h	/^    int syslog_facility;$/;"	m	struct:redisServer
-syslog_ident	redis.h	/^    char *syslog_ident;$/;"	m	struct:redisServer
+syntaxerr	errdb.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
+syslog_enabled	errdb.h	/^    int syslog_enabled;$/;"	m	struct:redisServer
+syslog_facility	errdb.h	/^    int syslog_facility;$/;"	m	struct:redisServer
+syslog_ident	errdb.h	/^    char *syslog_ident;$/;"	m	struct:redisServer
 t	ts_list.c	/^    robj *t;$/;"	m	struct:tvNode	file:
 table	dict.h	/^    dictEntry **table;$/;"	m	struct:dictht
 table	dict.h	/^    int table;$/;"	m	struct:dictIterator
 tail	adlist.h	/^    listNode *tail;$/;"	m	struct:list
-tail	redis.h	/^    struct zskiplistNode *header, *tail;$/;"	m	struct:zskiplist	typeref:struct:zskiplist::
-target	redis.h	/^    robj *target;           \/* The key that should receive the element,$/;"	m	struct:blockingState
+tail	errdb.h	/^    struct zskiplistNode *header, *tail;$/;"	m	struct:zskiplist	typeref:struct:zskiplist::
+target	errdb.h	/^    robj *target;           \/* The key that should receive the element,$/;"	m	struct:blockingState
 test_cond	testhelp.h	/^#define test_cond(/;"	d
 test_report	testhelp.h	/^#define test_report(/;"	d
 timeEventHead	ae.h	/^    aeTimeEvent *timeEventHead;$/;"	m	struct:aeEventLoop
 timeEventNextId	ae.h	/^    long long timeEventNextId;$/;"	m	struct:aeEventLoop
 timeInMilliseconds	dict.c	/^long long timeInMilliseconds(void) {$/;"	f
 timeProc	ae.h	/^    aeTimeProc *timeProc;$/;"	m	struct:aeTimeEvent
-timeout	redis.h	/^    time_t timeout;         \/* Blocking operation timeout. If UNIX current time$/;"	m	struct:blockingState
-tryResizeHashTables	redis.c	/^void tryResizeHashTables(void) {$/;"	f
+timeout	errdb.h	/^    time_t timeout;         \/* Blocking operation timeout. If UNIX current time$/;"	m	struct:blockingState
+tryResizeHashTables	errdb.c	/^void tryResizeHashTables(void) {$/;"	f
 tsFetchCommand	ts_list.c	/^void tsFetchCommand(redisClient *c) {$/;"	f
 tsInsertCommand	ts_list.c	/^void tsInsertCommand(redisClient *c) {$/;"	f
 tsLastCommand	ts_list.c	/^void tsLastCommand(redisClient *c) {$/;"	f
@@ -1126,49 +1068,45 @@ tvNode	ts_list.c	/^typedef struct tvNode {$/;"	s	file:
 tvNode	ts_list.c	/^} tvNode;$/;"	t	typeref:struct:tvNode	file:
 tvNodeLen	ts_list.c	/^size_t tvNodeLen(tvNode *tv) {$/;"	f
 type	dict.h	/^    dictType *type;$/;"	m	struct:dict
-type	redis-cli.c	/^    int type;$/;"	m	struct:__anon1	file:
-type	redis.h	/^    int type;   \/* Request type, REDIS_IOJOB_* *\/$/;"	m	struct:iojob
-type	redis.h	/^    int type;$/;"	m	struct:_redisSortOperation
-type	redis.h	/^    int type;$/;"	m	struct:ioop
-type	redis.h	/^    unsigned type:4;$/;"	m	struct:redisObject
+type	errdb-cli.c	/^    int type;$/;"	m	struct:__anon1	file:
+type	errdb.h	/^    int type;   \/* Request type, REDIS_IOJOB_* *\/$/;"	m	struct:iojob
+type	errdb.h	/^    int type;$/;"	m	struct:_redisSortOperation
+type	errdb.h	/^    int type;$/;"	m	struct:ioop
+type	errdb.h	/^    unsigned type:4;$/;"	m	struct:redisObject
 typeCommand	db.c	/^void typeCommand(redisClient *c) {$/;"	f
-u	redis.h	/^    } u;$/;"	m	struct:_redisSortObject	typeref:union:_redisSortObject::__anon2
-u16	lzfP.h	/^    typedef unsigned int u16;$/;"	t
-u16	lzfP.h	/^    typedef unsigned short u16;$/;"	t
-u8	lzfP.h	/^typedef unsigned char u8;$/;"	t
+u	errdb.h	/^    } u;$/;"	m	struct:_redisSortObject	typeref:union:_redisSortObject::__anon2
 u_int	solarisfixes.h	/^#define u_int /;"	d
 u_int32_t	solarisfixes.h	/^#define u_int32_t /;"	d
 unblockClientWaitingData	ts_list.c	/^void unblockClientWaitingData(redisClient *c) {$/;"	f
-unblocked_clients	redis.h	/^    list *unblocked_clients; \/* list of clients to unblock before next loop *\/$/;"	m	struct:redisServer
-unixsocket	redis.h	/^    char *unixsocket;$/;"	m	struct:redisServer
-unixtime	redis.h	/^    time_t unixtime;    \/* Unix time sampled every second. *\/$/;"	m	struct:redisServer
+unblocked_clients	errdb.h	/^    list *unblocked_clients; \/* list of clients to unblock before next loop *\/$/;"	m	struct:redisServer
+unixsocket	errdb.h	/^    char *unixsocket;$/;"	m	struct:redisServer
+unixtime	errdb.h	/^    time_t unixtime;    \/* Unix time sampled every second. *\/$/;"	m	struct:redisServer
 unlockThreadedIO	dscache.c	/^void unlockThreadedIO(void) {$/;"	f
-updateDictResizePolicy	redis.c	/^void updateDictResizePolicy(void) {$/;"	f
-updateLRUClock	redis.c	/^void updateLRUClock(void) {$/;"	f
+updateDictResizePolicy	errdb.c	/^void updateDictResizePolicy(void) {$/;"	f
+updateLRUClock	errdb.c	/^void updateLRUClock(void) {$/;"	f
 update_zmalloc_stat_alloc	zmalloc.c	/^#define update_zmalloc_stat_alloc(/;"	d	file:
 update_zmalloc_stat_free	zmalloc.c	/^#define update_zmalloc_stat_free(/;"	d	file:
-usage	redis-cli.c	/^static void usage() {$/;"	f	file:
-usage	redis.c	/^void usage() {$/;"	f
-usec	intset.c	/^long long usec(void) {$/;"	f
+usage	errdb-cli.c	/^static void usage() {$/;"	f	file:
+usage	errdb.c	/^void usage() {$/;"	f
 used	dict.h	/^    unsigned long used;$/;"	m	struct:dictht
 used_memory	zmalloc.c	/^static size_t used_memory = 0;$/;"	v	file:
 used_memory_mutex	zmalloc.c	/^pthread_mutex_t used_memory_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
-ustime	redis.c	/^long long ustime(void) {$/;"	f
+ustime	errdb.c	/^long long ustime(void) {$/;"	f
 v	ts_list.c	/^    robj *v;$/;"	m	struct:tvNode	file:
 val	dict.h	/^    void *val;$/;"	m	struct:dictEntry
-val	redis.h	/^    robj *val;  \/* the value to swap for REDIS_IOJOB_SAVE, otherwise this$/;"	m	struct:iojob
+val	errdb.h	/^    robj *val;  \/* the value to swap for REDIS_IOJOB_SAVE, otherwise this$/;"	m	struct:iojob
 valDestructor	dict.h	/^    void (*valDestructor)(void *privdata, void *obj);$/;"	m	struct:dictType
 valDup	dict.h	/^    void *(*valDup)(void *privdata, const void *obj);$/;"	m	struct:dictType
 value	adlist.h	/^    void *value;$/;"	m	struct:listNode
 vecswap	pqsort.c	/^#define vecswap(/;"	d	file:
-verbosity	redis.h	/^    int verbosity;$/;"	m	struct:redisServer
-version	redis.c	/^void version() {$/;"	f
+verbosity	errdb.h	/^    int verbosity;$/;"	m	struct:redisServer
+version	errdb.c	/^void version() {$/;"	f
 vmThreadedIOCompletedJob	dscache.c	/^void vmThreadedIOCompletedJob(aeEventLoop *el, int fd, void *privdata,$/;"	f
-vm_firstkey	redis.h	/^    int vm_firstkey; \/* The first argument that's a key (0 = no keys) *\/$/;"	m	struct:redisCommand
-vm_keystep	redis.h	/^    int vm_keystep;  \/* The step between first and last key *\/$/;"	m	struct:redisCommand
-vm_lastkey	redis.h	/^    int vm_lastkey;  \/* THe last argument that's a key *\/$/;"	m	struct:redisCommand
-vm_max_threads	redis.h	/^    int vm_max_threads; \/* Max number of I\/O threads running at the same time *\/$/;"	m	struct:redisServer
-vm_preload_proc	redis.h	/^    redisVmPreloadProc *vm_preload_proc;$/;"	m	struct:redisCommand
+vm_firstkey	errdb.h	/^    int vm_firstkey; \/* The first argument that's a key (0 = no keys) *\/$/;"	m	struct:redisCommand
+vm_keystep	errdb.h	/^    int vm_keystep;  \/* The step between first and last key *\/$/;"	m	struct:redisCommand
+vm_lastkey	errdb.h	/^    int vm_lastkey;  \/* THe last argument that's a key *\/$/;"	m	struct:redisCommand
+vm_max_threads	errdb.h	/^    int vm_max_threads; \/* Max number of I\/O threads running at the same time *\/$/;"	m	struct:redisServer
+vm_preload_proc	errdb.h	/^    redisVmPreloadProc *vm_preload_proc;$/;"	m	struct:redisCommand
 waitEmptyIOJobsQueue	dscache.c	/^void waitEmptyIOJobsQueue(void) {$/;"	f
 waitForMultipleSwappedKeys	dscache.c	/^void waitForMultipleSwappedKeys(redisClient *c, struct redisCommand *cmd, int argc, robj **argv) {$/;"	f
 waitForSwappedKey	dscache.c	/^int waitForSwappedKey(redisClient *c, robj *key) {$/;"	f
@@ -1176,17 +1114,17 @@ wfds	ae_select.c	/^    fd_set rfds, wfds;$/;"	m	struct:aeApiState	file:
 wfileProc	ae.h	/^    aeFileProc *wfileProc;$/;"	m	struct:aeFileEvent
 when_ms	ae.h	/^    long when_ms; \/* milliseconds *\/$/;"	m	struct:aeTimeEvent
 when_sec	ae.h	/^    long when_sec; \/* seconds *\/$/;"	m	struct:aeTimeEvent
-wrongtypeerr	redis.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
+wrongtypeerr	errdb.h	/^    *emptymultibulk, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,$/;"	m	struct:sharedObjectsStruct
 xorDigest	debug.c	/^void xorDigest(unsigned char *digest, void *ptr, size_t len) {$/;"	f
 xorObjectDigest	debug.c	/^void xorObjectDigest(unsigned char *digest, robj *o) {$/;"	f
 yesnotoi	config.c	/^int yesnotoi(char *s) {$/;"	f
 zcalloc	zmalloc.c	/^void *zcalloc(size_t size) {$/;"	f
 zfree	zmalloc.c	/^void zfree(void *ptr) {$/;"	f
-zi	redis.h	/^    unsigned char *zi;  \/* Entry in ziplist *\/$/;"	m	struct:__anon4
-zi	redis.h	/^    unsigned char *zi;$/;"	m	struct:__anon3
-zi	redis.h	/^    unsigned char *zi;$/;"	m	struct:__anon6
-zk	redis.h	/^    unsigned char *zk, *zv;$/;"	m	struct:__anon6
-zklen	redis.h	/^    unsigned int zklen, zvlen;$/;"	m	struct:__anon6
+zi	errdb.h	/^    unsigned char *zi;  \/* Entry in ziplist *\/$/;"	m	struct:__anon4
+zi	errdb.h	/^    unsigned char *zi;$/;"	m	struct:__anon3
+zi	errdb.h	/^    unsigned char *zi;$/;"	m	struct:__anon6
+zk	errdb.h	/^    unsigned char *zk, *zv;$/;"	m	struct:__anon6
+zklen	errdb.h	/^    unsigned int zklen, zvlen;$/;"	m	struct:__anon6
 zmalloc	zmalloc.c	/^void *zmalloc(size_t size) {$/;"	f
 zmalloc_allocations	zmalloc.c	/^size_t zmalloc_allocations[ZMALLOC_MAX_ALLOC_STAT+1];$/;"	v
 zmalloc_allocations_for_size	zmalloc.c	/^size_t zmalloc_allocations_for_size(size_t size) {$/;"	f
@@ -1197,16 +1135,16 @@ zmalloc_oom	zmalloc.c	/^static void zmalloc_oom(size_t size) {$/;"	f	file:
 zmalloc_thread_safe	zmalloc.c	/^static int zmalloc_thread_safe = 0;$/;"	v	file:
 zmalloc_used_memory	zmalloc.c	/^size_t zmalloc_used_memory(void) {$/;"	f
 zrealloc	zmalloc.c	/^void *zrealloc(void *ptr, size_t size) {$/;"	f
-zset	redis.h	/^typedef struct zset {$/;"	s
-zset	redis.h	/^} zset;$/;"	t	typeref:struct:zset
-zsetDictType	redis.c	/^dictType zsetDictType = {$/;"	v
-zskiplist	redis.h	/^typedef struct zskiplist {$/;"	s
-zskiplist	redis.h	/^} zskiplist;$/;"	t	typeref:struct:zskiplist
-zskiplistLevel	redis.h	/^    struct zskiplistLevel {$/;"	s	struct:zskiplistNode
-zskiplistNode	redis.h	/^typedef struct zskiplistNode {$/;"	s
-zskiplistNode	redis.h	/^} zskiplistNode;$/;"	t	typeref:struct:zskiplistNode
-zsl	redis.h	/^    zskiplist *zsl;$/;"	m	struct:zset
+zset	errdb.h	/^typedef struct zset {$/;"	s
+zset	errdb.h	/^} zset;$/;"	t	typeref:struct:zset
+zsetDictType	errdb.c	/^dictType zsetDictType = {$/;"	v
+zskiplist	errdb.h	/^typedef struct zskiplist {$/;"	s
+zskiplist	errdb.h	/^} zskiplist;$/;"	t	typeref:struct:zskiplist
+zskiplistLevel	errdb.h	/^    struct zskiplistLevel {$/;"	s	struct:zskiplistNode
+zskiplistNode	errdb.h	/^typedef struct zskiplistNode {$/;"	s
+zskiplistNode	errdb.h	/^} zskiplistNode;$/;"	t	typeref:struct:zskiplistNode
+zsl	errdb.h	/^    zskiplist *zsl;$/;"	m	struct:zset
 zstrdup	zmalloc.c	/^char *zstrdup(const char *s) {$/;"	f
 zunionInterBlockClientOnSwappedKeys	dscache.c	/^void zunionInterBlockClientOnSwappedKeys(redisClient *c, struct redisCommand *cmd, int argc, robj **argv) {$/;"	f
-zv	redis.h	/^    unsigned char *zk, *zv;$/;"	m	struct:__anon6
-zvlen	redis.h	/^    unsigned int zklen, zvlen;$/;"	m	struct:__anon6
+zv	errdb.h	/^    unsigned char *zk, *zv;$/;"	m	struct:__anon6
+zvlen	errdb.h	/^    unsigned int zklen, zvlen;$/;"	m	struct:__anon6

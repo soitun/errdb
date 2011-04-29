@@ -1,4 +1,4 @@
-#include "redis.h"
+#include "errdb.h"
 
 /*-----------------------------------------------------------------------------
  * Config file parsing
@@ -149,11 +149,6 @@ void loadServerConfig(char *filename) {
             if (!validSyslogFacilities[i].name) {
                 err = "Invalid log facility. Must be one of USER or between LOCAL0-LOCAL7";
                 goto loaderr;
-            }
-        } else if (!strcasecmp(argv[0],"databases") && argc == 2) {
-            server.dbnum = atoi(argv[1]);
-            if (server.dbnum < 1) {
-                err = "Invalid number of databases"; goto loaderr;
             }
         } else if (!strcasecmp(argv[0],"include") && argc == 2) {
             loadServerConfig(argv[1]);

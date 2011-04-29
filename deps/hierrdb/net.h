@@ -31,7 +31,7 @@
 #ifndef __NET_H
 #define __NET_H
 
-#include "hiredis.h"
+#include "hierrdb.h"
 
 #if defined(__sun)
 #define AF_LOCAL AF_UNIX

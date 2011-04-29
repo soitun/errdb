@@ -1,4 +1,4 @@
-#include "redis.h"
+#include "errdb.h"
 #include <sys/uio.h>
 
 void *dupClientReplyValue(void *o) {
@@ -25,8 +25,8 @@ redisClient *createClient(int fd) {
         return NULL;
     }
 
-    selectDb(c,0);
     c->fd = fd;
+    c->db = server.db;
     c->querybuf = sdsempty();
     c->reqtype = 0;
     c->argc = 0;

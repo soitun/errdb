@@ -1,4 +1,4 @@
-#include "redis.h"
+#include "errdb.h"
 #include "sha1.h"   /* SHA1 is used for DEBUG DIGEST */
 
 #include <arpa/inet.h>
@@ -76,59 +76,57 @@ void computeDatasetDigest(unsigned char *final) {
 
     memset(final,0,20); /* Start with a clean result */
 
-    for (j = 0; j < server.dbnum; j++) {
-        redisDb *db = server.db+j;
+    redisDb *db = server.db;
 
-        if (dictSize(db->dict) == 0) continue;
-        di = dictGetIterator(db->dict);
+    if (dictSize(db->dict) == 0) return;
+    di = dictGetIterator(db->dict);
 
-        /* hash the DB id, so the same dataset moved in a different
-         * DB will lead to a different digest */
-        aux = htonl(j);
-        mixDigest(final,&aux,sizeof(aux));
+    /* hash the DB id, so the same dataset moved in a different
+     * DB will lead to a different digest */
+    aux = htonl(j);
+    mixDigest(final,&aux,sizeof(aux));
 
-        /* Iterate this DB writing every entry */
-        while((de = dictNext(di)) != NULL) {
-            sds key;
-            robj *keyobj, *o;
-            time_t expiretime;
+    /* Iterate this DB writing every entry */
+    while((de = dictNext(di)) != NULL) {
+        sds key;
+        robj *keyobj, *o;
+        time_t expiretime;
 
-            memset(digest,0,20); /* This key-val digest */
-            key = dictGetEntryKey(de);
-            keyobj = createStringObject(key,sdslen(key));
+        memset(digest,0,20); /* This key-val digest */
+        key = dictGetEntryKey(de);
+        keyobj = createStringObject(key,sdslen(key));
 
-            mixDigest(digest,key,sdslen(key));
+        mixDigest(digest,key,sdslen(key));
 
-            /* Make sure the key is loaded if VM is active */
-            o = lookupKeyRead(db,keyobj);
+        /* Make sure the key is loaded if VM is active */
+        o = lookupKeyRead(db,keyobj);
 
-            aux = htonl(o->type);
-            mixDigest(digest,&aux,sizeof(aux));
-            expiretime = getExpire(db,keyobj);
+        aux = htonl(o->type);
+        mixDigest(digest,&aux,sizeof(aux));
+        expiretime = getExpire(db,keyobj);
 
-            /* Save the key and associated value */
-            if (o->type == REDIS_STRING) {
-                mixObjectDigest(digest,o);
-            } else if (o->type == REDIS_LIST) {
-                listTypeIterator *li = listTypeInitIterator(o,0,REDIS_TAIL);
-                listTypeEntry entry;
-                while(listTypeNext(li,&entry)) {
-                    robj *eleobj = listTypeGet(&entry);
-                    mixObjectDigest(digest,eleobj);
-                    decrRefCount(eleobj);
-                }
-                listTypeReleaseIterator(li);
-            } else {
-                redisPanic("Unknown object type");
+        /* Save the key and associated value */
+        if (o->type == REDIS_STRING) {
+            mixObjectDigest(digest,o);
+        } else if (o->type == REDIS_LIST) {
+            listTypeIterator *li = listTypeInitIterator(o,0,REDIS_TAIL);
+            listTypeEntry entry;
+            while(listTypeNext(li,&entry)) {
+                robj *eleobj = listTypeGet(&entry);
+                mixObjectDigest(digest,eleobj);
+                decrRefCount(eleobj);
             }
-            /* If the key has an expire, add it to the mix */
-            if (expiretime != -1) xorDigest(digest,"!!expire!!",10);
-            /* We can finally xor the key-val digest to the final digest */
-            xorDigest(final,digest,20);
-            decrRefCount(keyobj);
+            listTypeReleaseIterator(li);
+        } else {
+            redisPanic("Unknown object type");
         }
-        dictReleaseIterator(di);
+        /* If the key has an expire, add it to the mix */
+        if (expiretime != -1) xorDigest(digest,"!!expire!!",10);
+        /* We can finally xor the key-val digest to the final digest */
+        xorDigest(final,digest,20);
+        decrRefCount(keyobj);
     }
+    dictReleaseIterator(di);
 }
 
 void debugCommand(redisClient *c) {

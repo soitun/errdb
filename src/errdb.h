@@ -1,5 +1,5 @@
-#ifndef __REDIS_H
-#define __REDIS_H
+#ifndef __ERRDB_H
+#define __ERRDB_H
 
 #include "fmacros.h"
 #include "config.h"
@@ -65,7 +65,6 @@
 #define REDIS_LIST 1
 #define REDIS_SET 2
 #define REDIS_ZSET 3
-#define REDIS_HASH 4
 #define REDIS_VMPOINTER 8
 /* Object types only used for persistence in .rdb files */
 #define REDIS_SET_INTSET 11
@@ -181,11 +180,6 @@
 #define APPENDFSYNC_NO 0
 #define APPENDFSYNC_ALWAYS 1
 #define APPENDFSYNC_EVERYSEC 2
-
-/* Zip structure related defaults */
-#define REDIS_HASH_MAX_ZIPMAP_ENTRIES 512
-#define REDIS_HASH_MAX_ZIPMAP_VALUE 64
-#define REDIS_SET_MAX_INTSET_ENTRIES 512
 
 /* Sets operations codes */
 #define REDIS_OP_UNION 0
@@ -339,7 +333,6 @@ struct redisServer {
     /* Configuration */
     int verbosity;
     int maxidletime;
-    int dbnum;
     int daemonize;
     int shutdown_asap;
     int activerehashing;
@@ -873,7 +866,6 @@ void ltrimCommand(redisClient *c);
 void typeCommand(redisClient *c);
 void lsetCommand(redisClient *c);
 void syncCommand(redisClient *c);
-void flushdbCommand(redisClient *c);
 void flushallCommand(redisClient *c);
 void lremCommand(redisClient *c);
 void rpoplpushCommand(redisClient *c);

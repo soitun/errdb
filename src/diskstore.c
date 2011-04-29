@@ -42,7 +42,7 @@
  * -------------------------------------------------------------------------
  */
 
-#include "redis.h"
+#include "errdb.h"
 #include "sha1.h"
 
 #include <math.h>
@@ -498,7 +498,7 @@ int rdbLoadDoubleValue(FILE *fp, double *val) {
 /* Load a Redis object of the specified type from the specified file.
  * On success a newly allocated object is returned, otherwise NULL. */
 robj *rdbLoadObject(int type, FILE *fp) {
-    robj *o, *ele, *dec;
+    robj *o, *ele;
     size_t len;
 
     redisLog(REDIS_DEBUG,"LOADING OBJECT %d (at %d)\n",type,ftell(fp));

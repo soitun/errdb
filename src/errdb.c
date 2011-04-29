@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "redis.h"
+#include "errdb.h"
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
@@ -82,8 +82,6 @@ struct redisCommand redisCommandTable[] = {
     {"insert",tsInsertCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"llen",llenCommand,2,0,NULL,1,1,1,0,0},
 
-    {"select",selectCommand,2,0,NULL,0,0,0,0,0},
-    {"move",moveCommand,3,0,NULL,1,1,1,0,0},
     {"rename",renameCommand,3,0,NULL,1,1,1,0,0},
     {"expire",expireCommand,3,0,NULL,0,0,0,0,0},
     {"expireat",expireatCommand,3,0,NULL,0,0,0,0,0},
@@ -367,14 +365,10 @@ int htNeedsResize(dict *dict) {
 /* If the percentage of used slots in the HT reaches REDIS_HT_MINFILL
  * we resize the hash table to save memory */
 void tryResizeHashTables(void) {
-    int j;
-
-    for (j = 0; j < server.dbnum; j++) {
-        if (htNeedsResize(server.db[j].dict))
-            dictResize(server.db[j].dict);
-        if (htNeedsResize(server.db[j].expires))
-            dictResize(server.db[j].expires);
-    }
+    if (htNeedsResize(server.db->dict))
+        dictResize(server.db->dict);
+    if (htNeedsResize(server.db->expires))
+        dictResize(server.db->expires);
 }
 
 /* Our hash table implementation performs rehashing incrementally while
@@ -382,13 +376,8 @@ void tryResizeHashTables(void) {
  * table will use two tables for a long time. So we try to use 1 millisecond
  * of CPU time at every serverCron() loop in order to rehash some key. */
 void incrementallyRehash(void) {
-    int j;
-
-    for (j = 0; j < server.dbnum; j++) {
-        if (dictIsRehashing(server.db[j].dict)) {
-            dictRehashMilliseconds(server.db[j].dict,1);
-            break; /* already used our millisecond for this loop... */
-        }
+    if (dictIsRehashing(server.db->dict)) {
+        dictRehashMilliseconds(server.db->dict,1);
     }
 }
 
@@ -412,40 +401,36 @@ void updateDictResizePolicy(void) {
  * it will get more aggressive to avoid that too much memory is used by
  * keys that can be removed from the keyspace. */
 void activeExpireCycle(void) {
-    int j;
+    int expired;
+    redisDb *db = server.db;
 
-    for (j = 0; j < server.dbnum; j++) {
-        int expired;
-        redisDb *db = server.db+j;
+    /* Continue to expire if at the end of the cycle more than 25%
+     * of the keys were expired. */
+    do {
+        long num = dictSize(db->expires);
+        time_t now = time(NULL);
 
-        /* Continue to expire if at the end of the cycle more than 25%
-         * of the keys were expired. */
-        do {
-            long num = dictSize(db->expires);
-            time_t now = time(NULL);
+        expired = 0;
+        if (num > REDIS_EXPIRELOOKUPS_PER_CRON)
+            num = REDIS_EXPIRELOOKUPS_PER_CRON;
+        while (num--) {
+            dictEntry *de;
+            time_t t;
 
-            expired = 0;
-            if (num > REDIS_EXPIRELOOKUPS_PER_CRON)
-                num = REDIS_EXPIRELOOKUPS_PER_CRON;
-            while (num--) {
-                dictEntry *de;
-                time_t t;
+            if ((de = dictGetRandomKey(db->expires)) == NULL) break;
+            t = (time_t) dictGetEntryVal(de);
+            if (now > t) {
+                sds key = dictGetEntryKey(de);
+                robj *keyobj = createStringObject(key,sdslen(key));
 
-                if ((de = dictGetRandomKey(db->expires)) == NULL) break;
-                t = (time_t) dictGetEntryVal(de);
-                if (now > t) {
-                    sds key = dictGetEntryKey(de);
-                    robj *keyobj = createStringObject(key,sdslen(key));
-
-                    propagateExpire(db,keyobj);
-                    dbDelete(db,keyobj);
-                    decrRefCount(keyobj);
-                    expired++;
-                    server.stat_expiredkeys++;
-                }
+                propagateExpire(db,keyobj);
+                dbDelete(db,keyobj);
+                decrRefCount(keyobj);
+                expired++;
+                server.stat_expiredkeys++;
             }
-        } while (expired > REDIS_EXPIRELOOKUPS_PER_CRON/4);
-    }
+        }
+    } while (expired > REDIS_EXPIRELOOKUPS_PER_CRON/4);
 }
 
 void updateLRUClock(void) {
@@ -486,16 +471,14 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     }
 
     /* Show some info about non-empty databases */
-    for (j = 0; j < server.dbnum; j++) {
-        long long size, used, vkeys;
+    long long size, used, vkeys;
 
-        size = dictSlots(server.db[j].dict);
-        used = dictSize(server.db[j].dict);
-        vkeys = dictSize(server.db[j].expires);
-        if (!(loops % 50) && (used || vkeys)) {
-            redisLog(REDIS_VERBOSE,"DB %d: %lld keys (%lld volatile) in %lld slots HT.",j,used,vkeys,size);
-            /* dictPrintStats(server.dict); */
-        }
+    size = dictSlots(server.db->dict);
+    used = dictSize(server.db->dict);
+    vkeys = dictSize(server.db->expires);
+    if (!(loops % 50) && (used || vkeys)) {
+        redisLog(REDIS_VERBOSE,"%lld keys (%lld volatile) in %lld slots HT.",used,vkeys,size);
+        /* dictPrintStats(server.dict); */
     }
 
     /* We don't want to resize the hash tables while a bacground saving
@@ -684,7 +667,6 @@ void initServerConfig() {
     server.unixsocket = NULL;
     server.ipfd = -1;
     server.sofd = -1;
-    server.dbnum = REDIS_DEFAULT_DBNUM;
     server.verbosity = REDIS_VERBOSE;
     server.maxidletime = REDIS_MAXIDLETIME;
     server.saveparams = NULL;
@@ -710,7 +692,6 @@ void initServerConfig() {
     server.ds_path = sdsnew("/tmp/redis.ds");
     server.cache_max_memory = 64LL*1024*1024; /* 64 MB of RAM */
     server.cache_blocked_clients = 0;
-    server.set_max_intset_entries = REDIS_SET_MAX_INTSET_ENTRIES;
     server.shutdown_asap = 0;
     server.cache_flush_delay = 0;
 
@@ -755,7 +736,7 @@ void initServer() {
 
     createSharedObjects();
     server.el = aeCreateEventLoop();
-    server.db = zmalloc(sizeof(redisDb)*server.dbnum);
+    server.db = zmalloc(sizeof(redisDb));
 
     if (server.port != 0) {
         server.ipfd = anetTcpServer(server.neterr,server.port,server.bindaddr);
@@ -776,17 +757,17 @@ void initServer() {
         redisLog(REDIS_WARNING, "Configured to not listen anywhere, exiting.");
         exit(1);
     }
-    for (j = 0; j < server.dbnum; j++) {
-        server.db[j].dict = dictCreate(&dbDictType,NULL);
-        server.db[j].expires = dictCreate(&keyptrDictType,NULL);
-        server.db[j].blocking_keys = dictCreate(&keylistDictType,NULL);
-        if (server.ds_enabled) {
-            server.db[j].io_keys = dictCreate(&keylistDictType,NULL);
-            server.db[j].io_negcache = dictCreate(&setDictType,NULL);
-            server.db[j].io_queued = dictCreate(&setDictType,NULL);
-        }
-        server.db[j].id = j;
+
+    server.db->dict = dictCreate(&dbDictType,NULL);
+    server.db->expires = dictCreate(&keyptrDictType,NULL);
+    server.db->blocking_keys = dictCreate(&keylistDictType,NULL);
+    if (server.ds_enabled) {
+        server.db->io_keys = dictCreate(&keylistDictType,NULL);
+        server.db->io_negcache = dictCreate(&setDictType,NULL);
+        server.db->io_queued = dictCreate(&setDictType,NULL);
     }
+    server.db->id = 0;
+
     server.cronloops = 0;
     server.bgsavechildpid = -1;
     server.bgrewritechildpid = -1;
@@ -1207,16 +1188,16 @@ sds genRedisInfoString(char *section) {
     if (allsections || defsections || !strcasecmp(section,"keyspace")) {
         if (sections++) info = sdscat(info,"\r\n");
         info = sdscatprintf(info, "# Keyspace\r\n");
-        for (j = 0; j < server.dbnum; j++) {
-            long long keys, vkeys;
 
-            keys = dictSize(server.db[j].dict);
-            vkeys = dictSize(server.db[j].expires);
-            if (keys || vkeys) {
-                info = sdscatprintf(info, "db%d:keys=%lld,expires=%lld\r\n",
-                    j, keys, vkeys);
-            }
+        long long keys, vkeys;
+
+        keys = dictSize(server.db->dict);
+        vkeys = dictSize(server.db->expires);
+        if (keys || vkeys) {
+            info = sdscatprintf(info, "db:keys=%lld,expires=%lld\r\n", 
+                keys, vkeys);
         }
+
     }
     return info;
 }
@@ -1264,86 +1245,84 @@ void freeMemoryIfNeeded(void) {
     if (server.maxmemory_policy == REDIS_MAXMEMORY_NO_EVICTION) return;
 
     while (server.maxmemory && zmalloc_used_memory() > server.maxmemory) {
-        int j, k, freed = 0;
+        int k, freed = 0;
 
-        for (j = 0; j < server.dbnum; j++) {
-            long bestval = 0; /* just to prevent warning */
-            sds bestkey = NULL;
-            struct dictEntry *de;
-            redisDb *db = server.db+j;
-            dict *dict;
+        long bestval = 0; /* just to prevent warning */
+        sds bestkey = NULL;
+        struct dictEntry *de;
+        redisDb *db = server.db;
+        dict *dict;
 
-            if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||
-                server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_RANDOM)
-            {
-                dict = server.db[j].dict;
-            } else {
-                dict = server.db[j].expires;
-            }
-            if (dictSize(dict) == 0) continue;
+        if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||
+            server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_RANDOM)
+        {
+            dict = server.db->dict;
+        } else {
+            dict = server.db->expires;
+        }
+        if (dictSize(dict) == 0) continue;
 
-            /* volatile-random and allkeys-random policy */
-            if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_RANDOM ||
-                server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_RANDOM)
-            {
+        /* volatile-random and allkeys-random policy */
+        if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_RANDOM ||
+            server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_RANDOM)
+        {
+            de = dictGetRandomKey(dict);
+            bestkey = dictGetEntryKey(de);
+        }
+
+        /* volatile-lru and allkeys-lru policy */
+        else if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||
+            server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)
+        {
+            for (k = 0; k < server.maxmemory_samples; k++) {
+                sds thiskey;
+                long thisval;
+                robj *o;
+
                 de = dictGetRandomKey(dict);
-                bestkey = dictGetEntryKey(de);
-            }
+                thiskey = dictGetEntryKey(de);
+                /* When policy is volatile-lru we need an additonal lookup
+                 * to locate the real key, as dict is set to db->expires. */
+                if (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)
+                    de = dictFind(db->dict, thiskey);
+                o = dictGetEntryVal(de);
+                thisval = estimateObjectIdleTime(o);
 
-            /* volatile-lru and allkeys-lru policy */
-            else if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||
-                server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)
-            {
-                for (k = 0; k < server.maxmemory_samples; k++) {
-                    sds thiskey;
-                    long thisval;
-                    robj *o;
-
-                    de = dictGetRandomKey(dict);
-                    thiskey = dictGetEntryKey(de);
-                    /* When policy is volatile-lru we need an additonal lookup
-                     * to locate the real key, as dict is set to db->expires. */
-                    if (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)
-                        de = dictFind(db->dict, thiskey);
-                    o = dictGetEntryVal(de);
-                    thisval = estimateObjectIdleTime(o);
-
-                    /* Higher idle time is better candidate for deletion */
-                    if (bestkey == NULL || thisval > bestval) {
-                        bestkey = thiskey;
-                        bestval = thisval;
-                    }
+                /* Higher idle time is better candidate for deletion */
+                if (bestkey == NULL || thisval > bestval) {
+                    bestkey = thiskey;
+                    bestval = thisval;
                 }
             }
+        }
 
-            /* volatile-ttl */
-            else if (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_TTL) {
-                for (k = 0; k < server.maxmemory_samples; k++) {
-                    sds thiskey;
-                    long thisval;
+        /* volatile-ttl */
+        else if (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_TTL) {
+            for (k = 0; k < server.maxmemory_samples; k++) {
+                sds thiskey;
+                long thisval;
 
-                    de = dictGetRandomKey(dict);
-                    thiskey = dictGetEntryKey(de);
-                    thisval = (long) dictGetEntryVal(de);
+                de = dictGetRandomKey(dict);
+                thiskey = dictGetEntryKey(de);
+                thisval = (long) dictGetEntryVal(de);
 
-                    /* Expire sooner (minor expire unix timestamp) is better
-                     * candidate for deletion */
-                    if (bestkey == NULL || thisval < bestval) {
-                        bestkey = thiskey;
-                        bestval = thisval;
-                    }
+                /* Expire sooner (minor expire unix timestamp) is better
+                 * candidate for deletion */
+                if (bestkey == NULL || thisval < bestval) {
+                    bestkey = thiskey;
+                    bestval = thisval;
                 }
             }
+        }
 
-            /* Finally remove the selected key. */
-            if (bestkey) {
-                robj *keyobj = createStringObject(bestkey,sdslen(bestkey));
-                propagateExpire(db,keyobj);
-                dbDelete(db,keyobj);
-                server.stat_evictedkeys++;
-                decrRefCount(keyobj);
-                freed++;
-            }
+        /* Finally remove the selected key. */
+        if (bestkey) {
+            robj *keyobj = createStringObject(bestkey,sdslen(bestkey));
+            propagateExpire(db,keyobj);
+            dbDelete(db,keyobj);
+            server.stat_evictedkeys++;
+            decrRefCount(keyobj);
+            freed++;
         }
         if (!freed) return; /* nothing to free... */
     }

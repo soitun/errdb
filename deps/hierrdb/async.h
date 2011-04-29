@@ -29,7 +29,7 @@
 
 #ifndef __HIREDIS_ASYNC_H
 #define __HIREDIS_ASYNC_H
-#include "hiredis.h"
+#include "hierrdb.h"
 
 #ifdef __cplusplus
 extern "C" {

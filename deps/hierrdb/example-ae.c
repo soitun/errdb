@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include "hiredis.h"
+#include "hierrdb.h"
 #include "async.h"
 #include "adapters/ae.h"
 

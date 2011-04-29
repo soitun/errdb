@@ -1,4 +1,4 @@
-#include "redis.h"
+#include "errdb.h"
 
 #include <fcntl.h>
 #include <pthread.h>
@@ -171,46 +171,45 @@ double computeObjectSwappability(robj *o) {
 
 /* Try to free one entry from the diskstore object cache */
 int cacheFreeOneEntry(void) {
-    int j, i;
+    int i;
     struct dictEntry *best = NULL;
     double best_swappability = 0;
     redisDb *best_db = NULL;
     robj *val;
     sds key;
 
-    for (j = 0; j < server.dbnum; j++) {
-        redisDb *db = server.db+j;
-        /* Why maxtries is set to 100?
-         * Because this way (usually) we'll find 1 object even if just 1% - 2%
-         * are swappable objects */
-        int maxtries = 100;
+    redisDb *db = server.db;
+    /* Why maxtries is set to 100?
+     * Because this way (usually) we'll find 1 object even if just 1% - 2%
+     * are swappable objects */
+    int maxtries = 100;
 
-        for (i = 0; i < 5 && dictSize(db->dict); i++) {
-            dictEntry *de;
-            double swappability;
-            robj keyobj;
-            sds keystr;
+    for (i = 0; i < 5 && dictSize(db->dict); i++) {
+        dictEntry *de;
+        double swappability;
+        robj keyobj;
+        sds keystr;
 
-            if (maxtries) maxtries--;
-            de = dictGetRandomKey(db->dict);
-            keystr = dictGetEntryKey(de);
-            val = dictGetEntryVal(de);
-            initStaticStringObject(keyobj,keystr);
+        if (maxtries) maxtries--;
+        de = dictGetRandomKey(db->dict);
+        keystr = dictGetEntryKey(de);
+        val = dictGetEntryVal(de);
+        initStaticStringObject(keyobj,keystr);
 
-            /* Don't remove objects that are currently target of a
-             * read or write operation. */
-            if (cacheScheduleIOGetFlags(db,&keyobj) != 0) {
-                if (maxtries) i--; /* don't count this try */
-                continue;
-            }
-            swappability = computeObjectSwappability(val);
-            if (!best || swappability > best_swappability) {
-                best = de;
-                best_swappability = swappability;
-                best_db = db;
-            }
+        /* Don't remove objects that are currently target of a
+         * read or write operation. */
+        if (cacheScheduleIOGetFlags(db,&keyobj) != 0) {
+            if (maxtries) i--; /* don't count this try */
+            continue;
+        }
+        swappability = computeObjectSwappability(val);
+        if (!best || swappability > best_swappability) {
+            best = de;
+            best_swappability = swappability;
+            best_db = db;
         }
     }
+
     if (best == NULL) {
         /* Not able to free a single object? we should check if our
          * IO queues have stuff in queue, and try to consume the queue
@@ -279,24 +278,22 @@ int negativeCacheEvictOneEntry(void) {
     robj *best = NULL;
     redisDb *best_db = NULL;
     time_t time, best_time = 0;
-    int j;
 
-    for (j = 0; j < server.dbnum; j++) {
-        redisDb *db = server.db+j;
-        int i;
+    redisDb *db = server.db;
+    int i;
 
-        if (dictSize(db->io_negcache) == 0) continue;
-        for (i = 0; i < 3; i++) {
-            de = dictGetRandomKey(db->io_negcache);
-            time = (time_t) dictGetEntryVal(de);
+    if (dictSize(db->io_negcache) == 0) return;
+    for (i = 0; i < 3; i++) {
+        de = dictGetRandomKey(db->io_negcache);
+        time = (time_t) dictGetEntryVal(de);
 
-            if (best == NULL || time < best_time) {
-                best = dictGetEntryKey(de);
-                best_db = db;
-                best_time = time;
-            }
+        if (best == NULL || time < best_time) {
+            best = dictGetEntryKey(de);
+            best_db = db;
+            best_time = time;
         }
     }
+
     if (best) {
         dictDelete(best_db->io_negcache,best);
         return REDIS_OK;
