@@ -67,13 +67,6 @@ robj *createSetObject(void) {
     return o;
 }
 
-robj *createIntsetObject(void) {
-    intset *is = intsetNew();
-    robj *o = createObject(REDIS_SET,is);
-    o->encoding = REDIS_ENCODING_INTSET;
-    return o;
-}
-
 void freeStringObject(robj *o) {
     if (o->encoding == REDIS_ENCODING_RAW) {
         sdsfree(o->ptr);
@@ -291,7 +284,6 @@ char *strEncoding(int encoding) {
     case REDIS_ENCODING_INT: return "int";
     case REDIS_ENCODING_HT: return "hashtable";
     case REDIS_ENCODING_LINKEDLIST: return "linkedlist";
-    case REDIS_ENCODING_INTSET: return "intset";
     default: return "unknown";
     }
 }

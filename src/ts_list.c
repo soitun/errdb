@@ -209,9 +209,9 @@ void tsFetchCommand(redisClient *c) {
 
         while(rangelen--) {
             tvNode *tv = ln->value;
-            addReplyLen(c,tvNodeLen(tv)+2);
+            addReplyLen(c,tvNodeLen(tv)+1);
             addReply(c,tv->t);
-            addReplyString(c, ": ", 2);
+            addReplyString(c, ":", 1);
             addReply(c,tv->v);
             addReply(c,shared.crlf);
             ln = ln->next;
@@ -229,14 +229,11 @@ void tsLastCommand(redisClient *c) {
     if (tv == NULL) {
         addReply(c,shared.nullbulk);
     } else {
-        addReplyLen(c,tvNodeLen(tv)+2);
+        addReplyLen(c,tvNodeLen(tv)+1);
         addReply(c,tv->t);
-        addReplyString(c, ": ", 2);
+        addReplyString(c, ":", 1);
         addReply(c,tv->v);
         addReply(c,shared.crlf);
     }
 }
-
-
-
 

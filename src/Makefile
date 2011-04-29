@@ -25,7 +25,7 @@ PREFIX= /usr/local
 INSTALL_BIN= $(PREFIX)/bin
 INSTALL= cp -p
 
-OBJ = debug.o adlist.o ae.o anet.o dict.o redis.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o sha1.o release.o networking.o util.o object.o db.o t_string.o ts_list.o  config.o dscache.o  intset.o syncio.o diskstore.o endian.o rdb.o
+OBJ = debug.o adlist.o ae.o anet.o dict.o redis.o sds.o zmalloc.o pqsort.o sha1.o release.o client.o util.o object.o db.o t_string.o ts_list.o  config.o dscache.o  syncio.o diskstore.o endian.o 
 BENCHOBJ = ae.o anet.o sds.o adlist.o zmalloc.o
 CLIOBJ = anet.o sds.o adlist.o redis-cli.o zmalloc.o release.o
 
@@ -45,41 +45,36 @@ ae_kqueue.o: ae_kqueue.c
 ae_select.o: ae_select.c
 anet.o: anet.c fmacros.h anet.h
 config.o: config.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h  intset.h version.h
+  zmalloc.h anet.h  version.h
 db.o: db.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h  intset.h version.h
+  zmalloc.h anet.h  version.h
 dict.o: dict.c fmacros.h dict.h zmalloc.h
 diskstore.o: diskstore.c redis.h fmacros.h config.h ae.h sds.h dict.h \
-  adlist.h zmalloc.h anet.h   intset.h version.h
+  adlist.h zmalloc.h anet.h   version.h
 dscache.o: dscache.c redis.h fmacros.h config.h ae.h sds.h dict.h \
-  adlist.h zmalloc.h anet.h  intset.h version.h
-intset.o: intset.c intset.h zmalloc.h
-lzf_c.o: lzf_c.c lzfP.h
-lzf_d.o: lzf_d.c lzfP.h
-networking.o: networking.c redis.h fmacros.h config.h ae.h sds.h dict.h \
-  adlist.h zmalloc.h anet.h   intset.h version.h
+  adlist.h zmalloc.h anet.h  version.h
+client.o: client.c redis.h fmacros.h config.h ae.h sds.h dict.h \
+  adlist.h zmalloc.h anet.h  version.h
 object.o: object.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h  intset.h version.h
+  zmalloc.h anet.h  version.h
 pqsort.o: pqsort.c
-rdb.o: rdb.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h  intset.h version.h lzf.h
 redis-cli.o: redis-cli.c fmacros.h version.h ../deps/hiredis/hiredis.h \
   sds.h zmalloc.h ../deps/linenoise/linenoise.h help.h
 redis.o: redis.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h  intset.h version.h
+  zmalloc.h anet.h version.h
 release.o: release.c release.h
 sds.o: sds.c sds.h zmalloc.h
 sha1.o: sha1.c sha1.h
 syncio.o: syncio.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h   intset.h version.h
+  zmalloc.h anet.h  version.h
 ts_list.o: ts_list.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h   intset.h version.h
+  zmalloc.h anet.h  version.h
 t_string.o: t_string.c redis.h fmacros.h config.h ae.h sds.h dict.h \
-  adlist.h zmalloc.h anet.h   intset.h version.h
+  adlist.h zmalloc.h anet.h  version.h
 util.o: util.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h   intset.h version.h
+  zmalloc.h anet.h version.h
 debug.o: debug.c redis.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h   intset.h version.h
+  zmalloc.h anet.h  version.h
 zmalloc.o: zmalloc.c config.h
 
 dependencies:

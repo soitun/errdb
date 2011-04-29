@@ -71,20 +71,9 @@ struct redisCommand *commandTable;
 struct redisCommand redisCommandTable[] = {
     {"get",getCommand,2,0,NULL,1,1,1,0,0},
     {"set",setCommand,3,REDIS_CMD_DENYOOM,NULL,0,0,0,0,0},
-    {"setnx",setnxCommand,3,REDIS_CMD_DENYOOM,NULL,0,0,0,0,0},
-    {"setex",setexCommand,4,REDIS_CMD_DENYOOM,NULL,0,0,0,0,0},
-    {"append",appendCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"strlen",strlenCommand,2,0,NULL,1,1,1,0,0},
     {"del",delCommand,-2,0,NULL,0,0,0,0,0},
     {"delete",delCommand,-2,0,NULL,0,0,0,0,0},
     {"exists",existsCommand,2,0,NULL,1,1,1,0,0},
-    {"setbit",setbitCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"getbit",getbitCommand,3,0,NULL,1,1,1,0,0},
-    {"setrange",setrangeCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"getrange",getrangeCommand,4,0,NULL,1,1,1,0,0},
-    {"substr",getrangeCommand,4,0,NULL,1,1,1,0,0},
-    {"incr",incrCommand,2,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"decr",decrCommand,2,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"mget",mgetCommand,-2,0,NULL,1,-1,1,0,0},
 
     //Time series data
@@ -93,16 +82,9 @@ struct redisCommand redisCommandTable[] = {
     {"insert",tsInsertCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
     {"llen",llenCommand,2,0,NULL,1,1,1,0,0},
 
-    {"incrby",incrbyCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"decrby",decrbyCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"getset",getsetCommand,3,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"mset",msetCommand,-3,REDIS_CMD_DENYOOM,NULL,1,-1,2,0,0},
-    {"msetnx",msetnxCommand,-3,REDIS_CMD_DENYOOM,NULL,1,-1,2,0,0},
-    {"randomkey",randomkeyCommand,1,0,NULL,0,0,0,0,0},
     {"select",selectCommand,2,0,NULL,0,0,0,0,0},
     {"move",moveCommand,3,0,NULL,1,1,1,0,0},
     {"rename",renameCommand,3,0,NULL,1,1,1,0,0},
-    {"renamenx",renamenxCommand,3,0,NULL,1,1,1,0,0},
     {"expire",expireCommand,3,0,NULL,0,0,0,0,0},
     {"expireat",expireatCommand,3,0,NULL,0,0,0,0,0},
     {"keys",keysCommand,2,0,NULL,0,0,0,0,0},
@@ -562,8 +544,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
             if (state == REDIS_BGSAVE_THREAD_DONE_OK ||
                 state == REDIS_BGSAVE_THREAD_DONE_ERR)
             {
-                backgroundSaveDoneHandler(
-                    (state == REDIS_BGSAVE_THREAD_DONE_OK) ? 0 : 1, 0);
+                //backgroundSaveDoneHandler(
+                //    (state == REDIS_BGSAVE_THREAD_DONE_OK) ? 0 : 1, 0);
             }
         }
     } else if (!server.ds_enabled) {

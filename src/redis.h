@@ -25,7 +25,6 @@
 #include "adlist.h" /* Linked lists */
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */
 #include "anet.h"   /* Networking the easy way */
-#include "intset.h" /* Compact integer set structure */
 #include "version.h"
 
 /* Error codes */
@@ -78,7 +77,6 @@
 #define REDIS_ENCODING_INT 1     /* Encoded as integer */
 #define REDIS_ENCODING_HT 2      /* Encoded as hash table */
 #define REDIS_ENCODING_LINKEDLIST 4 /* Encoded as regular linked list */
-#define REDIS_ENCODING_INTSET 6  /* Encoded as intset */
 #define REDIS_ENCODING_TS 8 /* Encoded as time series data*/
 
 /* Object types only used for dumping to disk */
@@ -230,10 +228,6 @@ typedef struct redisObject {
     unsigned lru:22;        /* lru time (relative to server.lruclock) */
     int refcount;
     void *ptr;
-    /* VM fields are only allocated if VM is active, otherwise the
-     * object allocation function will just allocate
-     * sizeof(redisObjct) minus sizeof(redisObjectVM), so using
-     * Redis without VM active will not have any overhead. */
 } robj;
 
 /* Macro used to initalize a Redis object allocated on the stack.
@@ -256,18 +250,6 @@ typedef struct redisDb {
     dict *io_queued;            /* Queued IO operations hash table */
     int id;
 } redisDb;
-
-/* Client MULTI/EXEC state */
-typedef struct multiCmd {
-    robj **argv;
-    int argc;
-    struct redisCommand *cmd;
-} multiCmd;
-
-typedef struct multiState {
-    multiCmd *commands;     /* Array of MULTI commands */
-    int count;              /* Total number of MULTI commands */
-} multiState;
 
 typedef struct blockingState {
     robj **keys;            /* The key we are waiting to terminate a blocking
