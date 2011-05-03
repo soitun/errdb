@@ -4,22 +4,34 @@
  * List API
  *----------------------------------------------------------------------------*/
 size_t tsObjLen(tsObj *obj) {
-    size_t len;
+    size_t len = 1;
     long n = (long)obj->time;
-    len = sdslen(obj->value);
+    printf("obj->time: %d\n", obj->time);
+    printf("obj->value: %s\n", obj->value);
     /* Compute how many bytes will take this integer as a radix 10 string */
     while((n = n/10) != 0) {
         len++;
     }
-    return len;
+    return len + sdslen(obj->value);
+}
+
+void tsObjReply(redisClient *c, tsObj *o) {
+    sds ts = sdsfromlonglong(o->time);
+    addReplyLen(c, sdslen(ts) + sdslen(o->value) + 1);
+    addReplySds(c, ts);
+    addReplyString(c, ":", 1);
+    addReplySds(c, o->value);
+    addReplySds(c,shared.crlf);
 }
 
 tsObj *createTsObject(int time, sds value) {
+    printf("time: %d, value: %s \n", time, value);
     tsObj *o;
     if ((o = zmalloc(sizeof(*o))) == NULL)
         return NULL;
+    o -> tag = 0;
     o->time = time;
-    o->value  = value;
+    o->value  = sdsdup(value);
     return o;
 }
 
@@ -106,26 +118,28 @@ void listTypeReleaseIterator(listTypeIterator *li) {
     zfree(li);
 }
 
-
 /*-----------------------------------------------------------------------------
  * List Commands
  *----------------------------------------------------------------------------*/
 void llenCommand(redisClient *c) {
-    tsObj *o = lookupKeyReadOrReply(c,c->argv[1],shared.czero);
+    tsObj *o = lookupKeyRead(c->db,c->argv[1]);
     if (o == NULL) return;
     addReplyLongLong(c,listTypeLength(o));
 }
 
 void tsInsertCommand(redisClient *c) {
-    list *list = lookupKeyWrite(c->db,c->argv[1]);
+    int time = atoi(c->argv[2]);
+    sds val = c->argv[3];
+    list *list = lookupKeyWrite(c->db, c->argv[1]);
     if (list == NULL) {
         list = listCreate();
-        dbAdd(c->db,c->argv[1],list);
-    } 
-    tsListInsert(list, atoi(c->argv[2]), c->argv[3]);
+        dbAdd(c->db, c->argv[1], list);
+    }
+    tsListInsert(list, time, val);
     addReplyLongLong(c, listTypeLength(list));
-    signalModifiedKey(c->db, c->argv[1]);
-    server.dirty++;
+    //TODO: fix later
+    //signalModifiedKey(c->db, key);
+    //server.dirty++;
 }
 
 void tsFetchCommand(redisClient *c) {
@@ -135,7 +149,7 @@ void tsFetchCommand(redisClient *c) {
     int llen;
     int rangelen;
 
-    if ((list = lookupKeyReadOrReply(c,c->argv[1],shared.emptymultibulk)) == NULL) return;
+    if ((list = lookupKeyRead(c->db,c->argv[1])) == NULL) return;
     llen = listTypeLength(list);
 
     /* convert negative indexes */
@@ -159,26 +173,21 @@ void tsFetchCommand(redisClient *c) {
 
     while(rangelen--) {
         tsObj *o = ln->value;
-        addReplyLen(c,tsObjLen(o)+1);
-        addReplySds(c, sdsfromlonglong(o->time));
-        addReplyString(c, ":", 1);
-        addReplySds(c,o->value);
-        addReplySds(c,shared.crlf);
+        tsObjReply(c, o);
         ln = ln->next;
     }
 }
 
+
 void tsLastCommand(redisClient *c) {
-    list *list = lookupKeyWriteOrReply(c,c->argv[1],shared.nullbulk);
-    tsObj *o = listLast(list);
-    if (o == NULL) {
-        addReplySds(c,shared.nullbulk);
-    } else {
-        addReplyLen(c,tsObjLen(o)+1);
-        addReplySds(c, sdsfromlonglong(o->time));
-        addReplyString(c, ":", 1);
-        addReplySds(c,o->value);
-        addReplySds(c,shared.crlf);
+    sds key = c->argv[1];
+    list *list = lookupKeyRead(c->db, key);
+    if (list == NULL) {
+        addReplySds(c, shared.nullbulk);
+        return;
     }
+    tsObj *o = tsListLast(list);
+    printf("last return, o->time: %d, o->value: %s\n", o->time, o->value);
+    tsObjReply(c, o);
 }
 

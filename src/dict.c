@@ -62,7 +62,7 @@ static unsigned int dict_force_resize_ratio = 5;
 
 static int _dictExpandIfNeeded(dict *ht);
 static unsigned long _dictNextPower(unsigned long size);
-static int _dictKeyIndex(dict *ht, const void *key);
+static int _dictKeyIndex(dict *ht, const sds key);
 static int _dictInit(dict *ht, dictType *type, void *privDataPtr);
 
 /* -------------------------- hash functions -------------------------------- */
@@ -257,7 +257,7 @@ static void _dictRehashStep(dict *d) {
 }
 
 /* Add an element to the target hash table */
-int dictAdd(dict *d, void *key, void *val)
+int dictAdd(dict *d, sds key, void *val)
 {
     int index;
     dictEntry *entry;
@@ -287,7 +287,7 @@ int dictAdd(dict *d, void *key, void *val)
  * Return 1 if the key was added from scratch, 0 if there was already an
  * element with such key and dictReplace() just performed a value update
  * operation. */
-int dictReplace(dict *d, void *key, void *val)
+int dictReplace(dict *d, sds key, void *val)
 {
     dictEntry *entry, auxentry;
 
@@ -310,7 +310,7 @@ int dictReplace(dict *d, void *key, void *val)
 }
 
 /* Search and remove an element */
-static int dictGenericDelete(dict *d, const void *key, int nofree)
+static int dictGenericDelete(dict *d, const sds key, int nofree)
 {
     unsigned int h, idx;
     dictEntry *he, *prevHe;
@@ -347,11 +347,11 @@ static int dictGenericDelete(dict *d, const void *key, int nofree)
     return DICT_ERR; /* not found */
 }
 
-int dictDelete(dict *ht, const void *key) {
+int dictDelete(dict *ht, const sds key) {
     return dictGenericDelete(ht,key,0);
 }
 
-int dictDeleteNoFree(dict *ht, const void *key) {
+int dictDeleteNoFree(dict *ht, const sds key) {
     return dictGenericDelete(ht,key,1);
 }
 
@@ -389,10 +389,11 @@ void dictRelease(dict *d)
     zfree(d);
 }
 
-dictEntry *dictFind(dict *d, const void *key)
+dictEntry *dictFind(dict *d, sds key)
 {
     dictEntry *he;
     unsigned int h, idx, table;
+
 
     if (d->ht[0].size == 0) return NULL; /* We don't have a table at all */
     if (dictIsRehashing(d)) _dictRehashStep(d);
@@ -410,7 +411,7 @@ dictEntry *dictFind(dict *d, const void *key)
     return NULL;
 }
 
-void *dictFetchValue(dict *d, const void *key) {
+void *dictFetchValue(dict *d, const sds key) {
     dictEntry *he;
 
     he = dictFind(d,key);
@@ -548,7 +549,7 @@ static unsigned long _dictNextPower(unsigned long size)
  *
  * Note that if we are in the process of rehashing the hash table, the
  * index is always returned in the context of the second (new) hash table. */
-static int _dictKeyIndex(dict *d, const void *key)
+static int _dictKeyIndex(dict *d, const sds key)
 {
     unsigned int h, idx, table;
     dictEntry *he;
@@ -648,12 +649,12 @@ void dictDisableResize(void) {
 
 /* ----------------------- StringCopy Hash Table Type ------------------------*/
 
-static unsigned int _dictStringCopyHTHashFunction(const void *key)
+static unsigned int _dictStringCopyHTHashFunction(const sds key)
 {
     return dictGenHashFunction(key, strlen(key));
 }
 
-static void *_dictStringDup(void *privdata, const void *key)
+static void *_dictStringDup(void *privdata, const sds key)
 {
     int len = strlen(key);
     char *copy = zmalloc(len+1);
@@ -664,15 +665,15 @@ static void *_dictStringDup(void *privdata, const void *key)
     return copy;
 }
 
-static int _dictStringCopyHTKeyCompare(void *privdata, const void *key1,
-        const void *key2)
+static int _dictStringCopyHTKeyCompare(void *privdata, const sds key1,
+        const sds key2)
 {
     DICT_NOTUSED(privdata);
 
     return strcmp(key1, key2) == 0;
 }
 
-static void _dictStringDestructor(void *privdata, void *key)
+static void _dictStringDestructor(void *privdata, sds key)
 {
     DICT_NOTUSED(privdata);
 

@@ -207,8 +207,8 @@ void _redisPanic(char *msg, char *file, int line);
 #define REDIS_LRU_CLOCK_MAX ((1<<21)-1) /* Max value of obj->lru */
 #define REDIS_LRU_CLOCK_RESOLUTION 10 /* LRU clock resolution in seconds */
 typedef struct tsObject {
-    unsigned tag:2;
-    unsigned time:30;
+    char tag;
+    int time;
     sds value;
 } tsObj;
 
@@ -573,13 +573,11 @@ void propagateExpire(redisDb *db, sds key);
 int expireIfNeeded(redisDb *db, sds key);
 time_t getExpire(redisDb *db, sds key);
 void setExpire(redisDb *db, sds key, time_t when);
-tsObj *lookupKey(redisDb *db, sds key);
-tsObj *lookupKeyRead(redisDb *db, sds key);
-tsObj *lookupKeyWrite(redisDb *db, sds key);
-tsObj *lookupKeyReadOrReply(redisClient *c, sds key, tsObj *reply);
-tsObj *lookupKeyWriteOrReply(redisClient *c, sds key, tsObj *reply);
-int dbAdd(redisDb *db, sds key, tsObj *val);
-int dbReplace(redisDb *db, sds key, tsObj *val);
+list *lookupKey(redisDb *db, sds key);
+list *lookupKeyRead(redisDb *db, sds key);
+list *lookupKeyWrite(redisDb *db, sds key);
+int dbAdd(redisDb *db, sds key, list *val);
+int dbReplace(redisDb *db, sds key, list *val);
 int dbExists(redisDb *db, sds key);
 sds dbRandomKey(redisDb *db);
 int dbDelete(redisDb *db, sds key);

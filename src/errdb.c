@@ -180,25 +180,22 @@ void dictTsListDestructor(void *privdata, void *val)
     listRelease((list*)val);
 }
 
-int dictSdsKeyCompare(void *privdata, const void *key1,
-        const void *key2)
+int dictSdsKeyCompare(void *privdata, const sds key1,
+        const sds key2)
 {
-    int l1,l2;
     DICT_NOTUSED(privdata);
 
-    l1 = sdslen((sds)key1);
-    l2 = sdslen((sds)key2);
-    if (l1 != l2) return 0;
-    return memcmp(key1, key2, l1) == 0;
+    printf("DEBUG: key1: %s, key2: %s \n", key1, key2);
+
+    return sdscmp(key1, key2) == 0;
 }
 
 /* A case insensitive version used for the command lookup table. */
-int dictSdsKeyCaseCompare(void *privdata, const void *key1,
-        const void *key2)
+int dictSdsKeyCaseCompare(void *privdata, const sds key1,
+        const sds key2)
 {
-    DICT_NOTUSED(privdata);
-
-    return strcasecmp(key1, key2) == 0;
+    DICT_NOTUSED(privdata); 
+    return sdscmp(key1, key2) == 0;
 }
 
 void dictRedisObjectDestructor(void *privdata, void *val)
@@ -208,19 +205,19 @@ void dictRedisObjectDestructor(void *privdata, void *val)
     if (val == NULL) return; /* Values of swapped out keys as set to NULL */
 }
 
-void dictSdsDestructor(void *privdata, void *val)
+void dictSdsDestructor(void *privdata, sds val)
 {
     DICT_NOTUSED(privdata);
 
     sdsfree(val);
 }
 
-unsigned int dictSdsHash(const void *key) {
-    return dictGenHashFunction((unsigned char*)key, sdslen((char*)key));
+unsigned int dictSdsHash(sds key) {
+    return dictGenHashFunction((unsigned char*)key, sdslen(key));
 }
 
-unsigned int dictSdsCaseHash(const void *key) {
-    return dictGenCaseHashFunction((unsigned char*)key, sdslen((char*)key));
+unsigned int dictSdsCaseHash(sds key) {
+    return dictGenCaseHashFunction((unsigned char*)key, sdslen(key));
 }
 
 /* Db->dict, keys are sds strings, vals are Redis objects. */

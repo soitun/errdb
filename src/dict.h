@@ -36,24 +36,27 @@
 #ifndef __DICT_H
 #define __DICT_H
 
+
 #define DICT_OK 0
 #define DICT_ERR 1
 
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void) V)
 
+#include "sds.h"
+
 typedef struct dictEntry {
-    void *key;
+    sds key;
     void *val;
     struct dictEntry *next;
 } dictEntry;
 
 typedef struct dictType {
-    unsigned int (*hashFunction)(const void *key);
-    void *(*keyDup)(void *privdata, const void *key);
+    unsigned int (*hashFunction)(sds key);
+    void *(*keyDup)(void *privdata, sds key);
     void *(*valDup)(void *privdata, const void *obj);
-    int (*keyCompare)(void *privdata, const void *key1, const void *key2);
-    void (*keyDestructor)(void *privdata, void *key);
+    int (*keyCompare)(void *privdata, sds key1, sds key2);
+    void (*keyDestructor)(void *privdata, sds key);
     void (*valDestructor)(void *privdata, void *obj);
 } dictType;
 
@@ -123,13 +126,13 @@ typedef struct dictIterator {
 /* API */
 dict *dictCreate(dictType *type, void *privDataPtr);
 int dictExpand(dict *d, unsigned long size);
-int dictAdd(dict *d, void *key, void *val);
-int dictReplace(dict *d, void *key, void *val);
-int dictDelete(dict *d, const void *key);
-int dictDeleteNoFree(dict *d, const void *key);
+int dictAdd(dict *d, sds key, void *val);
+int dictReplace(dict *d, sds key, void *val);
+int dictDelete(dict *d, const sds key);
+int dictDeleteNoFree(dict *d, const sds key);
 void dictRelease(dict *d);
-dictEntry * dictFind(dict *d, const void *key);
-void *dictFetchValue(dict *d, const void *key);
+dictEntry * dictFind(dict *d, const sds key);
+void *dictFetchValue(dict *d, const sds key);
 int dictResize(dict *d);
 dictIterator *dictGetIterator(dict *d);
 dictEntry *dictNext(dictIterator *iter);

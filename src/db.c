@@ -36,7 +36,7 @@ void lookupWaitBusyKey(redisDb *db, sds key) {
     //redisAssert((cacheScheduleIOGetFlags(db,key) & REDIS_IO_SAVEINPROG) == 0);
 }
 
-tsObj *lookupKey(redisDb *db, sds key) {
+list *lookupKey(redisDb *db, sds key) {
     dictEntry *de = dictFind(db->dict, key);
     if (de) {
         tsObj *val = dictGetEntryVal(de);
@@ -101,39 +101,24 @@ tsObj *lookupKey(redisDb *db, sds key) {
     }
 }
 
-tsObj *lookupKeyRead(redisDb *db, sds key) {
+list *lookupKeyRead(redisDb *db, sds key) {
     expireIfNeeded(db,key);
-    return lookupKey(db,key);
+    return lookupKey(db, key);
 }
 
-tsObj *lookupKeyWrite(redisDb *db, sds key) {
+list *lookupKeyWrite(redisDb *db, sds key) {
     expireIfNeeded(db,key);
-    return lookupKey(db,key);
+    return lookupKey(db, key);
 }
 
-tsObj *lookupKeyReadOrReply(redisClient *c, sds key, tsObj *reply) {
-    tsObj *o = lookupKeyRead(c->db, key);
-    if (!o) addReplyObj(c,reply);
-    return o;
-}
-
-tsObj *lookupKeyWriteOrReply(redisClient *c, sds key, tsObj *reply) {
-    tsObj *o = lookupKeyWrite(c->db, key);
-    if (!o) addReplyObj(c,reply);
-    return o;
-}
-
-/* Add the key to the DB. If the key already exists REDIS_ERR is returned,
- * otherwise REDIS_OK is returned, and the caller should increment the
- * refcount of 'val'. */
-int dbAdd(redisDb *db, sds key, tsObj *val) {
+int dbAdd(redisDb *db, sds key, list *list) {
     /* Perform a lookup before adding the key, as we need to copy the
      * key value. */
     if (dictFind(db->dict, key) != NULL) {
         return REDIS_ERR;
     } else {
         sds copy = sdsdup(key);
-        dictAdd(db->dict, copy, val);
+        dictAdd(db->dict, copy, list);
         //TODO:FIX LATER
         //if (server.ds_enabled) cacheSetKeyMayExist(db,key);
         return REDIS_OK;
@@ -144,11 +129,11 @@ int dbAdd(redisDb *db, sds key, tsObj *val) {
  * the value associated to the key is replaced with the new one.
  *
  * On update (key already existed) 0 is returned. Otherwise 1. */
-int dbReplace(redisDb *db, sds key, tsObj *val) {
+int dbReplace(redisDb *db, sds key, list *val) {
     tsObj *oldval;
     int retval;
 
-    if ((oldval = dictFetchValue(db->dict,key)) == NULL) {
+    if ((oldval = dictFetchValue(db->dict, key)) == NULL) {
         sds copy = sdsdup(key);
         dictAdd(db->dict, copy, val);
         retval = 1;

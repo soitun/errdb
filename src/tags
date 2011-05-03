@@ -193,7 +193,7 @@ _addReplyToBuffer	client.c	/^int _addReplyToBuffer(redisClient *c, char *s, size
 _dictClear	dict.c	/^int _dictClear(dict *d, dictht *ht)$/;"	f
 _dictExpandIfNeeded	dict.c	/^static int _dictExpandIfNeeded(dict *d)$/;"	f	file:
 _dictInit	dict.c	/^int _dictInit(dict *d, dictType *type,$/;"	f
-_dictKeyIndex	dict.c	/^static int _dictKeyIndex(dict *d, const void *key)$/;"	f	file:
+_dictKeyIndex	dict.c	/^static int _dictKeyIndex(dict *d, const sds key)$/;"	f	file:
 _dictNextPower	dict.c	/^static unsigned long _dictNextPower(unsigned long size)$/;"	f	file:
 _dictPrintStatsHt	dict.c	/^static void _dictPrintStatsHt(dictht *ht) {$/;"	f	file:
 _dictRehashStep	dict.c	/^static void _dictRehashStep(dict *d) {$/;"	f	file:
@@ -389,12 +389,12 @@ db	errdb.h	/^    redisDb *db;$/;"	m	struct:ioop
 db	errdb.h	/^    redisDb *db;$/;"	m	struct:redisClient
 db	errdb.h	/^    redisDb *db;$/;"	m	struct:redisServer
 db	errdb.h	/^    redisDb *db;\/* Redis database *\/$/;"	m	struct:iojob
-dbAdd	db.c	/^int dbAdd(redisDb *db, sds key, tsObj *val) {$/;"	f
+dbAdd	db.c	/^int dbAdd(redisDb *db, sds key, list *list) {$/;"	f
 dbDelete	db.c	/^int dbDelete(redisDb *db, sds key) {$/;"	f
 dbDictType	errdb.c	/^dictType dbDictType = {$/;"	v
 dbExists	db.c	/^int dbExists(redisDb *db, sds key) {$/;"	f
 dbRandomKey	db.c	/^sds dbRandomKey(redisDb *db) {$/;"	f
-dbReplace	db.c	/^int dbReplace(redisDb *db, sds key, tsObj *val) {$/;"	f
+dbReplace	db.c	/^int dbReplace(redisDb *db, sds key, list *val) {$/;"	f
 dbfilename	errdb.h	/^    char *dbfilename;$/;"	m	struct:redisServer
 dbnum	errdb-cli.c	/^    int dbnum;$/;"	m	struct:config	file:
 dbsizeCommand	db.c	/^void dbsizeCommand(redisClient *c) {$/;"	f
@@ -405,24 +405,24 @@ di	errdb.h	/^    dictIterator *di;$/;"	m	struct:__anon4
 dict	dict.h	/^typedef struct dict {$/;"	s
 dict	dict.h	/^} dict;$/;"	t	typeref:struct:dict
 dict	errdb.h	/^    dict *dict;                 \/* The keyspace for this DB *\/$/;"	m	struct:redisDb
-dictAdd	dict.c	/^int dictAdd(dict *d, void *key, void *val)$/;"	f
+dictAdd	dict.c	/^int dictAdd(dict *d, sds key, void *val)$/;"	f
 dictCompareHashKeys	dict.h	/^#define dictCompareHashKeys(/;"	d
 dictCreate	dict.c	/^dict *dictCreate(dictType *type,$/;"	f
-dictDelete	dict.c	/^int dictDelete(dict *ht, const void *key) {$/;"	f
-dictDeleteNoFree	dict.c	/^int dictDeleteNoFree(dict *ht, const void *key) {$/;"	f
+dictDelete	dict.c	/^int dictDelete(dict *ht, const sds key) {$/;"	f
+dictDeleteNoFree	dict.c	/^int dictDeleteNoFree(dict *ht, const sds key) {$/;"	f
 dictDisableResize	dict.c	/^void dictDisableResize(void) {$/;"	f
 dictEmpty	dict.c	/^void dictEmpty(dict *d) {$/;"	f
 dictEnableResize	dict.c	/^void dictEnableResize(void) {$/;"	f
 dictEntry	dict.h	/^typedef struct dictEntry {$/;"	s
 dictEntry	dict.h	/^} dictEntry;$/;"	t	typeref:struct:dictEntry
 dictExpand	dict.c	/^int dictExpand(dict *d, unsigned long size)$/;"	f
-dictFetchValue	dict.c	/^void *dictFetchValue(dict *d, const void *key) {$/;"	f
-dictFind	dict.c	/^dictEntry *dictFind(dict *d, const void *key)$/;"	f
+dictFetchValue	dict.c	/^void *dictFetchValue(dict *d, const sds key) {$/;"	f
+dictFind	dict.c	/^dictEntry *dictFind(dict *d, sds key)$/;"	f
 dictFreeEntryKey	dict.h	/^#define dictFreeEntryKey(/;"	d
 dictFreeEntryVal	dict.h	/^#define dictFreeEntryVal(/;"	d
 dictGenCaseHashFunction	dict.c	/^unsigned int dictGenCaseHashFunction(const unsigned char *buf, int len) {$/;"	f
 dictGenHashFunction	dict.c	/^unsigned int dictGenHashFunction(const unsigned char *buf, int len) {$/;"	f
-dictGenericDelete	dict.c	/^static int dictGenericDelete(dict *d, const void *key, int nofree)$/;"	f	file:
+dictGenericDelete	dict.c	/^static int dictGenericDelete(dict *d, const sds key, int nofree)$/;"	f	file:
 dictGetEntryKey	dict.h	/^#define dictGetEntryKey(/;"	d
 dictGetEntryVal	dict.h	/^#define dictGetEntryVal(/;"	d
 dictGetIterator	dict.c	/^dictIterator *dictGetIterator(dict *d)$/;"	f
@@ -441,13 +441,13 @@ dictRehash	dict.c	/^int dictRehash(dict *d, int n) {$/;"	f
 dictRehashMilliseconds	dict.c	/^int dictRehashMilliseconds(dict *d, int ms) {$/;"	f
 dictRelease	dict.c	/^void dictRelease(dict *d)$/;"	f
 dictReleaseIterator	dict.c	/^void dictReleaseIterator(dictIterator *iter)$/;"	f
-dictReplace	dict.c	/^int dictReplace(dict *d, void *key, void *val)$/;"	f
+dictReplace	dict.c	/^int dictReplace(dict *d, sds key, void *val)$/;"	f
 dictResize	dict.c	/^int dictResize(dict *d)$/;"	f
-dictSdsCaseHash	errdb.c	/^unsigned int dictSdsCaseHash(const void *key) {$/;"	f
-dictSdsDestructor	errdb.c	/^void dictSdsDestructor(void *privdata, void *val)$/;"	f
-dictSdsHash	errdb.c	/^unsigned int dictSdsHash(const void *key) {$/;"	f
-dictSdsKeyCaseCompare	errdb.c	/^int dictSdsKeyCaseCompare(void *privdata, const void *key1,$/;"	f
-dictSdsKeyCompare	errdb.c	/^int dictSdsKeyCompare(void *privdata, const void *key1,$/;"	f
+dictSdsCaseHash	errdb.c	/^unsigned int dictSdsCaseHash(sds key) {$/;"	f
+dictSdsDestructor	errdb.c	/^void dictSdsDestructor(void *privdata, sds val)$/;"	f
+dictSdsHash	errdb.c	/^unsigned int dictSdsHash(sds key) {$/;"	f
+dictSdsKeyCaseCompare	errdb.c	/^int dictSdsKeyCaseCompare(void *privdata, const sds key1,$/;"	f
+dictSdsKeyCompare	errdb.c	/^int dictSdsKeyCompare(void *privdata, const sds key1,$/;"	f
 dictSetHashKey	dict.h	/^#define dictSetHashKey(/;"	d
 dictSetHashVal	dict.h	/^#define dictSetHashVal(/;"	d
 dictSize	dict.h	/^#define dictSize(/;"	d
@@ -512,7 +512,7 @@ getExpire	db.c	/^time_t getExpire(redisDb *db, sds key) {$/;"	f
 getMcontextEip	errdb.c	/^static void *getMcontextEip(ucontext_t *uc) {$/;"	f	file:
 group	help.h	/^  int group;$/;"	m	struct:commandHelp
 hashDictType	errdb.h	/^dictType hashDictType;$/;"	v
-hashFunction	dict.h	/^    unsigned int (*hashFunction)(const void *key);$/;"	m	struct:dictType
+hashFunction	dict.h	/^    unsigned int (*hashFunction)(sds key);$/;"	m	struct:dictType
 hashTypeIterator	errdb.h	/^} hashTypeIterator;$/;"	t	typeref:struct:__anon4
 head	adlist.h	/^    listNode *head;$/;"	m	struct:list
 helpEntries	errdb-cli.c	/^static helpEntry *helpEntries;$/;"	v	file:
@@ -562,12 +562,12 @@ isinf	solarisfixes.h	/^#undef isinf$/;"	d
 isnan	solarisfixes.h	/^#define isnan(/;"	d
 isnan	solarisfixes.h	/^#undef isnan$/;"	d
 iterators	dict.h	/^    int iterators; \/* number of iterators currently running *\/$/;"	m	struct:dict
-key	dict.h	/^    void *key;$/;"	m	struct:dictEntry
+key	dict.h	/^    sds key;$/;"	m	struct:dictEntry
 key	errdb.h	/^    sds key;  \/* This I\/O request is about this key *\/$/;"	m	struct:iojob
 key	errdb.h	/^    sds key;$/;"	m	struct:ioop
-keyCompare	dict.h	/^    int (*keyCompare)(void *privdata, const void *key1, const void *key2);$/;"	m	struct:dictType
-keyDestructor	dict.h	/^    void (*keyDestructor)(void *privdata, void *key);$/;"	m	struct:dictType
-keyDup	dict.h	/^    void *(*keyDup)(void *privdata, const void *key);$/;"	m	struct:dictType
+keyCompare	dict.h	/^    int (*keyCompare)(void *privdata, sds key1, sds key2);$/;"	m	struct:dictType
+keyDestructor	dict.h	/^    void (*keyDestructor)(void *privdata, sds key);$/;"	m	struct:dictType
+keyDup	dict.h	/^    void *(*keyDup)(void *privdata, sds key);$/;"	m	struct:dictType
 keylistDictType	errdb.c	/^dictType keylistDictType = {$/;"	v
 keyptrDictType	errdb.c	/^dictType keyptrDictType = {$/;"	v
 keys	errdb.h	/^    sds *keys;            \/* The key we are waiting to terminate a blocking$/;"	m	struct:blockingState
@@ -633,11 +633,9 @@ loadingerr	errdb.h	/^    outofrangeerr, loadingerr, plus,$/;"	m	struct:sharedObj
 logfile	errdb.h	/^    char *logfile;$/;"	m	struct:redisServer
 lookupCommand	errdb.c	/^struct redisCommand *lookupCommand(sds name) {$/;"	f
 lookupCommandByCString	errdb.c	/^struct redisCommand *lookupCommandByCString(char *s) {$/;"	f
-lookupKey	db.c	/^tsObj *lookupKey(redisDb *db, sds key) {$/;"	f
-lookupKeyRead	db.c	/^tsObj *lookupKeyRead(redisDb *db, sds key) {$/;"	f
-lookupKeyReadOrReply	db.c	/^tsObj *lookupKeyReadOrReply(redisClient *c, sds key, tsObj *reply) {$/;"	f
-lookupKeyWrite	db.c	/^tsObj *lookupKeyWrite(redisDb *db, sds key) {$/;"	f
-lookupKeyWriteOrReply	db.c	/^tsObj *lookupKeyWriteOrReply(redisClient *c, sds key, tsObj *reply) {$/;"	f
+lookupKey	db.c	/^list *lookupKey(redisDb *db, sds key) {$/;"	f
+lookupKeyRead	db.c	/^list *lookupKeyRead(redisDb *db, sds key) {$/;"	f
+lookupKeyWrite	db.c	/^list *lookupKeyWrite(redisDb *db, sds key) {$/;"	f
 lookupWaitBusyKey	db.c	/^void lookupWaitBusyKey(redisDb *db, sds key) {$/;"	f
 lruclock	errdb.h	/^    unsigned lruclock:22;        \/* clock incrementing every minute, for LRU *\/$/;"	m	struct:redisServer
 lruclock_padding	errdb.h	/^    unsigned lruclock_padding:10;$/;"	m	struct:redisServer
@@ -846,12 +844,12 @@ syslog_facility	errdb.h	/^    int syslog_facility;$/;"	m	struct:redisServer
 syslog_ident	errdb.h	/^    char *syslog_ident;$/;"	m	struct:redisServer
 table	dict.h	/^    dictEntry **table;$/;"	m	struct:dictht
 table	dict.h	/^    int table;$/;"	m	struct:dictIterator
-tag	errdb.h	/^    unsigned tag:2;$/;"	m	struct:tsObject
+tag	errdb.h	/^    char tag;$/;"	m	struct:tsObject
 tail	adlist.h	/^    listNode *tail;$/;"	m	struct:list
 target	errdb.h	/^    sds *target;           \/* The key that should receive the element,$/;"	m	struct:blockingState
 test_cond	testhelp.h	/^#define test_cond(/;"	d
 test_report	testhelp.h	/^#define test_report(/;"	d
-time	errdb.h	/^    unsigned time:30;$/;"	m	struct:tsObject
+time	errdb.h	/^    int time;$/;"	m	struct:tsObject
 timeEventHead	ae.h	/^    aeTimeEvent *timeEventHead;$/;"	m	struct:aeEventLoop
 timeEventNextId	ae.h	/^    long long timeEventNextId;$/;"	m	struct:aeEventLoop
 timeInMilliseconds	dict.c	/^long long timeInMilliseconds(void) {$/;"	f

@@ -82,13 +82,9 @@ void _addReplyStringToList(redisClient *c, char *s, size_t len) {
 
 void addReplySds(redisClient *c, sds s) {
     if (_installWriteEvent(c) != REDIS_OK) {
-        /* The caller expects the sds to be free'd. */
-        sdsfree(s);
         return;
     }
-    if (_addReplyToBuffer(c,s,sdslen(s)) == REDIS_OK) {
-        sdsfree(s);
-    } else {
+    if (_addReplyToBuffer(c, s, sdslen(s)) != REDIS_OK) {
         /* This method free's the sds when it is no longer needed. */
         _addReplySdsToList(c,s);
     }
