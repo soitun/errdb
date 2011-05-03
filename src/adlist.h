@@ -51,6 +51,8 @@ typedef struct list {
     void (*free)(void *ptr);
     int (*match)(void *ptr, void *key);
     unsigned int len;
+    unsigned int lastTs;
+    unsigned int firstTs;
 } list;
 
 /* Functions implemented as macros */

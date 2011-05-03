@@ -69,38 +69,28 @@ double R_Zero, R_PosInf, R_NegInf, R_Nan;
 struct redisServer server; /* server global state */
 struct redisCommand *commandTable;
 struct redisCommand redisCommandTable[] = {
-    {"get",getCommand,2,0,NULL,1,1,1,0,0},
-    {"set",setCommand,3,REDIS_CMD_DENYOOM,NULL,0,0,0,0,0},
-    {"del",delCommand,-2,0,NULL,0,0,0,0,0},
-    {"delete",delCommand,-2,0,NULL,0,0,0,0,0},
-    {"exists",existsCommand,2,0,NULL,1,1,1,0,0},
-    {"mget",mgetCommand,-2,0,NULL,1,-1,1,0,0},
+    {"del",delCommand,-2,0,0,0,0,0,0},
+    {"delete",delCommand,-2,0,0,0,0,0,0},
+    {"exists",existsCommand,2,0,1,1,1,0,0},
 
     //Time series data
-    {"last",tsLastCommand,2,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"fetch",tsFetchCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"insert",tsInsertCommand,4,REDIS_CMD_DENYOOM,NULL,1,1,1,0,0},
-    {"llen",llenCommand,2,0,NULL,1,1,1,0,0},
+    {"last",tsLastCommand,2,REDIS_CMD_DENYOOM,1,1,1,0,0},
+    {"fetch",tsFetchCommand,4,REDIS_CMD_DENYOOM,1,1,1,0,0},
+    {"insert",tsInsertCommand,4,REDIS_CMD_DENYOOM,1,1,1,0,0},
+    {"llen",llenCommand,2,0,1,1,1,0,0},
 
-    {"rename",renameCommand,3,0,NULL,1,1,1,0,0},
-    {"expire",expireCommand,3,0,NULL,0,0,0,0,0},
-    {"expireat",expireatCommand,3,0,NULL,0,0,0,0,0},
-    {"keys",keysCommand,2,0,NULL,0,0,0,0,0},
-    {"dbsize",dbsizeCommand,1,0,NULL,0,0,0,0,0},
-    {"auth",authCommand,2,0,NULL,0,0,0,0,0},
-    {"ping",pingCommand,1,0,NULL,0,0,0,0,0},
-    {"echo",echoCommand,2,0,NULL,0,0,0,0,0},
-    {"save",saveCommand,1,0,NULL,0,0,0,0,0},
-    {"bgsave",bgsaveCommand,1,0,NULL,0,0,0,0,0},
-    {"shutdown",shutdownCommand,1,0,NULL,0,0,0,0,0},
-    {"lastsave",lastsaveCommand,1,0,NULL,0,0,0,0,0},
-    {"type",typeCommand,2,0,NULL,1,1,1,0,0},
-    {"info",infoCommand,-1,0,NULL,0,0,0,0,0},
-    {"monitor",monitorCommand,1,0,NULL,0,0,0,0,0},
-    {"ttl",ttlCommand,2,0,NULL,1,1,1,0,0},
-    {"persist",persistCommand,2,0,NULL,1,1,1,0,0},
-    {"debug",debugCommand,-2,0,NULL,0,0,0,0,0},
-    {"config",configCommand,-2,0,NULL,0,0,0,0,0}
+    {"expire",expireCommand,3,0,0,0,0,0,0},
+    {"expireat",expireatCommand,3,0,0,0,0,0,0},
+    {"keys",keysCommand,2,0,0,0,0,0,0},
+    {"dbsize",dbsizeCommand,1,0,0,0,0,0,0},
+    {"auth",authCommand,2,0,0,0,0,0,0},
+    {"ping",pingCommand,1,0,0,0,0,0,0},
+    {"echo",echoCommand,2,0,0,0,0,0,0},
+    {"shutdown",shutdownCommand,1,0,0,0,0,0,0},
+    {"info",infoCommand,-1,0,0,0,0,0,0},
+    {"monitor",monitorCommand,1,0,0,0,0,0,0},
+    {"ttl",ttlCommand,2,0,1,1,1,0,0},
+    {"persist",persistCommand,2,0,1,1,1,0,0}
 };
 
 /*============================ Utility functions ============================ */
@@ -184,6 +174,12 @@ void dictListDestructor(void *privdata, void *val)
     listRelease((list*)val);
 }
 
+void dictTsListDestructor(void *privdata, void *val)
+{
+    DICT_NOTUSED(privdata);
+    listRelease((list*)val);
+}
+
 int dictSdsKeyCompare(void *privdata, const void *key1,
         const void *key2)
 {
@@ -210,7 +206,6 @@ void dictRedisObjectDestructor(void *privdata, void *val)
     DICT_NOTUSED(privdata);
 
     if (val == NULL) return; /* Values of swapped out keys as set to NULL */
-    decrRefCount(val);
 }
 
 void dictSdsDestructor(void *privdata, void *val)
@@ -218,18 +213,6 @@ void dictSdsDestructor(void *privdata, void *val)
     DICT_NOTUSED(privdata);
 
     sdsfree(val);
-}
-
-int dictObjKeyCompare(void *privdata, const void *key1,
-        const void *key2)
-{
-    const robj *o1 = key1, *o2 = key2;
-    return dictSdsKeyCompare(privdata,o1->ptr,o2->ptr);
-}
-
-unsigned int dictObjHash(const void *key) {
-    const robj *o = key;
-    return dictGenHashFunction(o->ptr, sdslen((sds)o->ptr));
 }
 
 unsigned int dictSdsHash(const void *key) {
@@ -240,67 +223,6 @@ unsigned int dictSdsCaseHash(const void *key) {
     return dictGenCaseHashFunction((unsigned char*)key, sdslen((char*)key));
 }
 
-int dictEncObjKeyCompare(void *privdata, const void *key1,
-        const void *key2)
-{
-    robj *o1 = (robj*) key1, *o2 = (robj*) key2;
-    int cmp;
-
-    if (o1->encoding == REDIS_ENCODING_INT &&
-        o2->encoding == REDIS_ENCODING_INT)
-            return o1->ptr == o2->ptr;
-
-    o1 = getDecodedObject(o1);
-    o2 = getDecodedObject(o2);
-    cmp = dictSdsKeyCompare(privdata,o1->ptr,o2->ptr);
-    decrRefCount(o1);
-    decrRefCount(o2);
-    return cmp;
-}
-
-unsigned int dictEncObjHash(const void *key) {
-    robj *o = (robj*) key;
-
-    if (o->encoding == REDIS_ENCODING_RAW) {
-        return dictGenHashFunction(o->ptr, sdslen((sds)o->ptr));
-    } else {
-        if (o->encoding == REDIS_ENCODING_INT) {
-            char buf[32];
-            int len;
-
-            len = ll2string(buf,32,(long)o->ptr);
-            return dictGenHashFunction((unsigned char*)buf, len);
-        } else {
-            unsigned int hash;
-
-            o = getDecodedObject(o);
-            hash = dictGenHashFunction(o->ptr, sdslen((sds)o->ptr));
-            decrRefCount(o);
-            return hash;
-        }
-    }
-}
-
-/* Sets type and diskstore negative caching hash table */
-dictType setDictType = {
-    dictEncObjHash,            /* hash function */
-    NULL,                      /* key dup */
-    NULL,                      /* val dup */
-    dictEncObjKeyCompare,      /* key compare */
-    dictRedisObjectDestructor, /* key destructor */
-    NULL                       /* val destructor */
-};
-
-/* Sorted sets hash (note: a skiplist is used in addition to the hash table) */
-dictType zsetDictType = {
-    dictEncObjHash,            /* hash function */
-    NULL,                      /* key dup */
-    NULL,                      /* val dup */
-    dictEncObjKeyCompare,      /* key compare */
-    dictRedisObjectDestructor, /* key destructor */
-    NULL                       /* val destructor */
-};
-
 /* Db->dict, keys are sds strings, vals are Redis objects. */
 dictType dbDictType = {
     dictSdsHash,                /* hash function */
@@ -308,7 +230,7 @@ dictType dbDictType = {
     NULL,                       /* val dup */
     dictSdsKeyCompare,          /* key compare */
     dictSdsDestructor,          /* key destructor */
-    dictRedisObjectDestructor   /* val destructor */
+    dictTsListDestructor   /* val destructor */
 };
 
 /* Db->expires */
@@ -331,25 +253,15 @@ dictType commandTableDictType = {
     NULL                       /* val destructor */
 };
 
-/* Hash type hash table (note that small hashes are represented with zimpaps) */
-dictType hashDictType = {
-    dictEncObjHash,             /* hash function */
-    NULL,                       /* key dup */
-    NULL,                       /* val dup */
-    dictEncObjKeyCompare,       /* key compare */
-    dictRedisObjectDestructor,  /* key destructor */
-    dictRedisObjectDestructor   /* val destructor */
-};
-
 /* Keylist hash table type has unencoded redis objects as keys and
  * lists as values. It's used for blocking operations (BLPOP) and to
  * map swapped keys to a list of clients waiting for this keys to be loaded. */
 dictType keylistDictType = {
-    dictObjHash,                /* hash function */
+    dictSdsHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
-    dictObjKeyCompare,          /* key compare */
-    dictRedisObjectDestructor,  /* key destructor */
+    dictSdsKeyCompare,          /* key compare */
+    dictSdsDestructor,          /* key destructor */
     dictListDestructor          /* val destructor */
 };
 
@@ -421,11 +333,8 @@ void activeExpireCycle(void) {
             t = (time_t) dictGetEntryVal(de);
             if (now > t) {
                 sds key = dictGetEntryKey(de);
-                robj *keyobj = createStringObject(key,sdslen(key));
 
-                propagateExpire(db,keyobj);
-                dbDelete(db,keyobj);
-                decrRefCount(keyobj);
+                dbDelete(db,key);
                 expired++;
                 server.stat_expiredkeys++;
             }
@@ -542,7 +451,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
                 now-server.lastsave > sp->seconds) {
                 redisLog(REDIS_NOTICE,"%d changes in %d seconds. Saving...",
                     sp->changes, sp->seconds);
-                rdbSaveBackground(server.dbfilename);
+                //TODO: FIX LATER
+                //rdbSaveBackground(server.dbfilename);
                 break;
             }
          }
@@ -555,7 +465,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
     /* Remove a few cached objects from memory if we are over the
      * configured memory limit */
-    if (server.ds_enabled) cacheCron();
+    //TODO: FIX LATER
+    //if (server.ds_enabled) cacheCron();
 
     server.cronloops++;
     return 100;
@@ -584,7 +495,7 @@ void beforeSleep(struct aeEventLoop *eventLoop) {
             server.cache_blocked_clients--;
             aeCreateFileEvent(server.el, c->fd, AE_READABLE,
                 readQueryFromClient, c);
-            cmd = lookupCommand(c->argv[0]->ptr);
+            cmd = lookupCommand(c->argv[0]);
             redisAssert(cmd != NULL);
             call(c,cmd);
             resetClient(c);
@@ -612,53 +523,37 @@ void beforeSleep(struct aeEventLoop *eventLoop) {
 /* =========================== Server initialization ======================== */
 
 void createSharedObjects(void) {
-    int j;
-
-    shared.crlf = createObject(REDIS_STRING,sdsnew("\r\n"));
-    shared.ok = createObject(REDIS_STRING,sdsnew("+OK\r\n"));
-    shared.err = createObject(REDIS_STRING,sdsnew("-ERR\r\n"));
-    shared.emptybulk = createObject(REDIS_STRING,sdsnew("$0\r\n\r\n"));
-    shared.czero = createObject(REDIS_STRING,sdsnew(":0\r\n"));
-    shared.cone = createObject(REDIS_STRING,sdsnew(":1\r\n"));
-    shared.cnegone = createObject(REDIS_STRING,sdsnew(":-1\r\n"));
-    shared.nullbulk = createObject(REDIS_STRING,sdsnew("$-1\r\n"));
-    shared.nullmultibulk = createObject(REDIS_STRING,sdsnew("*-1\r\n"));
-    shared.emptymultibulk = createObject(REDIS_STRING,sdsnew("*0\r\n"));
-    shared.pong = createObject(REDIS_STRING,sdsnew("+PONG\r\n"));
-    shared.queued = createObject(REDIS_STRING,sdsnew("+QUEUED\r\n"));
-    shared.wrongtypeerr = createObject(REDIS_STRING,sdsnew(
-        "-ERR Operation against a key holding the wrong kind of value\r\n"));
-    shared.nokeyerr = createObject(REDIS_STRING,sdsnew(
-        "-ERR no such key\r\n"));
-    shared.syntaxerr = createObject(REDIS_STRING,sdsnew(
-        "-ERR syntax error\r\n"));
-    shared.sameobjecterr = createObject(REDIS_STRING,sdsnew(
-        "-ERR source and destination objects are the same\r\n"));
-    shared.outofrangeerr = createObject(REDIS_STRING,sdsnew(
-        "-ERR index out of range\r\n"));
-    shared.loadingerr = createObject(REDIS_STRING,sdsnew(
-        "-LOADING Redis is loading the dataset in memory\r\n"));
-    shared.space = createObject(REDIS_STRING,sdsnew(" "));
-    shared.colon = createObject(REDIS_STRING,sdsnew(":"));
-    shared.plus = createObject(REDIS_STRING,sdsnew("+"));
-    shared.select0 = createStringObject("select 0\r\n",10);
-    shared.select1 = createStringObject("select 1\r\n",10);
-    shared.select2 = createStringObject("select 2\r\n",10);
-    shared.select3 = createStringObject("select 3\r\n",10);
-    shared.select4 = createStringObject("select 4\r\n",10);
-    shared.select5 = createStringObject("select 5\r\n",10);
-    shared.select6 = createStringObject("select 6\r\n",10);
-    shared.select7 = createStringObject("select 7\r\n",10);
-    shared.select8 = createStringObject("select 8\r\n",10);
-    shared.select9 = createStringObject("select 9\r\n",10);
-    shared.messagebulk = createStringObject("$7\r\nmessage\r\n",13);
-    shared.pmessagebulk = createStringObject("$8\r\npmessage\r\n",14);
-    shared.mbulk3 = createStringObject("*3\r\n",4);
-    shared.mbulk4 = createStringObject("*4\r\n",4);
-    for (j = 0; j < REDIS_SHARED_INTEGERS; j++) {
-        shared.integers[j] = createObject(REDIS_STRING,(void*)(long)j);
-        shared.integers[j]->encoding = REDIS_ENCODING_INT;
-    }
+    shared.crlf = sdsnew("\r\n");
+    shared.ok = sdsnew("+OK\r\n");
+    shared.err = sdsnew("-ERR\r\n");
+    shared.emptybulk = sdsnew("$0\r\n\r\n");
+    shared.czero = sdsnew(":0\r\n");
+    shared.cone = sdsnew(":1\r\n");
+    shared.cnegone = sdsnew(":-1\r\n");
+    shared.nullbulk = sdsnew("$-1\r\n");
+    shared.nullmultibulk = sdsnew("*-1\r\n");
+    shared.emptymultibulk = sdsnew("*0\r\n");
+    shared.pong = sdsnew("+PONG\r\n");
+    shared.queued = sdsnew("+QUEUED\r\n");
+    shared.wrongtypeerr = sdsnew(
+        "-ERR Operation against a key holding the wrong kind of value\r\n");
+    shared.nokeyerr = sdsnew(
+        "-ERR no such key\r\n");
+    shared.syntaxerr = sdsnew(
+        "-ERR syntax error\r\n");
+    shared.sameobjecterr = sdsnew(
+        "-ERR source and destination objects are the same\r\n");
+    shared.outofrangeerr = sdsnew(
+        "-ERR index out of range\r\n");
+    shared.loadingerr = sdsnew(
+        "-LOADING Redis is loading the dataset in memory\r\n");
+    shared.space = sdsnew(" ");
+    shared.colon = sdsnew(":");
+    shared.plus = sdsnew("+");
+    shared.messagebulk = sdsnew("$7\r\nmessage\r\n");
+    shared.pmessagebulk = sdsnew("$8\r\npmessage\r\n");
+    shared.mbulk3 = sdsnew("*3\r\n");
+    shared.mbulk4 = sdsnew("*4\r\n");
 }
 
 void initServerConfig() {
@@ -717,8 +612,6 @@ void initServerConfig() {
 }
 
 void initServer() {
-    int j;
-
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     setupSignalHandlers();
@@ -763,8 +656,9 @@ void initServer() {
     server.db->blocking_keys = dictCreate(&keylistDictType,NULL);
     if (server.ds_enabled) {
         server.db->io_keys = dictCreate(&keylistDictType,NULL);
-        server.db->io_negcache = dictCreate(&setDictType,NULL);
-        server.db->io_queued = dictCreate(&setDictType,NULL);
+        //TODO: fix later.
+        //server.db->io_negcache = dictCreate(&setDictType,NULL);
+        //server.db->io_queued = dictCreate(&setDictType,NULL);
     }
     server.db->id = 0;
 
@@ -788,8 +682,8 @@ void initServer() {
         acceptTcpHandler,NULL) == AE_ERR) oom("creating file event");
     if (server.sofd > 0 && aeCreateFileEvent(server.el,server.sofd,AE_READABLE,
         acceptUnixHandler,NULL) == AE_ERR) oom("creating file event");
-
-    if (server.ds_enabled) dsInit();
+    //TODO: FIX LATER
+    //if (server.ds_enabled) dsInit();
     srand(time(NULL)^getpid());
 }
 
@@ -866,18 +760,18 @@ int processCommand(redisClient *c) {
      * go through checking for replication and QUIT will cause trouble
      * when FORCE_REPLICATION is enabled and would be implemented in
      * a regular command proc. */
-    if (!strcasecmp(c->argv[0]->ptr,"quit")) {
-        addReply(c,shared.ok);
+    if (!strcasecmp(c->argv[0],"quit")) {
+        addReplySds(c,shared.ok);
         c->flags |= REDIS_CLOSE_AFTER_REPLY;
         return REDIS_ERR;
     }
 
     /* Now lookup the command and check ASAP about trivial error conditions
      * such wrong arity, bad command name and so forth. */
-    cmd = lookupCommand(c->argv[0]->ptr);
+    cmd = lookupCommand(c->argv[0]);
     if (!cmd) {
         addReplyErrorFormat(c,"unknown command '%s'",
-            (char*)c->argv[0]->ptr);
+            (char*)c->argv[0]);
         return REDIS_OK;
     } else if ((cmd->arity > 0 && cmd->arity != c->argc) ||
                (c->argc < -cmd->arity)) {
@@ -897,7 +791,8 @@ int processCommand(redisClient *c) {
      * First we try to free some memory if possible (if there are volatile
      * keys in the dataset). If there are not the only thing we can do
      * is returning an error. */
-    if (server.maxmemory) freeMemoryIfNeeded();
+    //TODO: fix later
+    //if (server.maxmemory) freeMemoryIfNeeded();
     if (server.maxmemory && (cmd->flags & REDIS_CMD_DENYOOM) &&
         zmalloc_used_memory() > server.maxmemory)
     {
@@ -905,8 +800,9 @@ int processCommand(redisClient *c) {
         return REDIS_OK;
     }
 
-    if (server.ds_enabled && blockClientOnSwappedKeys(c,cmd))
-        return REDIS_ERR;
+    //TODO: fix later
+    //if (server.ds_enabled && blockClientOnSwappedKeys(c,cmd))
+    //    return REDIS_ERR;
     call(c,cmd);
 
     return REDIS_OK;
@@ -919,24 +815,27 @@ int prepareForShutdown() {
     /* Kill the saving child if there is a background saving in progress.
        We want to avoid race conditions, for instance our saving child may
        overwrite the synchronous saving did by SHUTDOWN. */
+    //TODO: fix later
     if (server.bgsavechildpid != -1) {
         redisLog(REDIS_WARNING,"There is a live saving child. Killing it!");
         kill(server.bgsavechildpid,SIGKILL);
-        rdbRemoveTempFile(server.bgsavechildpid);
+        //rdbRemoveTempFile(server.bgsavechildpid);
     }
     if (server.ds_enabled) {
         /* FIXME: flush all objects on disk */
     } else if (server.saveparamslen > 0) {
         /* Snapshotting. Perform a SYNC SAVE and exit */
-        if (rdbSave(server.dbfilename) != REDIS_OK) {
+
+        //TODO: fix later
+        //if (rdbSave(server.dbfilename) != REDIS_OK) {
             /* Ooops.. error saving! The best we can do is to continue
              * operating. Note that if there was a background saving process,
              * in the next cron() Redis will be notified that the background
              * saving aborted, handling special stuff like slaves pending for
              * synchronization... */
-            redisLog(REDIS_WARNING,"Error trying to save the DB, can't exit");
-            return REDIS_ERR;
-        }
+        //    redisLog(REDIS_WARNING,"Error trying to save the DB, can't exit");
+        //    return REDIS_ERR;
+        //}
     } else {
         redisLog(REDIS_WARNING,"Not saving DB.");
     }
@@ -948,9 +847,9 @@ int prepareForShutdown() {
 /*================================== Commands =============================== */
 
 void authCommand(redisClient *c) {
-    if (!server.requirepass || !strcmp(c->argv[1]->ptr, server.requirepass)) {
+    if (!server.requirepass || !strcmp(c->argv[1], server.requirepass)) {
       c->authenticated = 1;
-      addReply(c,shared.ok);
+      addReplySds(c,shared.ok);
     } else {
       c->authenticated = 0;
       addReplyError(c,"invalid password");
@@ -958,7 +857,7 @@ void authCommand(redisClient *c) {
 }
 
 void pingCommand(redisClient *c) {
-    addReply(c,shared.pong);
+    addReplySds(c,shared.pong);
 }
 
 void echoCommand(redisClient *c) {
@@ -1113,7 +1012,8 @@ sds genRedisInfoString(char *section) {
             "ds_enabled:%d\r\n",
             server.ds_enabled != 0);
         if (server.ds_enabled) {
-            lockThreadedIO();
+            //TODO: FIX LATER
+            //lockThreadedIO();
             info = sdscatprintf(info,
                 "cache_max_memory:%llu\r\n"
                 "cache_blocked_clients:%lu\r\n"
@@ -1130,7 +1030,8 @@ sds genRedisInfoString(char *section) {
                 (unsigned long) listLength(server.io_processed),
                 (unsigned long) listLength(server.io_ready_clients)
             );
-            unlockThreadedIO();
+            //TODO: FIX LATER
+            //unlockThreadedIO();
         }
     }
 
@@ -1203,17 +1104,17 @@ sds genRedisInfoString(char *section) {
 }
 
 void infoCommand(redisClient *c) {
-    char *section = c->argc == 2 ? c->argv[1]->ptr : "default";
+    char *section = c->argc == 2 ? c->argv[1] : "default";
 
     if (c->argc > 2) {
-        addReply(c,shared.syntaxerr);
+        addReplySds(c,shared.syntaxerr);
         return;
     }
     sds info = genRedisInfoString(section);
     addReplySds(c,sdscatprintf(sdsempty(),"$%lu\r\n",
         (unsigned long)sdslen(info)));
     addReplySds(c,info);
-    addReply(c,shared.crlf);
+    addReplySds(c,shared.crlf);
 }
 
 void monitorCommand(redisClient *c) {
@@ -1223,109 +1124,7 @@ void monitorCommand(redisClient *c) {
     c->flags |= (REDIS_SLAVE|REDIS_MONITOR);
     c->slaveseldb = 0;
     listAddNodeTail(server.monitors,c);
-    addReply(c,shared.ok);
-}
-
-/* ============================ Maxmemory directive  ======================== */
-
-/* This function gets called when 'maxmemory' is set on the config file to limit
- * the max memory used by the server, and we are out of memory.
- * This function will try to, in order:
- *
- * - Free objects from the free list
- * - Try to remove keys with an EXPIRE set
- *
- * It is not possible to free enough memory to reach used-memory < maxmemory
- * the server will start refusing commands that will enlarge even more the
- * memory usage.
- */
-void freeMemoryIfNeeded(void) {
-    /* Remove keys accordingly to the active policy as long as we are
-     * over the memory limit. */
-    if (server.maxmemory_policy == REDIS_MAXMEMORY_NO_EVICTION) return;
-
-    while (server.maxmemory && zmalloc_used_memory() > server.maxmemory) {
-        int k, freed = 0;
-
-        long bestval = 0; /* just to prevent warning */
-        sds bestkey = NULL;
-        struct dictEntry *de;
-        redisDb *db = server.db;
-        dict *dict;
-
-        if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||
-            server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_RANDOM)
-        {
-            dict = server.db->dict;
-        } else {
-            dict = server.db->expires;
-        }
-        if (dictSize(dict) == 0) continue;
-
-        /* volatile-random and allkeys-random policy */
-        if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_RANDOM ||
-            server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_RANDOM)
-        {
-            de = dictGetRandomKey(dict);
-            bestkey = dictGetEntryKey(de);
-        }
-
-        /* volatile-lru and allkeys-lru policy */
-        else if (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||
-            server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)
-        {
-            for (k = 0; k < server.maxmemory_samples; k++) {
-                sds thiskey;
-                long thisval;
-                robj *o;
-
-                de = dictGetRandomKey(dict);
-                thiskey = dictGetEntryKey(de);
-                /* When policy is volatile-lru we need an additonal lookup
-                 * to locate the real key, as dict is set to db->expires. */
-                if (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)
-                    de = dictFind(db->dict, thiskey);
-                o = dictGetEntryVal(de);
-                thisval = estimateObjectIdleTime(o);
-
-                /* Higher idle time is better candidate for deletion */
-                if (bestkey == NULL || thisval > bestval) {
-                    bestkey = thiskey;
-                    bestval = thisval;
-                }
-            }
-        }
-
-        /* volatile-ttl */
-        else if (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_TTL) {
-            for (k = 0; k < server.maxmemory_samples; k++) {
-                sds thiskey;
-                long thisval;
-
-                de = dictGetRandomKey(dict);
-                thiskey = dictGetEntryKey(de);
-                thisval = (long) dictGetEntryVal(de);
-
-                /* Expire sooner (minor expire unix timestamp) is better
-                 * candidate for deletion */
-                if (bestkey == NULL || thisval < bestval) {
-                    bestkey = thiskey;
-                    bestval = thisval;
-                }
-            }
-        }
-
-        /* Finally remove the selected key. */
-        if (bestkey) {
-            robj *keyobj = createStringObject(bestkey,sdslen(bestkey));
-            propagateExpire(db,keyobj);
-            dbDelete(db,keyobj);
-            server.stat_evictedkeys++;
-            decrRefCount(keyobj);
-            freed++;
-        }
-        if (!freed) return; /* nothing to free... */
-    }
+    addReplySds(c,shared.ok);
 }
 
 /* =================================== Main! ================================ */

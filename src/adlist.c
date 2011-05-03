@@ -49,6 +49,8 @@ list *listCreate(void)
     list->dup = NULL;
     list->free = NULL;
     list->match = NULL;
+    list->lastTs = 0;
+    list->firstTs = 0;
     return list;
 }
 

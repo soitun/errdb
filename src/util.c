@@ -231,13 +231,3 @@ int isStringRepresentableAsLong(sds s, long *longval) {
     *longval = (long)ll;
     return REDIS_OK;
 }
-
-int isObjectRepresentableAsLongLong(robj *o, long long *llongval) {
-    redisAssert(o->type == REDIS_STRING);
-    if (o->encoding == REDIS_ENCODING_INT) {
-        if (llongval) *llongval = (long) o->ptr;
-        return REDIS_OK;
-    } else {
-        return isStringRepresentableAsLongLong(o->ptr,llongval);
-    }
-}

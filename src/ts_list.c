@@ -3,69 +3,43 @@
 /*-----------------------------------------------------------------------------
  * List API
  *----------------------------------------------------------------------------*/
-typedef struct tvNode {
-    robj *t;
-    robj *v;
-} tvNode;
-
-size_t robjLen(robj *obj) {
+size_t tsObjLen(tsObj *obj) {
     size_t len;
-
-    if (obj->encoding == REDIS_ENCODING_RAW) {
-        len = sdslen(obj->ptr);
-    } else {
-        long n = (long)obj->ptr;
-
-        /* Compute how many bytes will take this integer as a radix 10 string */
-        len = 1;
-        if (n < 0) {
-            len++;
-            n = -n;
-        }
-        while((n = n/10) != 0) {
-            len++;
-        }
+    long n = (long)obj->time;
+    len = sdslen(obj->value);
+    /* Compute how many bytes will take this integer as a radix 10 string */
+    while((n = n/10) != 0) {
+        len++;
     }
-
     return len;
 }
 
-size_t tvNodeLen(tvNode *tv) {
-    return (size_t)(robjLen(tv->t) + robjLen(tv->v));
-}
-
-tvNode *createTvNode(robj *t, robj *v) {
-    tvNode *n;
-    if ((n = zmalloc(sizeof(*n))) == NULL)
+tsObj *createTsObject(int time, sds value) {
+    tsObj *o;
+    if ((o = zmalloc(sizeof(*o))) == NULL)
         return NULL;
-    n->t = t;
-    n->v = v;
-    incrRefCount(t);
-    incrRefCount(v);
-    return n;
+    o->time = time;
+    o->value  = value;
+    return o;
 }
 
-tvNode *tsListTypeLast(robj *subject) {
-    robj *value = NULL;
-    list *list = subject->ptr;
+tsObj *tsListLast(list *list) {
+    tsObj *o = NULL;
     listNode *ln = listFirst(list);
     if (ln != NULL) {
-        value = listNodeValue(ln);
+        o = listNodeValue(ln);
     }
-    return value;
+    return o;
 }
 
-void tsListInsert(robj *subject, robj *ts, robj *v) {
-    tvNode *tv = createTvNode(ts, v);
-    listAddNodeHead(subject->ptr, tv);
+void tsListInsert(list *list, int time, sds value) {
+    tsObj *o;
+    o = createTsObject(time, value);
+    listAddNodeHead(list, o);
 }
 
-unsigned long listTypeLength(robj *subject) {
-    if (subject->encoding == REDIS_ENCODING_LINKEDLIST) {
-        return listLength((list*)subject->ptr);
-    } else {
-        redisPanic("Unknown list encoding");
-    }
+unsigned long listTypeLength(list *list) {
+    return listLength(list);
 }
 
 /* Unblock a client that's waiting in a blocking operation such as BLPOP */
@@ -85,7 +59,6 @@ void unblockClientWaitingData(redisClient *c) {
         /* If the list is empty we need to remove it to avoid wasting memory */
         if (listLength(l) == 0)
             dictDelete(c->db->blocking_keys,c->bpop.keys[j]);
-        decrRefCount(c->bpop.keys[j]);
     }
 
     /* Cleanup the client structure */
@@ -99,48 +72,31 @@ void unblockClientWaitingData(redisClient *c) {
 }
 
 /* Initialize an iterator at the specified index. */
-listTypeIterator *listTypeInitIterator(robj *subject, int index, unsigned char direction) {
+listTypeIterator *listTypeInitIterator(list *subject, int index, unsigned char direction) {
     listTypeIterator *li = zmalloc(sizeof(listTypeIterator));
     li->subject = subject;
-    li->encoding = subject->encoding;
     li->direction = direction;
-    if(li->encoding == REDIS_ENCODING_LINKEDLIST) {
-        li->ln = listIndex(subject->ptr,index);
-    } else {
-        redisPanic("Unknown list encoding");
-    }
+    li->ln = listIndex(subject,index);
     return li;
 }
 
-robj *listTypeGet(listTypeEntry *entry) {
+tsObj *listTypeGet(listTypeEntry *entry) {
     listTypeIterator *li = entry->li;
-    robj *value = NULL;
-    if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
-        redisAssert(entry->ln != NULL);
-        value = listNodeValue(entry->ln);
-        incrRefCount(value);
-    } else {
-        redisPanic("Unknown list encoding");
-    }
+    tsObj *value = NULL;
+    redisAssert(entry->ln != NULL);
+    value = listNodeValue(entry->ln);
     return value;
 }
 
 int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {
-    /* Protect from converting when iterating */
-    redisAssert(li->subject->encoding == li->encoding);
-
     entry->li = li;
-    if (li->encoding == REDIS_ENCODING_LINKEDLIST) {
-        entry->ln = li->ln;
-        if (entry->ln != NULL) {
-            if (li->direction == REDIS_TAIL)
-                li->ln = li->ln->next;
-            else
-                li->ln = li->ln->prev;
-            return 1;
-        }
-    } else {
-        redisPanic("Unknown list encoding");
+    entry->ln = li->ln;
+    if (entry->ln != NULL) {
+        if (li->direction == REDIS_TAIL)
+            li->ln = li->ln->next;
+        else
+            li->ln = li->ln->prev;
+        return 1;
     }
     return 0;
 }
@@ -155,38 +111,32 @@ void listTypeReleaseIterator(listTypeIterator *li) {
  * List Commands
  *----------------------------------------------------------------------------*/
 void llenCommand(redisClient *c) {
-    robj *o = lookupKeyReadOrReply(c,c->argv[1],shared.czero);
-    if (o == NULL || checkType(c,o,REDIS_LIST)) return;
+    tsObj *o = lookupKeyReadOrReply(c,c->argv[1],shared.czero);
+    if (o == NULL) return;
     addReplyLongLong(c,listTypeLength(o));
 }
 
 void tsInsertCommand(redisClient *c) {
-    robj *lobj = lookupKeyWrite(c->db,c->argv[1]);
-    if (lobj == NULL) {
-        lobj = createListObject();
-        dbAdd(c->db,c->argv[1],lobj);
-    } else {
-        if (lobj->type != REDIS_LIST) {
-            addReply(c,shared.wrongtypeerr);
-            return;
-        }
-    }
-    tsListInsert(lobj, c->argv[2], c->argv[3]);
-    addReplyLongLong(c, listTypeLength(lobj));
-    signalModifiedKey(c->db,c->argv[1]);
+    list *list = lookupKeyWrite(c->db,c->argv[1]);
+    if (list == NULL) {
+        list = listCreate();
+        dbAdd(c->db,c->argv[1],list);
+    } 
+    tsListInsert(list, atoi(c->argv[2]), c->argv[3]);
+    addReplyLongLong(c, listTypeLength(list));
+    signalModifiedKey(c->db, c->argv[1]);
     server.dirty++;
 }
 
 void tsFetchCommand(redisClient *c) {
-    robj *o;
-    int start = atoi(c->argv[2]->ptr);
-    int end = atoi(c->argv[3]->ptr);
+    list *list;
+    int start = atoi(c->argv[2]);
+    int end = atoi(c->argv[3]);
     int llen;
     int rangelen;
 
-    if ((o = lookupKeyReadOrReply(c,c->argv[1],shared.emptymultibulk)) == NULL
-         || checkType(c,o,REDIS_LIST)) return;
-    llen = listTypeLength(o);
+    if ((list = lookupKeyReadOrReply(c,c->argv[1],shared.emptymultibulk)) == NULL) return;
+    llen = listTypeLength(list);
 
     /* convert negative indexes */
     if (start < 0) start = llen+start;
@@ -196,7 +146,7 @@ void tsFetchCommand(redisClient *c) {
     /* Invariant: start >= 0, so this test will be true when end < 0.
      * The range is empty when start > end or start >= length. */
     if (start > end || start >= llen) {
-        addReply(c,shared.emptymultibulk);
+        addReplySds(c,shared.emptymultibulk);
         return;
     }
     if (end >= llen) end = llen-1;
@@ -204,36 +154,31 @@ void tsFetchCommand(redisClient *c) {
 
     /* Return the result in form of a multi-bulk reply */
     addReplyMultiBulkLen(c,rangelen);
-    if (o->encoding == REDIS_ENCODING_LINKEDLIST) {
-        listNode *ln = listIndex(o->ptr,start);
 
-        while(rangelen--) {
-            tvNode *tv = ln->value;
-            addReplyLen(c,tvNodeLen(tv)+1);
-            addReply(c,tv->t);
-            addReplyString(c, ":", 1);
-            addReply(c,tv->v);
-            addReply(c,shared.crlf);
-            ln = ln->next;
-        }
-    } else {
-        redisPanic("List encoding is not LINKEDLIST");
+    listNode *ln = listIndex(list,start);
+
+    while(rangelen--) {
+        tsObj *o = ln->value;
+        addReplyLen(c,tsObjLen(o)+1);
+        addReplySds(c, sdsfromlonglong(o->time));
+        addReplyString(c, ":", 1);
+        addReplySds(c,o->value);
+        addReplySds(c,shared.crlf);
+        ln = ln->next;
     }
 }
 
 void tsLastCommand(redisClient *c) {
-    robj *o = lookupKeyWriteOrReply(c,c->argv[1],shared.nullbulk);
-    if (o == NULL || checkType(c,o,REDIS_LIST)) return;
-
-    tvNode *tv = tsListTypeLast(o);
-    if (tv == NULL) {
-        addReply(c,shared.nullbulk);
+    list *list = lookupKeyWriteOrReply(c,c->argv[1],shared.nullbulk);
+    tsObj *o = listLast(list);
+    if (o == NULL) {
+        addReplySds(c,shared.nullbulk);
     } else {
-        addReplyLen(c,tvNodeLen(tv)+1);
-        addReply(c,tv->t);
+        addReplyLen(c,tsObjLen(o)+1);
+        addReplySds(c, sdsfromlonglong(o->time));
         addReplyString(c, ":", 1);
-        addReply(c,tv->v);
-        addReply(c,shared.crlf);
+        addReplySds(c,o->value);
+        addReplySds(c,shared.crlf);
     }
 }
 

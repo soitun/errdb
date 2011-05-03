@@ -1,15 +1,6 @@
 #include "errdb.h"
 #include <sys/uio.h>
 
-void *dupClientReplyValue(void *o) {
-    incrRefCount((robj*)o);
-    return o;
-}
-
-int listMatchObjects(void *a, void *b) {
-    return equalStringObjects(a,b);
-}
-
 redisClient *createClient(int fd) {
     redisClient *c = zmalloc(sizeof(redisClient));
     c->bufpos = 0;
@@ -39,15 +30,15 @@ redisClient *createClient(int fd) {
     c->authenticated = 0;
     c->replstate = REDIS_REPL_NONE;
     c->reply = listCreate();
-    listSetFreeMethod(c->reply,decrRefCount);
-    listSetDupMethod(c->reply,dupClientReplyValue);
+    listSetFreeMethod(c->reply,sdsfree);
+    listSetDupMethod(c->reply,sdsdup);
     c->bpop.keys = NULL;
     c->bpop.count = 0;
     c->bpop.timeout = 0;
     c->bpop.target = NULL;
     c->io_keys = listCreate();
-    listSetFreeMethod(c->io_keys,decrRefCount);
-    listAddNodeTail(server.clients,c);
+    listSetFreeMethod(c->io_keys,sdsfree);
+    listAddNodeTail(server.clients, c);
     return c;
 }
 
@@ -66,22 +57,6 @@ int _installWriteEvent(redisClient *c) {
     return REDIS_OK;
 }
 
-/* Create a duplicate of the last object in the reply list when
- * it is not exclusively owned by the reply list. */
-robj *dupLastObjectIfNeeded(list *reply) {
-    robj *new, *cur;
-    listNode *ln;
-    redisAssert(listLength(reply) > 0);
-    ln = listLast(reply);
-    cur = listNodeValue(ln);
-    if (cur->refcount > 1) {
-        new = dupStringObject(cur);
-        decrRefCount(cur);
-        listNodeValue(ln) = new;
-    }
-    return listNodeValue(ln);
-}
-
 int _addReplyToBuffer(redisClient *c, char *s, size_t len) {
     size_t available = sizeof(c->buf)-c->bufpos;
 
@@ -97,90 +72,12 @@ int _addReplyToBuffer(redisClient *c, char *s, size_t len) {
     return REDIS_OK;
 }
 
-void _addReplyObjectToList(redisClient *c, robj *o) {
-    robj *tail;
-    if (listLength(c->reply) == 0) {
-        incrRefCount(o);
-        listAddNodeTail(c->reply,o);
-    } else {
-        tail = listNodeValue(listLast(c->reply));
-
-        /* Append to this object when possible. */
-        if (tail->ptr != NULL &&
-            sdslen(tail->ptr)+sdslen(o->ptr) <= REDIS_REPLY_CHUNK_BYTES)
-        {
-            tail = dupLastObjectIfNeeded(c->reply);
-            tail->ptr = sdscatlen(tail->ptr,o->ptr,sdslen(o->ptr));
-        } else {
-            incrRefCount(o);
-            listAddNodeTail(c->reply,o);
-        }
-    }
-}
-
-/* This method takes responsibility over the sds. When it is no longer
- * needed it will be free'd, otherwise it ends up in a robj. */
 void _addReplySdsToList(redisClient *c, sds s) {
-    robj *tail;
-    if (listLength(c->reply) == 0) {
-        listAddNodeTail(c->reply,createObject(REDIS_STRING,s));
-    } else {
-        tail = listNodeValue(listLast(c->reply));
-
-        /* Append to this object when possible. */
-        if (tail->ptr != NULL &&
-            sdslen(tail->ptr)+sdslen(s) <= REDIS_REPLY_CHUNK_BYTES)
-        {
-            tail = dupLastObjectIfNeeded(c->reply);
-            tail->ptr = sdscatlen(tail->ptr,s,sdslen(s));
-            sdsfree(s);
-        } else {
-            listAddNodeTail(c->reply,createObject(REDIS_STRING,s));
-        }
-    }
+    listAddNodeTail(c->reply, s);
 }
 
 void _addReplyStringToList(redisClient *c, char *s, size_t len) {
-    robj *tail;
-    if (listLength(c->reply) == 0) {
-        listAddNodeTail(c->reply,createStringObject(s,len));
-    } else {
-        tail = listNodeValue(listLast(c->reply));
-
-        /* Append to this object when possible. */
-        if (tail->ptr != NULL &&
-            sdslen(tail->ptr)+len <= REDIS_REPLY_CHUNK_BYTES)
-        {
-            tail = dupLastObjectIfNeeded(c->reply);
-            tail->ptr = sdscatlen(tail->ptr,s,len);
-        } else {
-            listAddNodeTail(c->reply,createStringObject(s,len));
-        }
-    }
-}
-
-void addReply(redisClient *c, robj *obj) {
-    if (_installWriteEvent(c) != REDIS_OK) return;
-
-    /* This is an important place where we can avoid copy-on-write
-     * when there is a saving child running, avoiding touching the
-     * refcount field of the object if it's not needed.
-     *
-     * If the encoding is RAW and there is room in the static buffer
-     * we'll be able to send the object to the client without
-     * messing with its page. */
-    if (obj->encoding == REDIS_ENCODING_RAW) {
-        if (_addReplyToBuffer(c,obj->ptr,sdslen(obj->ptr)) != REDIS_OK)
-            _addReplyObjectToList(c,obj);
-    } else {
-        /* FIXME: convert the long into string and use _addReplyToBuffer()
-         * instead of calling getDecodedObject. As this place in the
-         * code is too performance critical. */
-        obj = getDecodedObject(obj);
-        if (_addReplyToBuffer(c,obj->ptr,sdslen(obj->ptr)) != REDIS_OK)
-            _addReplyObjectToList(c,obj);
-        decrRefCount(obj);
-    }
+    listAddNodeTail(c->reply, sdsnewlen(s,len));
 }
 
 void addReplySds(redisClient *c, sds s) {
@@ -241,38 +138,6 @@ void addReplyStatusFormat(redisClient *c, const char *fmt, ...) {
     sdsfree(s);
 }
 
-/* Adds an empty object to the reply list that will contain the multi bulk
- * length, which is not known when this function is called. */
-void *addDeferredMultiBulkLength(redisClient *c) {
-    /* Note that we install the write event here even if the object is not
-     * ready to be sent, since we are sure that before returning to the
-     * event loop setDeferredMultiBulkLength() will be called. */
-    if (_installWriteEvent(c) != REDIS_OK) return NULL;
-    listAddNodeTail(c->reply,createObject(REDIS_STRING,NULL));
-    return listLast(c->reply);
-}
-
-/* Populate the length object and try glueing it to the next chunk. */
-void setDeferredMultiBulkLength(redisClient *c, void *node, long length) {
-    listNode *ln = (listNode*)node;
-    robj *len, *next;
-
-    /* Abort when *node is NULL (see addDeferredMultiBulkLength). */
-    if (node == NULL) return;
-
-    len = listNodeValue(ln);
-    len->ptr = sdscatprintf(sdsempty(),"*%ld\r\n",length);
-    if (ln->next != NULL) {
-        next = listNodeValue(ln->next);
-
-        /* Only glue when the next node is non-NULL (an sds in this case) */
-        if (next->ptr != NULL) {
-            len->ptr = sdscatlen(len->ptr,next->ptr,sdslen(next->ptr));
-            listDelNode(c->reply,ln->next);
-        }
-    }
-}
-
 /* Add a duble as a bulk reply */
 void addReplyDouble(redisClient *c, double d) {
     char dbuf[128], sbuf[128];
@@ -307,45 +172,32 @@ void addReplyMultiBulkLen(redisClient *c, long length) {
 }
 
 /* Create the length prefix of a bulk reply, example: $2234 */
-void addReplyBulkLen(redisClient *c, robj *obj) {
-    size_t len;
-
-    if (obj->encoding == REDIS_ENCODING_RAW) {
-        len = sdslen(obj->ptr);
-    } else {
-        long n = (long)obj->ptr;
-
-        /* Compute how many bytes will take this integer as a radix 10 string */
-        len = 1;
-        if (n < 0) {
-            len++;
-            n = -n;
-        }
-        while((n = n/10) != 0) {
-            len++;
-        }
-    }
-    _addReplyLongLong(c,len,'$');
+void addReplyBulkLen(redisClient *c, sds sds) {
+    _addReplyLongLong(c,sdslen(sds),'$');
 }
 
 /* Add a Redis Object as a bulk reply */
-void addReplyBulk(redisClient *c, robj *obj) {
-    addReplyBulkLen(c,obj);
-    addReply(c,obj);
-    addReply(c,shared.crlf);
+void addReplyBulk(redisClient *c, sds sds) {
+    addReplyBulkLen(c,sds);
+    addReplySds(c,sds);
+    addReplySds(c,shared.crlf);
+}
+
+void addReplyObj(redisClient *c, tsObj *obj) {
+    //TODO: FIX LATER
 }
 
 /* Add a C buffer as bulk reply */
 void addReplyBulkCBuffer(redisClient *c, void *p, size_t len) {
     _addReplyLongLong(c,len,'$');
     addReplyString(c,p,len);
-    addReply(c,shared.crlf);
+    addReplySds(c,shared.crlf);
 }
 
 /* Add a C nul term string as bulk reply */
 void addReplyBulkCString(redisClient *c, char *s) {
     if (s == NULL) {
-        addReply(c,shared.nullbulk);
+        addReplySds(c,shared.nullbulk);
     } else {
         addReplyBulkCBuffer(c,s,strlen(s));
     }
@@ -419,7 +271,7 @@ void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
 static void freeClientArgv(redisClient *c) {
     int j;
     for (j = 0; j < c->argc; j++)
-        decrRefCount(c->argv[j]);
+        sdsfree(c->argv[j]);
     c->argc = 0;
 }
 
@@ -467,7 +319,8 @@ void freeClient(redisClient *c) {
         } else {
             while (listLength(c->io_keys)) {
                 ln = listFirst(c->io_keys);
-                dontWaitForSwappedKey(c,ln->value);
+                //TODO: FIX LATER
+                //dontWaitForSwappedKey(c,ln->value);
             }
         }
         server.cache_blocked_clients--;
@@ -480,8 +333,8 @@ void freeClient(redisClient *c) {
 
 void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask) {
     redisClient *c = privdata;
-    int nwritten = 0, totwritten = 0, objlen;
-    robj *o;
+    int nwritten = 0, totwritten = 0, len;
+    sds s;
     REDIS_NOTUSED(el);
     REDIS_NOTUSED(mask);
 
@@ -504,26 +357,26 @@ void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask) {
                 c->sentlen = 0;
             }
         } else {
-            o = listNodeValue(listFirst(c->reply));
-            objlen = sdslen(o->ptr);
+            s = listNodeValue(listFirst(c->reply));
+            len = sdslen(s);
 
-            if (objlen == 0) {
+            if (len == 0) {
                 listDelNode(c->reply,listFirst(c->reply));
                 continue;
             }
 
             if (c->flags & REDIS_MASTER) {
                 /* Don't reply to a master */
-                nwritten = objlen - c->sentlen;
+                nwritten = len - c->sentlen;
             } else {
-                nwritten = write(fd, ((char*)o->ptr)+c->sentlen,objlen-c->sentlen);
+                nwritten = write(fd, ((char*)s)+c->sentlen,len-c->sentlen);
                 if (nwritten <= 0) break;
             }
             c->sentlen += nwritten;
             totwritten += nwritten;
 
             /* If we fully sent the object on head go to the next one */
-            if (c->sentlen == objlen) {
+            if (c->sentlen == len) {
                 listDelNode(c->reply,listFirst(c->reply));
                 c->sentlen = 0;
             }
@@ -580,7 +433,7 @@ void closeTimedoutClients(void) {
             freeClient(c);
         } else if (c->flags & REDIS_BLOCKED) {
             if (c->bpop.timeout != 0 && c->bpop.timeout < now) {
-                addReply(c,shared.nullmultibulk);
+                addReplySds(c,shared.nullmultibulk);
                 unblockClientWaitingData(c);
             }
         }
@@ -589,7 +442,7 @@ void closeTimedoutClients(void) {
 
 int processInlineBuffer(redisClient *c) {
     char *newline = strstr(c->querybuf,"\r\n");
-    int argc, j;
+    int argc;
     sds *argv;
     size_t querylen;
 
@@ -601,23 +454,13 @@ int processInlineBuffer(redisClient *c) {
     querylen = newline-(c->querybuf);
     argv = sdssplitlen(c->querybuf,querylen," ",1,&argc);
 
+    c->argc = argc;
+
+    c->argv = argv;
+
     /* Leave data after the first line of the query in the buffer */
     c->querybuf = sdsrange(c->querybuf,querylen+2,-1);
 
-    /* Setup argv array on client structure */
-    if (c->argv) zfree(c->argv);
-    c->argv = zmalloc(sizeof(robj*)*argc);
-
-    /* Create redis objects for all arguments. */
-    for (c->argc = 0, j = 0; j < argc; j++) {
-        if (sdslen(argv[j])) {
-            c->argv[c->argc] = createObject(REDIS_STRING,argv[j]);
-            c->argc++;
-        } else {
-            sdsfree(argv[j]);
-        }
-    }
-    zfree(argv);
     return REDIS_OK;
 }
 
@@ -659,7 +502,7 @@ int processMultibulkBuffer(redisClient *c) {
 
         /* Setup argv array on client structure */
         if (c->argv) zfree(c->argv);
-        c->argv = zmalloc(sizeof(robj*)*c->multibulklen);
+        c->argv = zmalloc(sizeof(sds)*c->multibulklen);
 
         /* Search new newline */
         newline = strstr(c->querybuf+pos,"\r\n");
@@ -701,7 +544,7 @@ int processMultibulkBuffer(redisClient *c) {
             /* Not enough data (+2 == trailing \r\n) */
             break;
         } else {
-            c->argv[c->argc++] = createStringObject(c->querybuf+pos,c->bulklen);
+            c->argv[c->argc++] = sdsnewlen(c->querybuf+pos,c->bulklen);
             pos += c->bulklen+2;
             c->bulklen = -1;
             c->multibulklen--;

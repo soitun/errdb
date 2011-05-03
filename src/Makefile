@@ -25,7 +25,7 @@ PREFIX= /usr/local
 INSTALL_BIN= $(PREFIX)/bin
 INSTALL= cp -p
 
-OBJ = debug.o adlist.o ae.o anet.o dict.o errdb.o sds.o zmalloc.o pqsort.o sha1.o release.o client.o util.o object.o db.o t_string.o ts_list.o  config.o dscache.o  syncio.o diskstore.o endian.o 
+OBJ = debug.o adlist.o ae.o anet.o dict.o errdb.o sds.o zmalloc.o pqsort.o sha1.o release.o client.o util.o db.o t_string.o ts_list.o  config.o syncio.o endian.o 
 BENCHOBJ = ae.o anet.o sds.o adlist.o zmalloc.o
 CLIOBJ = anet.o sds.o adlist.o errdb-cli.o zmalloc.o release.o
 
@@ -49,14 +49,8 @@ config.o: config.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
 db.o: db.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
   zmalloc.h anet.h  version.h
 dict.o: dict.c fmacros.h dict.h zmalloc.h
-diskstore.o: diskstore.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
-  adlist.h zmalloc.h anet.h   version.h
-dscache.o: dscache.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
-  adlist.h zmalloc.h anet.h  version.h
 client.o: client.c errdb.h fmacros.h config.h ae.h sds.h dict.h \
   adlist.h zmalloc.h anet.h  version.h
-object.o: object.c errdb.h fmacros.h config.h ae.h sds.h dict.h adlist.h \
-  zmalloc.h anet.h  version.h
 pqsort.o: pqsort.c
 errdb-cli.o: errdb-cli.c fmacros.h version.h ../deps/hierrdb/hierrdb.h \
   sds.h zmalloc.h ../deps/linenoise/linenoise.h help.h

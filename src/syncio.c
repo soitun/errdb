@@ -139,16 +139,7 @@ int fwriteBulkLongLong(FILE *fp, long long l) {
 }
 
 /* Delegate writing an object to writing a bulk string or bulk long long. */
-int fwriteBulkObject(FILE *fp, robj *obj) {
-    /* Avoid using getDecodedObject to help copy-on-write (we are often
-     * in a child process when this function is called). */
-    if (obj->encoding == REDIS_ENCODING_INT) {
-        return fwriteBulkLongLong(fp,(long)obj->ptr);
-    } else if (obj->encoding == REDIS_ENCODING_RAW) {
-        return fwriteBulkString(fp,obj->ptr,sdslen(obj->ptr));
-    } else {
-        redisPanic("Unknown string encoding");
-    }
+int fwriteBulkObject(FILE *fp, sds s) {
+    return fwriteBulkString(fp, s,sdslen(s));
 }
-
 
