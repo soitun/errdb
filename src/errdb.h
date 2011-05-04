@@ -207,8 +207,8 @@ void _redisPanic(char *msg, char *file, int line);
 #define REDIS_LRU_CLOCK_MAX ((1<<21)-1) /* Max value of obj->lru */
 #define REDIS_LRU_CLOCK_RESOLUTION 10 /* LRU clock resolution in seconds */
 typedef struct tsObject {
-    char tag;
-    int time;
+    unsigned tag:2;
+    unsigned time:30;
     sds value;
 } tsObj;
 

@@ -1,3 +1,4 @@
+#include "adlist.h"
 #include "errdb.h"
 
 /*-----------------------------------------------------------------------------
@@ -48,6 +49,7 @@ void tsListInsert(list *list, int time, sds value) {
     tsObj *o;
     o = createTsObject(time, value);
     listAddNodeHead(list, o);
+    list->lastTs = time;
 }
 
 unsigned long listTypeLength(list *list) {
@@ -133,6 +135,7 @@ void tsInsertCommand(redisClient *c) {
     list *list = lookupKeyWrite(c->db, c->argv[1]);
     if (list == NULL) {
         list = listCreate();
+        list->firstTs = time;
         dbAdd(c->db, c->argv[1], list);
     }
     tsListInsert(list, time, val);
@@ -143,41 +146,84 @@ void tsInsertCommand(redisClient *c) {
 }
 
 void tsFetchCommand(redisClient *c) {
+    int i = 0;
     list *list;
+    listIter *iter;
+    listNode *ln;
+    int direct;
+    tsObj *o;
     int start = atoi(c->argv[2]);
     int end = atoi(c->argv[3]);
-    int llen;
-    int rangelen;
 
-    if ((list = lookupKeyRead(c->db,c->argv[1])) == NULL) return;
-    llen = listTypeLength(list);
+    int start_offset;
+    int end_offset;
 
-    /* convert negative indexes */
-    if (start < 0) start = llen+start;
-    if (end < 0) end = llen+end;
-    if (start < 0) start = 0;
-
-    /* Invariant: start >= 0, so this test will be true when end < 0.
-     * The range is empty when start > end or start >= length. */
-    if (start > end || start >= llen) {
+    //TODO: FIX LATER
+    tsObj *result[300];
+    int found = 0;
+    int items = 0;
+    
+    if ((list = lookupKeyRead(c->db,c->argv[1])) == NULL) {
         addReplySds(c,shared.emptymultibulk);
         return;
     }
-    if (end >= llen) end = llen-1;
-    rangelen = (end-start)+1;
+
+    /* convert negative indexes */
+    if (start < 0 || end < 0) {
+        addReplySds(c,shared.emptymultibulk);
+        return;
+    }
+
+    printf("start: %d, end: %d, lastTs: %d, firstTs: %d\n", start, end, list->lastTs, list->firstTs);
+
+    if(start > end || start > list->lastTs || end < list->firstTs) {
+        addReplySds(c,shared.emptymultibulk);
+        return;
+    }
+
+    start_offset = start - list->firstTs;
+    if(start_offset < 0) {
+        start_offset = -start_offset;
+    }
+    end_offset = end - list->lastTs;
+    if(end_offset < 0) {
+        end_offset = -end_offset;
+    }
+
+    printf("start_offset: %d, end_offset: %d\n", start_offset, end_offset);
+
+    direct = (start_offset < end_offset) ? AL_START_TAIL : AL_START_HEAD;
+    iter = listGetIterator(list, direct);
+
+    while((ln = listNext(iter)) != NULL) {
+        if(items > 100) break;
+        o = (tsObj *)ln->value;
+        if(o->time <= end && o->time >= start) {
+            found = 1;
+            result[items++] = o;
+        } else {
+            if(found) break;
+        }
+    }
+
+    printf("return items: %d", items);
 
     /* Return the result in form of a multi-bulk reply */
-    addReplyMultiBulkLen(c,rangelen);
+    addReplyMultiBulkLen(c, items);
 
-    listNode *ln = listIndex(list,start);
-
-    while(rangelen--) {
-        tsObj *o = ln->value;
-        tsObjReply(c, o);
-        ln = ln->next;
+    if(direct == AL_START_TAIL) {
+      for(i = 0; i < items; i++) {
+          tsObj *o = result[i];
+          tsObjReply(c, o);
+      }
+    } else {
+        for(i = items-1; i >= 0; i--) {
+            tsObj *o = result[i];
+            tsObjReply(c, o);
+        }
     }
-}
 
+}
 
 void tsLastCommand(redisClient *c) {
     sds key = c->argv[1];
