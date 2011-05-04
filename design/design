@@ -20,3 +20,9 @@ opengoss0912
 
 avg, cor, count, cov, dev, first, last, max, min, prd, sum, var, wavg, wsum
 
+
+reference:
+
+http://opentsdb.net/
+http://code.google.com/p/tsdb/
+http://code.google.com/p/esxsnmp/

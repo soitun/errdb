@@ -1,2 +1,2 @@
-#define REDIS_GIT_SHA1 "ac4e6b7b"
-#define REDIS_GIT_DIRTY "     315"
+#define REDIS_GIT_SHA1 "6bb6e3cc"
+#define REDIS_GIT_DIRTY "      36"
