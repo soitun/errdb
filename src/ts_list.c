@@ -123,12 +123,6 @@ void listTypeReleaseIterator(listTypeIterator *li) {
 /*-----------------------------------------------------------------------------
  * List Commands
  *----------------------------------------------------------------------------*/
-void llenCommand(redisClient *c) {
-    tsObj *o = lookupKeyRead(c->db,c->argv[1]);
-    if (o == NULL) return;
-    addReplyLongLong(c,listTypeLength(o));
-}
-
 void tsInsertCommand(redisClient *c) {
     int time = atoi(c->argv[2]);
     sds val = c->argv[3];

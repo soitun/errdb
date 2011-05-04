@@ -30,14 +30,14 @@ redisClient *createClient(int fd) {
     c->authenticated = 0;
     c->replstate = REDIS_REPL_NONE;
     c->reply = listCreate();
-    listSetFreeMethod(c->reply,sdsfree);
-    listSetDupMethod(c->reply,sdsdup);
+    listSetFreeMethod(c->reply, sdsfree);
+    listSetDupMethod(c->reply, sdsdup);
     c->bpop.keys = NULL;
     c->bpop.count = 0;
     c->bpop.timeout = 0;
     c->bpop.target = NULL;
     c->io_keys = listCreate();
-    listSetFreeMethod(c->io_keys,sdsfree);
+    listSetFreeMethod(c->io_keys, sdsfree);
     listAddNodeTail(server.clients, c);
     return c;
 }
@@ -179,9 +179,8 @@ void addReplyBulk(redisClient *c, sds sds) {
     addReplySds(c,shared.crlf);
 }
 
-void addReplyObj(redisClient *c, tsObj *obj) {
-    //TODO: FIX LATER
-}
+//void addReplyObj(redisClient *c, tsObj *obj) {
+//}
 
 /* Add a C buffer as bulk reply */
 void addReplyBulkCBuffer(redisClient *c, void *p, size_t len) {

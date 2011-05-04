@@ -41,7 +41,7 @@
 #include <sys/time.h>
 #include <assert.h>
 
-#include "hierrdb.h"
+#include "hiredis.h"
 #include "sds.h"
 #include "zmalloc.h"
 #include "linenoise.h"

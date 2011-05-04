@@ -77,7 +77,6 @@ struct redisCommand redisCommandTable[] = {
     {"last",tsLastCommand,2,REDIS_CMD_DENYOOM,1,1,1,0,0},
     {"fetch",tsFetchCommand,4,REDIS_CMD_DENYOOM,1,1,1,0,0},
     {"insert",tsInsertCommand,4,REDIS_CMD_DENYOOM,1,1,1,0,0},
-    {"llen",llenCommand,2,0,1,1,1,0,0},
 
     {"expire",expireCommand,3,0,0,0,0,0,0},
     {"expireat",expireatCommand,3,0,0,0,0,0,0},
