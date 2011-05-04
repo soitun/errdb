@@ -10,7 +10,7 @@ install: dummy
 
 clean:
 	cd src && $(MAKE) $@
-	cd deps/hiredis && $(MAKE) $@
+	cd deps/hierrdb && $(MAKE) $@
 	cd deps/linenoise && $(MAKE) $@
 
 $(TARGETS):
