@@ -1,4 +1,4 @@
-#include "errdb.h"
+#include "redis.h"
 #include "sha1.h"   /* SHA1 is used for DEBUG DIGEST */
 
 #include <arpa/inet.h>

@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "errdb.h"
+#include "redis.h"
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>

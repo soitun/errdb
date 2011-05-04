@@ -36,7 +36,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "hierrdb.h"
+#include "hiredis.h"
 #include "net.h"
 #include "sds.h"
 #include "util.h"

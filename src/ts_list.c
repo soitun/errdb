@@ -1,5 +1,5 @@
 #include "adlist.h"
-#include "errdb.h"
+#include "redis.h"
 
 /*-----------------------------------------------------------------------------
  * List API

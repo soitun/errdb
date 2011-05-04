@@ -28,7 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "errdb.h"
+#include "redis.h"
 
 /* ----------------- Blocking sockets I/O with timeouts --------------------- */
 

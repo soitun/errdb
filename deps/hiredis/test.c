@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "hierrdb.h"
+#include "hiredis.h"
 
 /* The following lines make up our testing "framework" :) */
 static int tests = 0, fails = 0;
