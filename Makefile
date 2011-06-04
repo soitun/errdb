@@ -1,22 +1,11 @@
-# Top level makefile, the real shit is at src/Makefile
+all: deps
+	(cd src;$(MAKE))
 
-TARGETS=32bit noopt test
-
-all:
-	cd src && $(MAKE) $@
-
-install: dummy
-	cd src && $(MAKE) $@
+deps:
+	cp /opt/platform/elog/ebin/* ebin
+	cp /opt/platform/elog/include/* include 
+	cp /opt/platform/core/ebin/* ebin
 
 clean:
-	cd src && $(MAKE) $@
-	cd deps/hiredis && $(MAKE) $@
-	cd deps/linenoise && $(MAKE) $@
+	(cd src;$(MAKE) clean)
 
-$(TARGETS):
-	cd src && $(MAKE) $@
-
-src/help.h:
-	@./utils/generate-command-help.rb > $@
-
-dummy:

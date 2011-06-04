@@ -1,0 +1,4 @@
+#!/bin/bash
+erl -smp auto +K true +A 8 -sname errdb -setcookie public -pa ./ebin -boot start_sasl -config etc/errdb.config -s errdb_app -log_level 4 -log_path ./var/log/errdb.log
+
+# 

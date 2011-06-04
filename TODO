@@ -1,11 +1,2 @@
-Redis TODO
-----------
-
-* ziplist to store values in memory?
-* rrdstore
-
-RRDSTORE TODO
-==============
-
-* implement a simple rrdstore
-
+1. tcp socket to client
+2. binary rrdfile format
