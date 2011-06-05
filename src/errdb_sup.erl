@@ -11,6 +11,8 @@
 
 -author('<ery.lee@gmail.com>').
 
+-import(errdb, [l2a/1, i2l/1]).
+
 -behaviour(supervisor).
 
 -export([start_link/0]).
@@ -21,22 +23,15 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    {ok, StoreOpts} = application:get_env(store),
-    Stores = [begin 
-        Name = l2a("errdb_store_" ++ i2l(I)),
-        {Name, {errdb_store, start_link, [Name, StoreOpts]},
-           permanent, 100, worker, [errdb_store]}
-    end || I <- lists:seq(1, 4)],
+    {ok, DbOpts} = application:get_env(rrdb),
+    Errdbs = [begin 
+        Name = l2a("errdb_" ++ i2l(Id)),
+        Opts = [{id, Id}|DbOpts],
+        {Name, {errdb, start_link, [Name, Opts]},
+           permanent, 100, worker, [errdb]}
+    end || Id <- lists:seq(1, 4)],
     {ok, JournalOpts} = application:get_env(journal),
     Journal = {errdb_journal, {errdb_journal, start_link, [JournalOpts]},
            permanent, 100, worker, [errdb_journal]},
-    {ok, DbOpts} = application:get_env(rrdb),
-    Errdb = {errdb, {errdb, start_link, [DbOpts]},
-           permanent, 100, worker, [errdb_hrlog]},
-    {ok, {{one_for_all, 0, 1}, [Journal] ++ Stores ++ [Errdb]}}.
+    {ok, {{one_for_all, 0, 1}, [Journal|Errdbs]}}.
 
-l2a(L) ->
-    list_to_atom(L).
-
-i2l(I) ->
-    integer_to_list(I).

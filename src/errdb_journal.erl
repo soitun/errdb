@@ -61,7 +61,7 @@ init([Opts]) ->
     State = #state{logdir = Dir, buffer_size = BufferSize},
     {noreply, NewState} = handle_info(journal_rotation, State),
     erlang:send_after(3000, self(), flush_queue),
-    ?INFO("errdb_journal is started, buffer: ~p", [BufferSize]),
+    ?INFO("errdb_journal is started.", []),
     {ok, NewState}.
 
 %%--------------------------------------------------------------------

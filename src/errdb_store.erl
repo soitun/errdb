@@ -17,13 +17,14 @@
 
 -import(extbif, [zeropad/1]).
 
+-import(errdb, [i2b/1,b2l/1,l2b/1,b2i/1]).
+
 -behavior(gen_server).
 
 -export([start_link/2,
-        dbdir/0,
-        read/1,
-        write/2,
-        delete/1]).
+        read/2,
+        write/3,
+        delete/2]).
 
 -export([init/1, 
         handle_call/3, 
@@ -39,15 +40,11 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], []).
+start_link(Name, Dir) ->
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir], []).
 
-dbdir() ->
-    Pid = pg2:get_closest_pid(?MODULE),
-    gen_server2:call(Pid, dbdir).
-
-read(Key) ->
-    FileName = filename(dbdir(), Key),
+read(DbDir, Key) ->
+    FileName = filename(DbDir, Key),
     case file:read_file(FileName) of
     {ok, Data} ->
         [_|Rows] = binary:split(Data, <<"\n">>, [global]),
@@ -61,12 +58,11 @@ read(Key) ->
         {error, Error}
     end.
     
-write(Key, Records) ->
-    Pid = pg2:get_closest_pid(?MODULE),
+write(Pid, Key, Records) ->
     gen_server2:cast(Pid, {write, Key, Records}).
 
-delete(Key) ->
-    gen_server2:cast(?MODULE, {delete, Key}).
+delete(Pid, Key) ->
+    gen_server2:cast(Pid, {delete, Key}).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -75,11 +71,8 @@ delete(Key) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Name, Opts]) ->
-    {value, Dir} = dataset:get_value(dbdir, Opts),
-    pg2:create(?MODULE),
-    pg2:join(?MODULE, self()),
-    ?INFO("~p is started, dir: ~p", [Name, Dir]),
+init([Name, Dir]) ->
+    ?INFO("~p is started.", [Name]),
     {ok, #state{dbdir = Dir}}.
 
 %%--------------------------------------------------------------------
@@ -130,7 +123,7 @@ handle_cast({write, Key, Records}, #state{dbdir = Dir} = State) ->
     {noreply, State};
 
 handle_cast({delete, Key}, #state{dbdir = Dir} = State) ->
-    file:del_dir(filedir(Dir, Key)),
+    file:del_dir(filename(Dir, Key)),
     {noreply, State};
     
 handle_cast(Msg, State) ->
@@ -167,12 +160,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-filedir(Dir, Key) ->
-    Path = binary:replace(Key, <<",">>, <<"/">>, [global]),
-    concat([Dir, b2l(Path), "/"]).
-    
 filename(Dir, Key) ->
-    concat([filedir(Dir, Key), strdate()]).
+    Path = binary:replace(Key, <<",">>, <<"/">>, [global]),
+    concat([Dir, b2l(Path)]).
 
 fields([{_, Data}|_]) ->
     Tokens = binary:split(Data, <<",">>, [global]),
@@ -204,20 +194,3 @@ tuplist([], Acc) ->
 tuplist([Name, Val|T], Acc) ->
     tuplist(T, [{Name, Val}|Acc]).
 
-strdate() ->
-    concat([zeropad(I) || I <- tuple_to_list(date())]).
-
-%strtime() ->
-%    concat([zeropad(I) || I <- tuple_to_list(time())]).
-
-i2b(I) when is_integer(I) ->
-    list_to_binary(integer_to_list(I)).
-
-b2l(B) when is_binary(B) ->
-    binary_to_list(B).
-
-l2b(L) when is_list(L) ->
-    list_to_binary(L).
-
-b2i(B) when is_binary(B) ->
-    list_to_integer(binary_to_list(B)).

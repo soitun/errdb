@@ -15,6 +15,8 @@
 %%@doc Start the errdb server
 start() -> 
     init_elog(),
+	application:start(crypto),
+	application:start(core),
 	application:start(errdb).
 
 init_elog() ->
@@ -25,7 +27,9 @@ init_elog() ->
 %%@spec stop() -> ok
 %%@doc Stop the errdb server
 stop() -> 
-    application:stop(errdb).
+    application:stop(errdb),
+	application:stop(core),
+	application:stop(crypto).
 
 start(_Type, _Args) ->
 	errdb_sup:start_link().
