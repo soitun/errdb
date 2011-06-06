@@ -13,7 +13,7 @@
 
 -include("elog.hrl").
 
--import(lists, [concat/1]).
+-import(lists, [concat/1, reverse/1]).
 
 -import(extbif, [zeropad/1]).
 
@@ -36,6 +36,8 @@
 
 -record(state, {dbdir}).
 
+-record(head, {lastup, lastrow, dscnt, dssize, fields}).
+
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
@@ -46,14 +48,14 @@ start_link(Name, Dir) ->
 read(DbDir, Key) ->
     FileName = filename(DbDir, Key),
     case file:read_file(FileName) of
-    {ok, Data} ->
-        [_|Rows] = binary:split(Data, <<"\n">>, [global]),
-        List = 
-        [begin 
-            [Time, Value] = binary:split(Row, <<":">>, [global]),
-            {b2i(Time), Value}
-        end || Row <- Rows, Row =/= <<>>],
-        {ok, List};
+    {ok, Binary} ->
+        case decode(Binary) of
+        {ok, #head{fields = Fields} = Head, Records} ->
+            ?INFO("head: ~p", [Head]),
+            {ok, Fields, Records};
+        {error, Reason} ->
+            {error, Reason}
+        end;
     {error, Error} -> 
         {error, Error}
     end.
@@ -84,15 +86,10 @@ init([Name, Dir]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call(dbdir, _From, #state{dbdir = Dir} = State) ->
-    {reply, Dir, State};
-
 handle_call(Req, _From, State) ->
     ?ERROR("badreq: ~p", [Req]),
     {reply, {error, badreq}, State}.
 
-priorities_call(dbdir, _From, _State) ->
-    10;
 priorities_call(_, _From, _State) ->
     0.
 %%--------------------------------------------------------------------
@@ -104,18 +101,34 @@ priorities_call(_, _From, _State) ->
 handle_cast({write, Key, Records}, #state{dbdir = Dir} = State) ->
     FileName = filename(Dir, Key),
     filelib:ensure_dir(FileName),
-    {ok, File} = file:open(FileName, [read, write, append, raw, {read_ahead, 1024}]), 
-    case file:read_line(File) of
-    {ok, "#time:" ++ Head} ->
-        Head1 = string:strip(Head, right, $\n),
-        Fields = fields(l2b(Head1)),
+    {ok, File} = file:open(FileName, [read, write, binary, raw, {read_ahead, 1024}]), 
+    case file:read(File, 1024) of
+    {ok, <<"RRDB0001", _/binary>> = Bin} ->
+        Head = decode(head, Bin),
+        #head{lastup=LastUp,lastrow=LastRow,fields=Fields} = Head,
         Lines = lines(Fields, Records),
-        file:write(File, Lines);
+        {LastUp1, LastRow1, Writes} = 
+        lists:foldl(fun(Line, {_Up, Row, Acc}) -> 
+            <<Time:32,_/binary>> = Line,
+            NextRow =
+            if
+            Row >= 599 -> 0;
+            true -> Row + 1
+            end,
+            Pos = 1024 + size(Line) * NextRow,
+            {Time, NextRow, [{Pos, Line}|Acc]}
+        end, {LastUp, LastRow, []}, Lines),
+        Writes1 = [{8, <<LastUp1:32, LastRow1:32>>}|Writes],
+        file:pwrite(File, Writes1);
     eof -> %new file
         Fields = fields(Records),
-        file:write(File, head(Fields)),
+        {LastUp,_} = lists:last(Records),
+        LastRow = length(Records) - 1,
+        Head = encode(head, Fields),
+        file:write(File, Head),
         Lines = lines(Fields, Records),
-        file:write(File, Lines);
+        Writes = [{8, <<LastUp:32, LastRow:32>>},{1024, l2b(Lines)}],
+        file:pwrite(File, Writes);
     {error, Reason} -> 
         ?ERROR("failed to open '~p': ~p", [FileName, Reason])
     end,
@@ -168,16 +181,12 @@ fields([{_, Data}|_]) ->
     Tokens = binary:split(Data, <<",">>, [global]),
     Fields = 
     [begin 
-        [Field|_] = binary:split(Token, <<"=">>), Field
+        [Field|_] = binary:split(Token, <<"=">>), b2l(Field)
     end || Token <- Tokens],
     lists:sort(Fields);
 
 fields(Head) when is_binary(Head) ->
     lists:sort(binary:split(Head, <<",">>, [global])).
-
-head(Fields) ->
-    Head = string:join([b2l(Field) || Field <- Fields], ","),
-    list_to_binary(["#time:", Head, "\n"]).
 
 lines(Fields, Records) ->
     [line(Fields, Record) || Record <- Records].
@@ -185,12 +194,66 @@ lines(Fields, Records) ->
 line(Fields, {Time, Data}) ->
     Tokens = binary:split(Data, [<<",">>, <<"=">>], [global]),
     TupList = tuplist(Tokens, []),
-    Values = [proplists:get_value(Field, TupList, <<"0">>) || Field <- Fields],
-    Line = string:join([b2l(V) || V <- Values], ","),
-    list_to_binary([i2b(Time), <<":">>, Line, <<"\n">>]).
+    Values = [proplists:get_value(l2b(Field), TupList, 0.0) || Field <- Fields],
+    Line = [<<V/float>> || V <- Values],
+    list_to_binary([<<Time:32>>, <<":">>, Line]).
 
 tuplist([], Acc) ->
     Acc;
-tuplist([Name, Val|T], Acc) ->
+tuplist([Name, ValBin|T], Acc) ->
+    Val = binary_to_number(ValBin),
     tuplist(T, [{Name, Val}|Acc]).
+
+binary_to_number(Bin) ->
+    N = binary_to_list(Bin),
+    case string:to_float(N) of
+        {error,no_float} -> list_to_integer(N);
+        {F,_Rest} -> F
+    end.
+
+decode(Bin) ->
+    <<HeadBin:1024/binary, BodyBin/binary>> = Bin,
+    #head{fields = Fields} = Head = decode(head, HeadBin),
+    Records = decode(body, Fields, BodyBin),
+    {ok, Head, Records}.
+
+decode(head, Bin) ->
+    <<"RRDB0001", LastUp:32, LastRow:32, DsCnt:32, DsSize:32, DsBin/binary>> = Bin,
+    <<DsData:DsSize/binary, _/binary>> = DsBin,
+    Fields = [b2l(B) || B <- binary:split(DsData, <<",">>, [global])],
+    #head{lastup=LastUp, lastrow=LastRow, dscnt=DsCnt, dssize=DsSize,fields=Fields};
+
+decode(value, Bin) ->
+    decode(value, Bin, []).
+
+decode(body, Fields, Bin) ->
+    Len = length(Fields) * 8,
+    decode(line, Bin, Len);
+
+decode(line, Bin, Len) ->
+    decode(line, Bin, Len, []);
+
+decode(value, <<>>, Acc) ->
+    reverse(Acc);
+
+decode(value, <<V/float, Bin/binary>>, Acc) ->
+    decode(value, Bin, [V | Acc]).
+
+decode(line, <<>>, _Len, Acc) ->
+    reverse(Acc);
+
+decode(line, <<Time:32, ":", Bin/binary>>, Len, Acc) ->
+    <<ValBin:Len/binary, Left/binary>> = Bin, 
+    Record = {Time, decode(value, ValBin)},
+    decode(line, Left, Len, [Record|Acc]).
+
+encode(head, Fields) ->
+    DsData = l2b(string:join(Fields, ",")),
+    DsCnt = length(Fields),
+    DsSize = size(DsData),
+    <<"RRDB0001", 0:32, 0:32, DsCnt:32, DsSize:32, DsData/binary>>;
+
+encode(line, {Time, Values}) ->
+    ValBin = l2b([<<V/float>> || V <- Values]),
+    <<Time:32, ":", ValBin/binary>>.
 

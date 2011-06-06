@@ -61,7 +61,6 @@ fetch(Key, Begin, End) when is_binary(Key)
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:call(Pid, {fetch, self(), Key, Begin, End}).
 
-
 insert(Key, Time, Value) when is_binary(Key) 
     and is_integer(Time) and is_binary(Value) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
@@ -85,8 +84,8 @@ init([Name, Opts]) ->
     %start store process
     {ok, Store} = errdb_store:start_link(store_name(Id), Dir),
 
-    DbTab = ets:new(dbtab(Id), [set, protected, {keypos, 2}]),
-    ReqTab = ets:new(reqtab(Id), [set, protected, {keypos, 2}]),
+    DbTab = ets:new(dbtab(Id), [set, protected, named_table, {keypos, 2}]),
+    ReqTab = ets:new(reqtab(Id), [set, protected, named_table, {keypos, 2}]),
 
     chash_pg:create(errdb),
     chash_pg:join(errdb, self()),
@@ -121,7 +120,9 @@ handle_call({fetch, Pid, Key, Begin, End}, From, #state{dbtab = DbTab} = State) 
     [#errdb{first = First, list = List}] -> 
         case (Begin >= First) of
         true ->
-            Reply = {ok, filter(Begin, End, List)},
+            Fields = fields(List),
+            Lines = lines(Fields, List),
+            Reply = {ok, Fields, filter(Begin, End, Lines)},
             {reply, Reply, State};
         false -> 
             fetch_from_store({Pid, Key, Begin, End}, From, State),
@@ -267,8 +268,8 @@ fetch_from_store({Pid, Key, Begin, End}, From, #state{dbdir = Dir, reqtab = ReqT
     spawn_link(fun() -> 
         Reply = 
         case errdb_store:read(Dir, Key) of
-        {ok, Records} ->
-            {ok, filter(Begin, End, Records)};
+        {ok, Fields, Records} ->
+            {ok, Fields, filter(Begin, End, Records)};
         {error, Reason} ->
             {error, Reason}
         end,
@@ -281,8 +282,41 @@ fetch_from_store({Pid, Key, Begin, End}, From, #state{dbdir = Dir, reqtab = ReqT
         reader = Reader},
     ets:insert(ReqTab, Req).
 
+fields([{_, Data}|_]) ->
+    Tokens = binary:split(Data, <<",">>, [global]),
+    Fields = 
+    [begin 
+        [Field|_] = binary:split(Token, <<"=">>), b2l(Field)
+    end || Token <- Tokens],
+    lists:sort(Fields).
+
+lines(Fields, Records) ->
+    [line(Fields, Record) || Record <- Records].
+
+line(Fields, {Time, Data}) ->
+    Tokens = binary:split(Data, [<<",">>, <<"=">>], [global]),
+    TupList = tuplist(Tokens, []),
+    Values = [proplists:get_value(l2b(Field), TupList, 0.0) || Field <- Fields],
+    {Time, Values}.
+
+tuplist([], Acc) ->
+    Acc;
+tuplist([Name, ValBin|T], Acc) ->
+    Val = binary_to_number(ValBin),
+    tuplist(T, [{Name, Val}|Acc]).
+
+binary_to_number(Bin) ->
+    N = binary_to_list(Bin),
+    case string:to_float(N) of
+        {error,no_float} -> list_to_integer(N);
+        {F,_Rest} -> F
+    end.
+
 filter(Begin, End, List) ->
-    [{Time, Data} || {Time, Data} <- List, Time >= Begin, Time =< End].
+    Match = [{Time, Data} || {Time, Data} <- List, Time >= Begin, Time =< End],
+    lists:sort(fun({T1,_}, {T2,_}) -> 
+        T1 =< T2
+    end, Match).
 
 store_name(Id) ->
     l2a("errdb_store_" ++ i2l(Id)).

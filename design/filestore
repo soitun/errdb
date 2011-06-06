@@ -9,7 +9,7 @@ filename:
 000000:1.10,3.30,5.30
 
 #header
-rrdb 0001 dscnt maxrows cntrows last_up last_row
+rrdb 0001 lastup lastrow dscnt dssize
 ============================
 #datasource
 ds1,
