@@ -50,7 +50,8 @@ read(DbDir, Key) ->
     case file:read_file(FileName) of
     {ok, Binary} ->
         case decode(Binary) of
-        {ok, #head{fields=Fields}, Records} ->
+        {ok, #head{fields=Fields} = Head, Records} ->
+            ?INFO("~p", [Head]),
             {ok, Fields, Records};
         {error, Reason} ->
             {error, Reason}

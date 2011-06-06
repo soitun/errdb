@@ -43,7 +43,7 @@
 %ref: timer ref
 -record(read_req, {id, mon, timer, from, reader}). 
 
--record(errdb, {key, first=0, last=0, list=[]}).
+-record(errdb, {key, first=0, last=0, fields = [], list=[]}).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -110,15 +110,18 @@ init([Name, Opts]) ->
 handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
     Reply = 
     case ets:lookup(DbTab, Key) of
-    [#errdb{list = [Last|_]}] -> {ok, Last};
+    [#errdb{list = [Last|_]}] -> 
+        Fields = fields([Last]),
+        Line = line(Fields, Last),
+        {ok, Fields, Line};
     [] -> {error, notfound}
     end,
     {reply, Reply, State};
 
 handle_call({fetch, Pid, Key, Begin, End}, From, #state{dbtab = DbTab} = State) ->
     case ets:lookup(DbTab, Key) of
-    [#errdb{first = First, list = List}] -> 
-        case (Begin >= First) of
+    [#errdb{first = First, last = Last, list = List}] -> 
+        case (Begin >= First) and (End =< Last) of
         true ->
             Fields = fields(List),
             Lines = lines(Fields, List),

@@ -33,5 +33,11 @@ init([]) ->
     {ok, JournalOpts} = application:get_env(journal),
     Journal = {errdb_journal, {errdb_journal, start_link, [JournalOpts]},
            permanent, 100, worker, [errdb_journal]},
-    {ok, {{one_for_all, 0, 1}, [Journal|Errdbs]}}.
+
+	%% Httpd config
+	{ok, HttpdConf} = application:get_env(httpd), 
+	%% Httpd 
+    Httpd = {errdb_httpd, {errdb_httpd, start, [HttpdConf]},
+           permanent, 10, worker, [errdb_httpd]},
+    {ok, {{one_for_all, 0, 1}, [Httpd,Journal|Errdbs]}}.
 
