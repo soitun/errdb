@@ -12,9 +12,7 @@ filename:
 rrdb 0001 lastup lastrow dscnt dssize
 ============================
 #datasource
-ds1,
-ds2,
-......
+ds1, ds2, ......
 ============================
 #rra
 rra1 total, file_offset, lasttime, firsttime, last_row
