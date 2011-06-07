@@ -1,0 +1,12 @@
+last:
+
+GET http://localhost:8000/rrdb/${key}/last
+
+fetch:
+
+GET http://localhost:8000/rrdb/${key}/${start}-${end}
+
+delete:
+
+DELETE http://localhost:8000/rrdb/${key}
+
