@@ -1,3 +1,5 @@
+2011-06-05 release v0.3.0(erylee): binary round robin format
+
 2011-06-04 release v0.2.1(erylee): use chash_pg to start 4 errdb
 
 2011-06-04 release v0.2.0(erylee): rewrite with erlang
