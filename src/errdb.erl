@@ -149,7 +149,7 @@ handle_call({fetch, Pid, Key, Begin, End}, From, #state{dbtab = DbTab} = State) 
             Reply = {ok, Fields, filter(Begin, End, List)},
             {reply, Reply, State};
         false -> 
-            fetch_from_store({Pid, Key, Begin, End}, List, From, State),
+            fetch_from_store({Pid, Key, Begin, End}, {Fields, List}, From, State),
             {noreply, State}
         end;
     [] -> 
@@ -194,7 +194,7 @@ handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab,
                 {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
             end;
         [false, _] ->
-            ?WARNING("badtime: time=~p < last=~p ", [Time, Last]),
+            ?WARNING("badtime: time=~p =< last=~p ", [Time, Last]),
             {error, badtime};
         [_, false] ->
             ?WARNING("badfield: fields=~p, oldfields=~p ", [Fields, OldFields]),
@@ -302,7 +302,7 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-fetch_from_store({Pid, Key, Begin, End}, MemList, From, 
+fetch_from_store({Pid, Key, Begin, End}, {MemFields, MemList}, From, 
     #state{dbdir = Dir, reqtab = ReqTab}) ->
     Parent = self(),
     ReqId = make_ref(),
@@ -314,6 +314,8 @@ fetch_from_store({Pid, Key, Begin, End}, MemList, From,
         case errdb_store:read(Dir, Key) of
         {ok, Fields, Records} ->
             {ok, Fields, filter(Begin, End, MemList ++ Records)};
+        {ok, []} ->
+            {ok, MemFields, filter(Begin, End, MemList)};
         {error, Reason} ->
             {error, Reason}
         end,

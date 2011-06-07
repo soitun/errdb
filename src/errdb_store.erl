@@ -56,6 +56,8 @@ read(DbDir, Key) ->
         {error, Reason} ->
             {error, Reason}
         end;
+    {error, enoent} ->
+        {ok, []}; %no file and data.
     {error, Error} -> 
         {error, Error}
     end.
