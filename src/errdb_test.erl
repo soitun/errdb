@@ -47,7 +47,7 @@ run(I, J) ->
     Key = list_to_binary(["key", i2s(I)]),
     Vals = <<"load1=1,load5=5,load15=15">>,
     Ts = extbif:timestamp(),
-    [errdb:insert(Key, Ts+X, Vals) || X <- lists:seq(1, J)],
+    [errdb:insert(Key, Ts+X-(I*1000), Vals) || X <- lists:seq(1, J)],
     run(I - 1, J).
 
 read(0) ->

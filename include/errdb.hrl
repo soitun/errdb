@@ -6,3 +6,5 @@
 
 -define(STATUS_BADRPC,  3).
 
+-define(ERTS_MINIMUM, "5.8.1").
+

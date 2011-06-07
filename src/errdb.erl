@@ -11,24 +11,25 @@
 
 -author('ery.lee@gmail.com').
 
--import(lists, [reverse/1]).
-
 -include("elog.hrl").
+
+-import(extbif, [to_list/1]).
+
+-import(lists, [concat/1,reverse/1]).
+
+-import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,number/1]).
 
 -export([last/1,
         fetch/3,
         insert/3,
         delete/1]).
 
-%utility functions
--export([l2a/1,i2l/1,i2b/1,b2l/1,l2b/1,b2i/1]).
-
 -behavior(gen_server).
 
 -export([start_link/2]).
 
 -export([init/1, 
-        handle_call/3, 
+        handle_call/3,
         priorities_call/3,
         handle_cast/2,
         handle_info/2,
@@ -61,14 +62,38 @@ fetch(Key, Begin, End) when is_binary(Key)
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:call(Pid, {fetch, self(), Key, Begin, End}).
 
-insert(Key, Time, Value) when is_binary(Key) 
-    and is_integer(Time) and is_binary(Value) ->
+%data: "k=v,k1=v1,k2=v2"
+insert(Key, Time, Data) when is_binary(Key) 
+    and is_integer(Time) and is_binary(Data) ->
+    {Fields, Values} = decode(Data),
     Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:cast(Pid, {insert, Key, Time, Value}).
+    gen_server2:cast(Pid, {insert, Key, Time, {Fields, Values}}).
+
+%Data: k=v,k1=v1,k2=v2
+%return: {["k","k1","k2"], [v,v1,v2]}
+decode(Data) when is_binary(Data) ->
+    Tokens = binary:split(Data, [<<",">>, <<"=">>], [global]),
+    decode(Tokens, []).
+
+decode([], Acc) ->
+    Sorted = 
+    lists:sort(fun({Name1, _}, {Name2, _}) -> 
+        Name1 =< Name2
+    end, Acc),
+    lists:unzip(Sorted);
+
+decode([Name, Value|T], Acc) ->
+    Tup = {b2l(Name), number(Value)},
+    decode(T, [Tup|Acc]).
 
 delete(Key) when is_binary(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:cast(Pid, {delete, Key}).
+
+encode({Fields, Values}) ->
+    TupList = lists:zip(Fields, Values),
+    Tokens = [concat([Name, "=", to_list(Val)]) || {Name, Val} <- TupList],
+    string:join(Tokens, ",").
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -91,11 +116,10 @@ init([Name, Opts]) ->
     chash_pg:join(errdb, self()),
 
     CacheSize = proplists:get_value(cache, Opts),
-    ?INFO("~p is started, cache: ~p", [Name, CacheSize]),
+    io:format("~n~p is started.~n ", [Name]),
 
     {ok, #state{dbtab = DbTab, reqtab = ReqTab, 
-        dbdir = Dir, store = Store, 
-        cache = CacheSize}}.
+        dbdir = Dir, store = Store, cache = CacheSize}}.
 
 
 %%--------------------------------------------------------------------
@@ -110,25 +134,22 @@ init([Name, Opts]) ->
 handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
     Reply = 
     case ets:lookup(DbTab, Key) of
-    [#errdb{list = [Last|_]}] -> 
-        Fields = fields([Last]),
-        Line = line(Fields, Last),
-        {ok, Fields, Line};
-    [] -> {error, notfound}
+    [#errdb{fields=Fields, list=[Last|_]}] -> 
+        {ok, Fields, Last};
+    [] -> 
+        {error, notfound}
     end,
     {reply, Reply, State};
 
 handle_call({fetch, Pid, Key, Begin, End}, From, #state{dbtab = DbTab} = State) ->
     case ets:lookup(DbTab, Key) of
-    [#errdb{first = First, last = Last, list = List}] -> 
+    [#errdb{first=First, last=Last, fields=Fields, list=List}] -> 
         case (Begin >= First) and (End =< Last) of
         true ->
-            Fields = fields(List),
-            Lines = lines(Fields, List),
-            Reply = {ok, Fields, filter(Begin, End, Lines)},
+            Reply = {ok, Fields, filter(Begin, End, List)},
             {reply, Reply, State};
         false -> 
-            fetch_from_store({Pid, Key, Begin, End}, From, State),
+            fetch_from_store({Pid, Key, Begin, End}, List, From, State),
             {noreply, State}
         end;
     [] -> 
@@ -147,29 +168,48 @@ priorities_call({fetch,_,_,_,_}, _From, _State) ->
 priorities_call(_, _From, _State) ->
     0.
 
+check_time(Last, Time) ->
+    Time > Last.
+check_fields(OldFields, Fields) ->
+    OldFields == Fields.
+
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({insert, Key, Time, Value}, #state{dbtab = DbTab, 
+handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab, 
     store = Store, cache = CacheSize} = State) ->
-    NewRecord =
+    Result =
     case ets:lookup(DbTab, Key) of
-    [#errdb{list = List} = OldRecord] -> 
-        case length(List) >= CacheSize of
-        true ->
-            errdb_store:write(Store, Key, reverse(List)),
-            OldRecord#errdb{first = Time, last = Time, list = [{Time, Value}]};
-        false ->
-            OldRecord#errdb{last = Time, list = [{Time, Value}|List]}
+    [#errdb{last=Last,fields=OldFields,list=List} = OldRecord] -> 
+        case [check_time(Last, Time), check_fields(OldFields, Fields)] of
+        [true, true] ->
+            case length(List) >= CacheSize of
+            true ->
+                errdb_store:write(Store, Key, Fields, reverse(List)),
+                {ok, OldRecord#errdb{first = Time, last = Time, list = [{Time, Values}]}};
+            false ->
+                {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
+            end;
+        [false, _] ->
+            ?WARNING("badtime: time=~p < last=~p ", [Time, Last]),
+            {error, badtime};
+        [_, false] ->
+            ?WARNING("badfield: fields=~p, oldfields=~p ", [Fields, OldFields]),
+            {error, badfield}
         end;
     [] ->
-        #errdb{key = Key, first = Time, last = Time, list = [{Time, Value}]}
+        {ok, #errdb{key=Key, first=Time, last=Time, fields=Fields, list=[{Time, Values}]}}
     end,
-    ets:insert(DbTab, NewRecord),
-    errdb_journal:write(Key, Time, Value),
+    case Result of
+    {ok, NewRecord} ->
+        ets:insert(DbTab, NewRecord),
+        errdb_journal:write(Key, Time, encode({Fields, Values}));
+    {error, _Reason} ->
+        ignore %here
+    end,
     {noreply, State};
 
 handle_cast({delete, Key}, #state{store = Store, dbtab = DbTab} = State) ->
@@ -262,7 +302,8 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-fetch_from_store({Pid, Key, Begin, End}, From, #state{dbdir = Dir, reqtab = ReqTab}) ->
+fetch_from_store({Pid, Key, Begin, End}, MemList, From, 
+    #state{dbdir = Dir, reqtab = ReqTab}) ->
     Parent = self(),
     ReqId = make_ref(),
     MonRef = erlang:monitor(process, Pid),
@@ -272,7 +313,7 @@ fetch_from_store({Pid, Key, Begin, End}, From, #state{dbdir = Dir, reqtab = ReqT
         Reply = 
         case errdb_store:read(Dir, Key) of
         {ok, Fields, Records} ->
-            {ok, Fields, filter(Begin, End, Records)};
+            {ok, Fields, filter(Begin, End, MemList ++ Records)};
         {error, Reason} ->
             {error, Reason}
         end,
@@ -284,36 +325,6 @@ fetch_from_store({Pid, Key, Begin, End}, From, #state{dbdir = Dir, reqtab = ReqT
         from = From,
         reader = Reader},
     ets:insert(ReqTab, Req).
-
-fields([{_, Data}|_]) ->
-    Tokens = binary:split(Data, <<",">>, [global]),
-    Fields = 
-    [begin 
-        [Field|_] = binary:split(Token, <<"=">>), b2l(Field)
-    end || Token <- Tokens],
-    lists:sort(Fields).
-
-lines(Fields, Records) ->
-    [line(Fields, Record) || Record <- Records].
-
-line(Fields, {Time, Data}) ->
-    Tokens = binary:split(Data, [<<",">>, <<"=">>], [global]),
-    TupList = tuplist(Tokens, []),
-    Values = [proplists:get_value(l2b(Field), TupList, 0.0) || Field <- Fields],
-    {Time, Values}.
-
-tuplist([], Acc) ->
-    Acc;
-tuplist([Name, ValBin|T], Acc) ->
-    Val = binary_to_number(ValBin),
-    tuplist(T, [{Name, Val}|Acc]).
-
-binary_to_number(Bin) ->
-    N = binary_to_list(Bin),
-    case string:to_float(N) of
-        {error,no_float} -> list_to_integer(N);
-        {F,_Rest} -> F
-    end.
 
 filter(Begin, End, List) ->
     Match = [{Time, Data} || {Time, Data} <- List, Time >= Begin, Time =< End],
@@ -335,20 +346,3 @@ cancel_timer(undefined) ->
 cancel_timer(Ref) ->
     (catch erlang:cancel_timer(Ref)).
 
-l2a(L) ->
-    list_to_atom(L).
-
-i2l(I) ->
-    integer_to_list(I).
-
-i2b(I) when is_integer(I) ->
-    list_to_binary(integer_to_list(I)).
-
-b2l(B) when is_binary(B) ->
-    binary_to_list(B).
-
-l2b(L) when is_list(L) ->
-    list_to_binary(L).
-
-b2i(B) when is_binary(B) ->
-    list_to_integer(binary_to_list(B)).

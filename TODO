@@ -1,1 +1,5 @@
-1. tcp socket to client
+0. write a tcp client
+OK 1. tcp socket to client
+OK 2. merge memory and disk data.
+OK 3. remove duplicate code and fix startup code
+

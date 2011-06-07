@@ -11,7 +11,7 @@
 
 -author('<ery.lee@gmail.com>').
 
--import(errdb, [l2a/1, i2l/1]).
+-import(errdb_misc, [l2a/1, i2l/1]).
 
 -behaviour(supervisor).
 
@@ -39,5 +39,11 @@ init([]) ->
 	%% Httpd 
     Httpd = {errdb_httpd, {errdb_httpd, start, [HttpdConf]},
            permanent, 10, worker, [errdb_httpd]},
-    {ok, {{one_for_all, 0, 1}, [Httpd,Journal|Errdbs]}}.
+
+	%% Socket config
+	{ok, SocketConf} = application:get_env(socket), 
+	%% Socket
+    Socket = {errdb_socket, {errdb_socket, start, [SocketConf]},
+           permanent, 10, worker, [errdb_socket]},
+    {ok, {{one_for_all, 0, 1}, Errdbs ++ [Journal, Httpd, Socket]}}.
 

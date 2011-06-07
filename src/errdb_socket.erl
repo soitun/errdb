@@ -2,15 +2,17 @@
 
 -include("elog.hrl").
 
--define(TIMEOUT, 3600000).
+-import(errdb_misc, [b2i/1, line/1]).
 
 -export([start/1, 
         loop/1, 
         stop/0]).
 
+-define(TIMEOUT, 3600000).
+
 %% External API
 start(Options) ->
-    ?INFO("errdb_socket is started...[ok]", []),
+    io:format("~nerrdb_socket is started.~n"),
     mochiweb_socket_server:start([{name, ?MODULE}, 
         {loop, fun loop/1} | Options]).
 
@@ -74,10 +76,4 @@ request(Req) ->
     ?ERROR("bad request: ~p", [Req]),
     "ERROR: bad request\n".
 
-line({Time, Values}) ->
-    Line = string:join([extbif:to_list(V) || V <- Values], ","),
-    string:join([extbif:to_list(Time), Line], ":").
-
-b2i(B) when is_binary(B) ->
-    list_to_integer(binary_to_list(B)).
 

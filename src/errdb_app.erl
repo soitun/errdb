@@ -5,6 +5,8 @@
 
 -module(errdb_app).
 
+-include("errdb.hrl").
+
 -export([start/0, stop/0]).
 
 -behavior(application).
@@ -32,8 +34,24 @@ stop() ->
 	application:stop(crypto).
 
 start(_Type, _Args) ->
-	errdb_sup:start_link().
+    case erts_version_check() of
+    ok ->
+        {ok, SupPid} = errdb_sup:start_link(),
+        true = register(errdb, self()),
+        io:format("~nerrdb is running~n"),
+        {ok, SupPid};
+    Error ->
+        Error
+    end.
+
 
 stop(_State) ->
 	ok.
 
+erts_version_check() ->
+    FoundVer = erlang:system_info(version),
+    case errdb_misc:version_compare(?ERTS_MINIMUM, FoundVer, lte) of
+        true  -> ok;
+        false -> {error, {erlang_version_too_old,
+                          {found, FoundVer}, {required, ?ERTS_MINIMUM}}}
+    end.

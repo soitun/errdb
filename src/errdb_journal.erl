@@ -11,6 +11,8 @@
 
 -author('ery.lee@gmail.com').
 
+-import(errdb_misc, [i2b/1]).
+
 -import(extbif, [timestamp/0, zeropad/1]).
 
 -include("elog.hrl").
@@ -61,7 +63,7 @@ init([Opts]) ->
     State = #state{logdir = Dir, buffer_size = BufferSize},
     {noreply, NewState} = handle_info(journal_rotation, State),
     erlang:send_after(3000, self(), flush_queue),
-    ?INFO("errdb_journal is started.", []),
+    io:format("~nerrdb_journal is started.~n", []),
     {ok, NewState}.
 
 %%--------------------------------------------------------------------
@@ -183,7 +185,4 @@ flush_to_disk(LogFile, Q) ->
 
 line(Key, Time, Value) ->
     list_to_binary([Key, <<"@">>, i2b(Time), <<":">>, Value, <<"\n">>]).
-
-i2b(I) when is_integer(I) ->
-    list_to_binary(integer_to_list(I)).
 
