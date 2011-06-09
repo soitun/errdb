@@ -43,17 +43,17 @@
 
 -define(TIMEOUT, 3000).
 
--record(state, {host, port, socket}).
+-record(state, {host, port, socket, queue}).
 
 -import(extbif, [to_list/1, to_binary/1, to_integer/1]).
 
 start_link(Args) ->
     gen_fsm:start_link(?MODULE, [Args], []).
 
-last(Pid, Key) when is_binary(Key) ->
+last(_Pid, Key) when is_binary(Key) ->
     {error, unsupport}.
 
-fetch(Pid, Key, Begin, End) when is_binary(Key) 
+fetch(_Pid, Key, Begin, End) when is_binary(Key) 
     and is_integer(Begin) and is_integer(End) ->
     {error, unsupport}.
 
@@ -72,7 +72,8 @@ init([Args]) ->
     put(datetime, {date(), time()}),
     Host = proplists:get_value(host, Args, "localhost"),
     Port = proplists:get_value(port, Args, 7272),
-    {ok, connecting, #state{host = Host, port = Port}, 0}.
+    State = #state{host = Host, port = Port, queue = queue:new()},
+    {ok, connecting, State, 0}.
 
 connecting(timeout, State) ->
     connect(State);
@@ -106,7 +107,7 @@ handle_info({tcp, _Socket, Data}, connected, State) ->
     case Data of
     <<"OK", _/binary>> -> %ok reply
         ok; %TODO
-    <<"ERROR:", Reason/binary>> -> %error reply
+    <<"ERROR:", _Reason/binary>> -> %error reply
         ok; %TODO
     _ -> %data reply
         ok %TODO

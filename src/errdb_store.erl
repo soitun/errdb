@@ -182,7 +182,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 filename(Dir, Key) ->
-    Path = binary:replace(Key, <<",">>, <<"/">>, [global]),
+    Path = binary:replace(Key, [<<",">>, <<":">>], <<"/">>, [global]),
     concat([Dir, b2l(Path)]).
 
 check_fields(OldFields, Fields) ->
