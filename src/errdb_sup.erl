@@ -23,6 +23,8 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
+    Monitor = {errdb_monitor, {errdb_monitor, start_link, []},
+            permanent, 10, worker, [errdb_monitor]},
     {ok, DbOpts} = application:get_env(rrdb),
     Errdbs = [begin 
         Name = l2a("errdb_" ++ i2l(Id)),
@@ -45,5 +47,5 @@ init([]) ->
 	%% Socket
     Socket = {errdb_socket, {errdb_socket, start, [SocketConf]},
            permanent, 10, worker, [errdb_socket]},
-    {ok, {{one_for_all, 0, 1}, Errdbs ++ [Journal, Httpd, Socket]}}.
+    {ok, {{one_for_all, 0, 1}, Errdbs ++ [Monitor, Journal, Httpd, Socket]}}.
 

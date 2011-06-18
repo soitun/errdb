@@ -109,8 +109,10 @@ init([Name, Opts]) ->
     %start store process
     {ok, Store} = errdb_store:start_link(store_name(Id), Dir),
 
-    DbTab = ets:new(dbtab(Id), [set, protected, named_table, {keypos, 2}]),
-    ReqTab = ets:new(reqtab(Id), [set, protected, named_table, {keypos, 2}]),
+    DbTab = ets:new(dbtab(Id), [set, protected, 
+        named_table, {keypos, 2}]),
+    ReqTab = ets:new(reqtab(Id), [set, protected, 
+        named_table, {keypos, 2}]),
 
     chash_pg:create(errdb),
     chash_pg:join(errdb, self()),

@@ -50,16 +50,26 @@ init() ->
     ets:new(errdb_ctl_cmds, [named_table, set, public]).
 
 process(["status"]) ->
+    Tabs = ets:all(),
+    ErrdbTabs = lists:filter(fun(Tab) -> 
+        if
+        is_atom(Tab) ->
+            lists:prefix("errdb", atom_to_list(Tab));
+        true ->
+            false
+        end
+    end, Tabs),
+    [?PRINT("table ~p:~n~p~n", [Tab, ets:info(Tab)]) || Tab <- ErrdbTabs],
     {InternalStatus, ProvidedStatus} = init:get_status(),
     ?PRINT("Node ~p is ~p. Status: ~p~n",
               [node(), InternalStatus, ProvidedStatus]),
     case lists:keysearch(errdb, 1, application:which_applications()) of
-        false ->
-            ?PRINT("errdb is not running~n", []),
-            ?STATUS_ERROR;
-        {value,_Version} ->
-            ?PRINT("errdb is running~n", []),
-            ?STATUS_SUCCESS
+    false ->
+        ?PRINT("errdb is not running~n", []),
+        ?STATUS_ERROR;
+    {value, Version} ->
+        ?PRINT("errdb ~p is running~n", [Version]),
+        ?STATUS_SUCCESS
     end;
 
 process(["stop"]) ->
