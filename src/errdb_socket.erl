@@ -45,7 +45,14 @@ request(Line) when is_binary(Line) ->
     request(Req);
 
 request({<<"insert">>, Key, Time, Value, <<>>}) ->
-    errdb:insert(Key, b2i(Time), Value),
+    if
+    Value == <<>> ->
+        ?ERROR("null insert: ~p", [Key]);
+    true ->
+        try errdb:insert(Key, b2i(Time), Value) catch
+        _:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
+        end
+    end,
     "OK\n";
 
 request({<<"last">>, Key, <<>>}) ->
