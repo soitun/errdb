@@ -111,7 +111,7 @@ init([Name, Opts]) ->
 
     %start journal process
     JournalOpts = proplists:get_value(journal, Opts),
-    Journal = errdb_journal:start_link(errdb_journal:name(Id), [{id, Id} | JournalOpts]),
+    {ok, Journal} = errdb_journal:start_link(errdb_journal:name(Id), [{id, Id} | JournalOpts]),
 
     DbTab = ets:new(dbtab(Id), [set, protected, 
         named_table, {keypos, 2}]),
