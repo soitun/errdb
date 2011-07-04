@@ -1,4 +1,3 @@
 #!/bin/bash
-erl -noinput -detached -smp auto +K true +A 32 -sname errdb -setcookie public -pa ./ebin -boot start_sasl -config etc/errdb.config -s errdb_app -log_level 4 -log_path ./var/log/errdb.log
 
-# 
+erl -noinput -detached -smp auto +K true +A 32 -sname errdb -setcookie public -pa ./ebin -boot start_sasl -config etc/errdb.config -s errdb_app -log_level 2 -log_path ./var/log/errdb.log
