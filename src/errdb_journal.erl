@@ -15,13 +15,16 @@
 
 -import(extbif, [timestamp/0, zeropad/1]).
 
+-import(errdb_misc, [i2l/1, l2a/1]).
+
 -include("elog.hrl").
 
 -behavior(gen_server).
 
--export([start_link/1, 
-        info/0,
-        write/3]).
+-export([name/1,
+        start_link/2, 
+        info/1,
+        write/4]).
 
 -export([init/1, 
         handle_call/3, 
@@ -32,20 +35,23 @@
         terminate/2,
         code_change/3]).
 
--record(state, {logdir, logfile, thishour, buffer_size = 100, queue = []}).
+-record(state, {id, logdir, logfile, thishour, buffer_size = 100, queue = []}).
+
+name(Id) ->
+    l2a("errdb_journal" ++ i2l(Id)).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Opts) ->
-    gen_server2:start_link({local, ?MODULE}, ?MODULE, [Opts], []).
+start_link(Name, Opts) ->
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], []).
 
-info() ->
-    gen_server2:call(?MODULE, info).
+info(Pid) ->
+    gen_server2:call(Pid, info).
 
-write(Key, Time, Value) ->
-    gen_server2:cast(?MODULE, {write, Key, Time, Value}).
+write(Pid, Key, Time, Value) ->
+    gen_server2:cast(Pid, {write, Key, Time, Value}).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -54,13 +60,14 @@ write(Key, Time, Value) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Opts]) ->
+init([Name, Opts]) ->
+    Id = proplists:get_value(id, Opts),
     Dir = proplists:get_value(dir, Opts),
     BufferSize = proplists:get_value(buffer, Opts, 100),
-    State = #state{logdir = Dir, buffer_size = BufferSize},
+    State = #state{id = Id, logdir = Dir, buffer_size = BufferSize},
     {noreply, NewState} = handle_info(journal_rotation, State),
     erlang:send_after(3000, self(), flush_queue),
-    io:format("~nerrdb_journal is started.~n", []),
+    io:format("~n~p is started.~n", [Name]),
     {ok, NewState}.
 
 %%--------------------------------------------------------------------
@@ -110,12 +117,12 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info(journal_rotation, #state{logdir = Dir, logfile = File, queue = Q} = State) ->
+handle_info(journal_rotation, #state{id = Id, logdir = Dir, logfile = File, queue = Q} = State) ->
     flush_queue(File, Q),
     close_file(File),
     Now = timestamp(),
     {Hour,_,_} = time(),
-    FilePath = Dir ++ zeropad(Hour),
+    FilePath = lists:concat([Dir, zeropad(Hour), "/", integer_to_list(Id), ".journal"]),
     filelib:ensure_dir(FilePath),
     {ok, NewFile} = file:open(FilePath, [write]),
     NextHour = ((Now div 3600) + 1) * 3600,

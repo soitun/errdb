@@ -72,11 +72,11 @@ handle_cast(Msg, State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({monitor, GcPid, long_gc, Info}, State) ->
-    ?ERROR("long_gc: ~p, process_info: ~n ~p", [Info, erlang:process_info(GcPid)]),
+    ?ERROR("long_gc warning! ~n ~p ~n ~p", [Info, erlang:process_info(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, GcPid, large_heap, Info}, State) ->
-    ?ERROR("large_heap: ~p, process_infor ~n ~p", [Info, erlang:process_info(GcPid)]),
+    ?ERROR("large_heap warning! ~n ~p ~n ~p", [Info, erlang:process_info(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, SusPid, busy_port, Port}, State) ->

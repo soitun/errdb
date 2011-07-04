@@ -23,19 +23,15 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    Monitor = {errdb_monitor, {errdb_monitor, start_link, []},
-            permanent, 10, worker, [errdb_monitor]},
+    %rrdb cluster
 	{ok, PoolSize} = application:get_env(pool_size),
-    {ok, DbOpts} = application:get_env(rrdb),
+    {ok, RrdbOpts} = application:get_env(rrdb),
     Errdbs = [begin 
         Name = l2a("errdb_" ++ i2l(Id)),
-        Opts = [{id, Id}|DbOpts],
+        Opts = [{id, Id} | RrdbOpts],
         {Name, {errdb, start_link, [Name, Opts]},
            permanent, 100, worker, [errdb]}
     end || Id <- lists:seq(1, PoolSize)],
-    {ok, JournalOpts} = application:get_env(journal),
-    Journal = {errdb_journal, {errdb_journal, start_link, [JournalOpts]},
-           permanent, 100, worker, [errdb_journal]},
 
 	%% Httpd config
 	{ok, HttpdConf} = application:get_env(httpd), 
@@ -48,5 +44,10 @@ init([]) ->
 	%% Socket
     Socket = {errdb_socket, {errdb_socket, start, [SocketConf]},
            permanent, 10, worker, [errdb_socket]},
-    {ok, {{one_for_all, 0, 1}, Errdbs ++ [Monitor, Journal, Httpd, Socket]}}.
+
+    %%system monitor
+    Monitor = {errdb_monitor, {errdb_monitor, start_link, []},
+            permanent, 10, worker, [errdb_monitor]},
+
+    {ok, {{one_for_all, 0, 1}, Errdbs ++ [Httpd, Socket, Monitor]}}.
 
