@@ -25,13 +25,14 @@ start_link() ->
 init([]) ->
     Monitor = {errdb_monitor, {errdb_monitor, start_link, []},
             permanent, 10, worker, [errdb_monitor]},
+	{ok, PoolSize} = application:get_env(pool_size),
     {ok, DbOpts} = application:get_env(rrdb),
     Errdbs = [begin 
         Name = l2a("errdb_" ++ i2l(Id)),
         Opts = [{id, Id}|DbOpts],
         {Name, {errdb, start_link, [Name, Opts]},
            permanent, 100, worker, [errdb]}
-    end || Id <- lists:seq(1, 4)],
+    end || Id <- lists:seq(1, PoolSize)],
     {ok, JournalOpts} = application:get_env(journal),
     Journal = {errdb_journal, {errdb_journal, start_link, [JournalOpts]},
            permanent, 100, worker, [errdb_journal]},

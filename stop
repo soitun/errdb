@@ -1,2 +1,2 @@
 #!/bin/bash
-erl -noinput -sname errdbctl -pa ./ebin -s errdb_ctl -extra errdb stop
+erl -noinput -setcookie public -sname errdbctl -pa ./ebin -s errdb_ctl -extra errdb stop
