@@ -212,10 +212,10 @@ handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab,
                 {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
             end;
         [false, _] ->
-            ?WARNING("badtime: time=~p =< last=~p ", [Time, Last]),
+            ?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
             {error, badtime};
         [_, false] ->
-            ?WARNING("badfield: fields=~p, oldfields=~p ", [Fields, OldFields]),
+            ?WARNING("key: ~p, badfield: fields=~p, oldfields=~p ", [Key, Fields, OldFields]),
             {error, badfield}
         end;
     [] ->
