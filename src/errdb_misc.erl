@@ -86,7 +86,7 @@ dropdot(A) -> lists:dropwhile(fun (X) -> X =:= $. end, A).
 
 pinfo(Pid) ->
     Props = [registered_name, message_queue_len, 
-        total_heap_size, heap_size, reductions],
+        binary, total_heap_size, heap_size, reductions],
     Info = process_info(Pid, Props),
     Name = proplists:get_value(registered_name, Info),
     {Name, Info}.

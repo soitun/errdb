@@ -47,7 +47,7 @@ name(Id) ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Name, Dir) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir], []).
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir], [{spawn_opt, [{min_heap_size, 256000}]}]).
 
 read(DbDir, Key) ->
     FileName = filename(DbDir, Key),

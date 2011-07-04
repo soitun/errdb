@@ -50,7 +50,7 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 4096}]}]).
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 20480}]}]).
 
 info() ->
     Pids = chash_pg:get_pids(errdb),

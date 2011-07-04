@@ -45,7 +45,7 @@ name(Id) ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], []).
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 256000}]}]).
 
 info(Pid) ->
     gen_server2:call(Pid, info).
