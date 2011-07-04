@@ -39,7 +39,7 @@
 
 -define(SERVER, {global, ?MODULE}).
 
--record(state, {dbtab, reqtab, store, cache, dbdir}).
+-record(state, {dbtab, reqtab, journal, store, cache, dbdir}).
 
 %ref: timer ref
 -record(read_req, {id, mon, timer, from, reader}). 
@@ -107,7 +107,11 @@ init([Name, Opts]) ->
     {value, Id} = dataset:get_value(id, Opts),
     {value, Dir} = dataset:get_value(dir, Opts),
     %start store process
-    {ok, Store} = errdb_store:start_link(store_name(Id), Dir),
+    {ok, Store} = errdb_store:start_link(errdb_store:name(Id), Dir),
+
+    %start journal process
+    JournalOpts = proplists:get_value(journal, Opts),
+    Journal = errdb_journal:start_link(errdb_journal:name(Id), [{id, Id} | JournalOpts]),
 
     DbTab = ets:new(dbtab(Id), [set, protected, 
         named_table, {keypos, 2}]),
@@ -120,8 +124,8 @@ init([Name, Opts]) ->
     CacheSize = proplists:get_value(cache, Opts),
     io:format("~n~p is started.~n ", [Name]),
 
-    {ok, #state{dbtab = DbTab, reqtab = ReqTab, 
-        dbdir = Dir, store = Store, cache = CacheSize}}.
+    {ok, #state{dbtab = DbTab, reqtab = ReqTab, dbdir = Dir,
+        store = Store, journal = Journal,  cache = CacheSize}}.
 
 
 %%--------------------------------------------------------------------
@@ -335,9 +339,6 @@ filter(Begin, End, List) ->
     lists:sort(fun({T1,_}, {T2,_}) -> 
         T1 =< T2
     end, Match).
-
-store_name(Id) ->
-    l2a("errdb_store_" ++ i2l(Id)).
 
 dbtab(Id) ->
     l2a("errdb_" ++ i2l(Id)).

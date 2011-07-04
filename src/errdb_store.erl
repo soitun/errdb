@@ -17,11 +17,12 @@
 
 -import(lists, [concat/1, reverse/1]).
 
--import(errdb_misc, [i2b/1,b2l/1,l2b/1,b2i/1]).
+-import(errdb_misc, [b2l/1, i2l/1, l2a/1, l2b/1]).
 
 -behavior(gen_server).
 
--export([start_link/2,
+-export([name/1,
+        start_link/2,
         read/2,
         write/4,
         delete/2]).
@@ -37,6 +38,9 @@
 -record(state, {dbdir}).
 
 -record(head, {lastup, lastrow, dscnt, dssize, fields}).
+
+name(Id) ->
+    l2a("errdb_store_" ++ i2l(Id)).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -183,7 +187,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 filename(Dir, Key) ->
     Path = binary:replace(Key, [<<",">>, <<":">>], <<"/">>, [global]),
-    concat([Dir, b2l(Path)]).
+    concat([Dir, b2l(Path), ".rrdb"]).
 
 check_fields(OldFields, Fields) ->
     OldFields == Fields.
