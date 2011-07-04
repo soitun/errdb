@@ -186,7 +186,7 @@ check_fields(OldFields, Fields) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab, 
-    store = Store, cache = CacheSize} = State) ->
+    journal = Journal, store = Store, cache = CacheSize} = State) ->
     Result =
     case ets:lookup(DbTab, Key) of
     [#errdb{last=Last,fields=OldFields,list=List} = OldRecord] -> 
@@ -212,7 +212,7 @@ handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab,
     case Result of
     {ok, NewRecord} ->
         ets:insert(DbTab, NewRecord),
-        errdb_journal:write(Key, Time, encode({Fields, Values}));
+        errdb_journal:write(Journal, Key, Time, encode({Fields, Values}));
     {error, _Reason} ->
         ignore %here
     end,
