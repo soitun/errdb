@@ -4,6 +4,7 @@
         b2i/1, b2l/1,
         i2b/1, i2l/1,
         l2a/1, l2b/1,
+        pinfo/1,
         number/1,
         line/1,
         dropdot/1,
@@ -83,4 +84,10 @@ version_compare(A,  B) ->
 
 dropdot(A) -> lists:dropwhile(fun (X) -> X =:= $. end, A).
 
+pinfo(Pid) ->
+    Props = [registered_name, message_queue_len, 
+        total_heap_size, heap_size, reductions],
+    Info = process_info(Pid, Props),
+    Name = proplists:get_value(registered_name, Info),
+    {Name, Info}.
 

@@ -38,7 +38,7 @@
 -record(state, {id, logdir, logfile, thishour, buffer_size = 100, queue = []}).
 
 name(Id) ->
-    l2a("errdb_journal" ++ i2l(Id)).
+    l2a("errdb_journal_" ++ i2l(Id)).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}

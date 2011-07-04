@@ -50,6 +50,8 @@ init() ->
     ets:new(errdb_ctl_cmds, [named_table, set, public]).
 
 process(["status"]) ->
+    Infos = lists:flatten(errdb:info()),
+    [?PRINT("process ~p: ~n~p~n", [Name, Info]) || {Name, Info} <- Infos],
     Tabs = ets:all(),
     ErrdbTabs = lists:filter(fun(Tab) -> 
         if
