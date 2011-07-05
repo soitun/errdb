@@ -19,7 +19,8 @@
 
 -import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,number/1]).
 
--export([last/1,
+-export([info/0,
+        last/1,
         fetch/3,
         insert/3,
         delete/1]).
@@ -37,9 +38,7 @@
         terminate/2,
         code_change/3]).
 
--define(SERVER, {global, ?MODULE}).
-
--record(state, {dbtab, reqtab, journal, store, cache, dbdir}).
+-record(state, {dbtab, reqtab, journal, store, cache, threshold = 1, dbdir}).
 
 %ref: timer ref
 -record(read_req, {id, mon, timer, from, reader}). 
@@ -51,7 +50,11 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], []).
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 4096}]}]).
+
+info() ->
+    Pids = chash_pg:get_pids(errdb),
+    [gen_server2:call(Pid, info) || Pid <- Pids].
 
 last(Key) when is_binary(Key) -> 
     Pid = chash_pg:get_pid(?MODULE, Key),
@@ -124,9 +127,10 @@ init([Name, Opts]) ->
     CacheSize = proplists:get_value(cache, Opts),
     io:format("~n~p is started.~n ", [Name]),
 
-    {ok, #state{dbtab = DbTab, reqtab = ReqTab, dbdir = Dir,
-        store = Store, journal = Journal,  cache = CacheSize}}.
+    erlang:send_after(1000, self(), cron),
 
+    {ok, #state{dbtab = DbTab, reqtab = ReqTab, dbdir = Dir,
+        store = Store, journal = Journal, cache = CacheSize}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -137,6 +141,12 @@ init([Name, Opts]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
+handle_call(info, _From, #state{store=Store, journal=Journal} = State) ->
+    Reply = [errdb_misc:pinfo(self()), 
+            errdb_misc:pinfo(Store),
+            errdb_misc:pinfo(Journal)],
+    {reply, Reply, State};
+    
 handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
     Reply = 
     case ets:lookup(DbTab, Key) of
@@ -167,6 +177,8 @@ handle_call(Req, _From, State) ->
     ?ERROR("badreq: ~p", [Req]),
     {reply, {error, bagreq}, State}.
 
+priorities_call(info, _From, _State) ->
+    10;
 priorities_call({last, _}, _From, _State) ->
     10;
 priorities_call({fetch,_,_,_,_}, _From, _State) ->
@@ -186,13 +198,13 @@ check_fields(OldFields, Fields) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab, 
-    journal = Journal, store = Store, cache = CacheSize} = State) ->
+    journal = Journal, store = Store, cache = CacheSize, threshold = Threshold} = State) ->
     Result =
     case ets:lookup(DbTab, Key) of
     [#errdb{last=Last,fields=OldFields,list=List} = OldRecord] -> 
         case [check_time(Last, Time), check_fields(OldFields, Fields)] of
         [true, true] ->
-            case length(List) >= CacheSize of
+            case length(List) >= (CacheSize+Threshold) of
             true ->
                 errdb_store:write(Store, Key, Fields, reverse(List)),
                 {ok, OldRecord#errdb{first = Time, last = Time, list = [{Time, Values}]}};
@@ -200,10 +212,10 @@ handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab,
                 {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
             end;
         [false, _] ->
-            ?WARNING("badtime: time=~p =< last=~p ", [Time, Last]),
+            ?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
             {error, badtime};
         [_, false] ->
-            ?WARNING("badfield: fields=~p, oldfields=~p ", [Fields, OldFields]),
+            ?WARNING("key: ~p, badfield: fields=~p, oldfields=~p ", [Key, Fields, OldFields]),
             {error, badfield}
         end;
     [] ->
@@ -281,10 +293,17 @@ handle_info({'EXIT', Pid, Reason}, #state{reqtab = ReqTab} = State) ->
 	end, Match),
     {noreply, State};
     
+handle_info(cron, #state{cache = CacheSize} = State) ->
+    Threshold = random:uniform(CacheSize),
+    erlang:send_after(1000, self(), cron),
+    {noreply, State#state{threshold = Threshold}};
+
 handle_info(Info, State) ->
     ?ERROR("badinfo: ~p", [Info]),
     {noreply, State}.
 
+priorities_info(cron, _State) ->
+    11;
 priorities_info({read_rep,_,_}, _State) ->
     10;
 priorities_info({read_timeout,_,_}, _State) ->

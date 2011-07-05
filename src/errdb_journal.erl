@@ -38,14 +38,14 @@
 -record(state, {id, logdir, logfile, thishour, buffer_size = 100, queue = []}).
 
 name(Id) ->
-    l2a("errdb_journal" ++ i2l(Id)).
+    l2a("errdb_journal_" ++ i2l(Id)).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], []).
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 20480}]}]).
 
 info(Pid) ->
     gen_server2:call(Pid, info).

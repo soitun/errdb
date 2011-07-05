@@ -41,7 +41,7 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    erlang:system_monitor(self(), [{long_gc, 500}, {large_heap, 1000000}, busy_port]),
+    erlang:system_monitor(self(), [{long_gc, 500}, {large_heap, 4000000}, busy_port]),
     io:format("~nerrdb_monitor is started.~n", []),
     {ok, #state{}}.
 %%--------------------------------------------------------------------
@@ -72,11 +72,11 @@ handle_cast(Msg, State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({monitor, GcPid, long_gc, Info}, State) ->
-    ?ERROR("long_gc warning! ~n ~p ~n ~p", [Info, erlang:process_info(GcPid)]),
+    ?ERROR("long_gc warning! ~n ~p ~n ~p", [Info, errdb_misc:pinfo(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, GcPid, large_heap, Info}, State) ->
-    ?ERROR("large_heap warning! ~n ~p ~n ~p", [Info, erlang:process_info(GcPid)]),
+    ?ERROR("large_heap warning! ~n ~p ~n ~p", [Info, errdb_misc:pinfo(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, SusPid, busy_port, Port}, State) ->
