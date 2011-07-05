@@ -127,7 +127,7 @@ init([Name, Opts]) ->
     CacheSize = proplists:get_value(cache, Opts),
     io:format("~n~p is started.~n ", [Name]),
 
-    erlang:send_after(5000, self(), cron),
+    erlang:send_after(1000, self(), cron),
 
     {ok, #state{dbtab = DbTab, reqtab = ReqTab, dbdir = Dir,
         store = Store, journal = Journal, cache = CacheSize}}.
@@ -295,7 +295,7 @@ handle_info({'EXIT', Pid, Reason}, #state{reqtab = ReqTab} = State) ->
     
 handle_info(cron, #state{cache = CacheSize} = State) ->
     Threshold = random:uniform(CacheSize),
-    erlang:send_after(5000, self(), cron),
+    erlang:send_after(1000, self(), cron),
     {noreply, State#state{threshold = Threshold}};
 
 handle_info(Info, State) ->
