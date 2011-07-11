@@ -41,7 +41,7 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    erlang:system_monitor(self(), [{long_gc, 500}, {large_heap, 4000000}, busy_port]),
+    erlang:system_monitor(self(), [{long_gc, 500}, {large_heap, 10000000}, busy_port]),
     io:format("~nerrdb_monitor is started.~n", []),
     {ok, #state{}}.
 %%--------------------------------------------------------------------
