@@ -24,11 +24,11 @@
 
 %% gen_fsm callbacks
 -export([init/1,
-     code_change/4,
-     handle_info/3,
-     handle_event/3,
-     handle_sync_event/4,
-     terminate/3]).
+		handle_info/3,
+		handle_event/3,
+		handle_sync_event/4,
+		code_change/4,
+		terminate/3]).
 
 %% fsm state
 -export([connecting/2,
@@ -45,8 +45,6 @@
 
 -record(state, {host, port, socket, queue}).
 
--import(extbif, [to_list/1, to_binary/1, to_integer/1]).
-
 start_link(Args) ->
     gen_fsm:start_link(?MODULE, [Args], []).
 
@@ -54,7 +52,7 @@ last(_Pid, Key) when is_binary(Key) ->
     {error, unsupport}.
 
 fetch(_Pid, Key, Begin, End) when is_binary(Key) 
-    and is_integer(Begin) and is_integer(End) ->
+	and is_integer(Begin) and is_integer(End) ->
     {error, unsupport}.
 
 insert(Pid, Key, Time, Data) when is_binary(Key)
@@ -68,7 +66,7 @@ stop(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, stop).
 
 init([Args]) ->
-    put(insert, 0),
+    put(inserted, 0),
     put(datetime, {date(), time()}),
     Host = proplists:get_value(host, Args, "localhost"),
     Port = proplists:get_value(port, Args, 7272),
@@ -97,17 +95,17 @@ connecting(Event, _From, S) ->
 
 connected({insert, Key, Time, Data}, #state{socket = Socket} = State) ->
     Insert = list_to_binary(["insert ", Key, " ", 
-        integer_to_list(Time), " ", Data, "\r\n"]),
+		integer_to_list(Time), " ", Data, "\r\n"]),
     gen_tcp:send(Socket, Insert),
-    put(inserted, get(insert)+1),
+    put(inserted, get(inserted)+1),
     {next_state, connected, State}.
 
 handle_info({tcp, _Socket, Data}, connected, State) ->
-    ?INFO("tcp data: ~p", [Data]),
     case Data of
     <<"OK", _/binary>> -> %ok reply
         ok; %TODO
-    <<"ERROR:", _Reason/binary>> -> %error reply
+    <<"ERROR:", Reason/binary>> -> %error reply
+		?ERROR("~p", [Reason]),
         ok; %TODO
     _ -> %data reply
         ok %TODO
@@ -147,7 +145,6 @@ terminate(_Reason, _StateName, _State) ->
 code_change(_OldVsn, StateName, State, _Extra) ->
     {ok, StateName, State}.
 
-%%%%%%%%%%%%interface%%%%%%%%%%%%%
 retry_connect() ->
     erlang:send_after(30000, self(), {timeout, retry_connect}).
 
