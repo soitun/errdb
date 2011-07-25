@@ -1,7 +1,7 @@
 {application, errdb,
  [{description, "errdb"},
   {id, "Errdb"},
-  {vsn, "0.3.0"},
+  {vsn, "0.4.1"},
   {modules, [
     errdb,
     errdb_app,
