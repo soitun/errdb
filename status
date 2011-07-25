@@ -1,2 +1,3 @@
 #!/bin/bash
-erl -noinput -sname errdbctl -setcookie public -pa ./ebin -s errdb_ctl -extra errdb status
+
+./errdb_ctl status

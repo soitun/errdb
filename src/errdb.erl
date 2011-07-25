@@ -215,7 +215,7 @@ handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab,
             ?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
             {error, badtime};
         [_, false] ->
-            ?WARNING("key: ~p, badfield: fields=~p, oldfields=~p ", [Key, Fields, OldFields]),
+            ?ERROR("key: ~p, badfield: fields=~p, oldfields=~p ", [Key, Fields, OldFields]),
             {error, badfield}
         end;
     [] ->

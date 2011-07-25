@@ -5,6 +5,8 @@
 
 -module(errdb_app).
 
+-include("elog.hrl").
+
 -include("errdb.hrl").
 
 -export([start/0, stop/0]).
