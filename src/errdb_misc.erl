@@ -4,6 +4,7 @@
         b2i/1, b2l/1,
         i2b/1, i2l/1,
         l2a/1, l2b/1,
+        str/1,
         pinfo/1,
         number/1,
         line/1,
@@ -33,6 +34,13 @@ l2a(L) ->
 
 l2b(L) when is_list(L) ->
     list_to_binary(L).
+
+str(V) when is_integer(V) ->
+    integer_to_list(V);
+
+str(V) when is_float(V) ->
+    [S] = io_lib:format("~.6f", [V]),
+    S.
 
 number(Bin) when is_binary(Bin) ->
     number(binary_to_list(Bin));

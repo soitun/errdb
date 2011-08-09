@@ -17,7 +17,7 @@
 
 -import(lists, [concat/1,reverse/1]).
 
--import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,number/1]).
+-import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,str/1,number/1]).
 
 -export([info/0,
         last/1,
@@ -95,7 +95,7 @@ delete(Key) when is_binary(Key) ->
 
 encode({Fields, Values}) ->
     TupList = lists:zip(Fields, Values),
-    Tokens = [concat([Name, "=", to_list(Val)]) || {Name, Val} <- TupList],
+    Tokens = [concat([Name, "=", str(Val)]) || {Name, Val} <- TupList],
     string:join(Tokens, ",").
 
 %%--------------------------------------------------------------------
