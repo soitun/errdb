@@ -53,34 +53,33 @@ request({<<"insert">>, Key, Time, Value, <<>>}) ->
         _:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
         end
     end,
-    "OK\n";
+    "OK\r\n";
 
 request({<<"last">>, Key, <<>>}) ->
     case errdb:last(Key) of
     {ok, Fields, Record} -> 
-        Head = ["time:", string:join(Fields, ",")],
+        Head = ["time: ", string:join(Fields, ",")],
         Line = line(Record),
-        list_to_binary([Head, "\n", Line, "\nEND\n"]);
+        list_to_binary([Head, "\r\n", Line, "\r\nEND\r\n"]);
     {error, Reason} ->
-        "ERROR: " ++ atom_to_list(Reason) ++ "\n"
+        "ERROR: " ++ atom_to_list(Reason) ++ "\r\n"
     end;
 
 request({<<"fetch">>, Key, Begin, End, <<>>}) ->
 	case errdb:fetch(Key, b2i(Begin), b2i(End)) of
     {ok, Fields, Records} -> 
-        Head = ["time:", string:join(Fields, ",")],
-        Lines = string:join([line(Record) || Record <- Records], "\n"),
-        list_to_binary([Head, "\n", Lines, "\nEND\n"]);
+        Head = ["time: ", string:join(Fields, ",")],
+        Lines = string:join([line(Record) || Record <- Records], "\r\n"),
+        list_to_binary([Head, "\r\n", Lines, "\r\nEND\r\n"]);
     {error, Reason} ->
-        "ERROR" ++ atom_to_list(Reason) ++ "\n"
+        "ERROR " ++ atom_to_list(Reason) ++ "\r\n"
 	end;
 
 request({<<"delete">>, Key, <<>>}) ->
     ok = errdb:delete(Key),
-    "OK\n";
+    "OK\r\n";
 
 request(Req) ->
     ?ERROR("bad request: ~p", [Req]),
-    "ERROR: bad request\n".
-
+    "ERROR: bad request\r\n".
 
