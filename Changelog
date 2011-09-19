@@ -1,4 +1,6 @@
-2011-08-04 release v0.4.0(erylee): fix float precision bug
+2011-08-15 release v0.4.2(erylee): support errdb ruby clients and fix errdb_socket
+
+2011-08-04 release v0.4.1(erylee): fix float precision bug
 
 2011-07-03 release v0.4.0(erylee): errdb_journal cluster
 
