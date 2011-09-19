@@ -13,15 +13,13 @@ Errdb实现上每个Key对应一个Round Robbin的存储文件，时间序列的
 
 实现模型如下：
 
-![Architecture](erylee/errdb/blob/master/design/arch.png "Architecture")
+![Architecture](errdb/blob/master/design/arch.png "Architecture")
 
 # Errdb应用
 
-Errdb在WLAN网管用于存储原始的性能数据，一般存储最近两天，WLAN网管界面上的所有
-实时性能图表，都来自ERRDB。
+Errdb在WLAN网管用于存储原始的性能数据，一般存储最近两天，WLAN网管界面上的所有实时性能图表，都来自ERRDB。
 
-Errdb生成的Journal文件在WLAN网管中，会通过定时任务导入到Oracle进行聚合归并生成
-报表数据。
+Errdb生成的Journal文件在WLAN网管中，会通过定时任务导入到Oracle进行聚合归并生成报表数据。
 
 # Errdb启动停止
 
