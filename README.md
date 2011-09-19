@@ -6,7 +6,7 @@ Errdb(Extensible Round Robin Database)是可扩展的环形的数据库，用于
 
 Errdb采用内存+文件的方式存储最近一段时间(T0~Tn)之间的指标数据，概念模型：
 
-![Architecture](erylee/errdb/blob/master/design/concept.png "Concept")
+![Architecture](https://github.com/erylee/errdb/raw/master/design/concept.png "Concept")
 
 Errdb实现上每个Key对应一个Round Robbin的存储文件，时间序列的性能数据先写入
 内存，然后定期DUMP到文件。
