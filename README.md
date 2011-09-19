@@ -37,8 +37,8 @@ Errdb缺省情况下把数据文件存储在var/rrdb/目录, journal文件存储
 
 # Errdb设计参考
 
-[Redis]: http://redis.io
-[RRDTOOL]: http://oss.oetiker.ch/rrdtool/
-[Cassandra]: http://cassandra.apache.org/
-[Mongodb]: http://www.mongodb.org/
++ [Redis]: http://redis.io
++ [RRDTOOL]: http://oss.oetiker.ch/rrdtool/
++ [Cassandra]: http://cassandra.apache.org/
++ [Mongodb]: http://www.mongodb.org/
 
