@@ -13,7 +13,7 @@ Errdb实现上每个Key对应一个Round Robbin的存储文件，时间序列的
 
 实现模型如下：
 
-![Architecture](errdb/blob/master/design/arch.png "Architecture")
+![Architecture](https://github.com/erylee/errdb/raw/master/design/arch.png "Architecture")
 
 # Errdb应用
 
