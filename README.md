@@ -5,6 +5,7 @@ Errdb(Extensible Round Robin Database)是可扩展的环形的数据库，用于
 # Errdb架构
 
 Errdb采用内存+文件的方式存储最近一段时间(T0~Tn)之间的指标数据，概念模型：
+
 -------------------------------------------------------------------
 > -----------------------------------------------------------------
 >	  | 			Memory			|			Disk			|		
@@ -19,14 +20,7 @@ Errdb实现上每个Key对应一个Round Robbin的存储文件，时间序列的
 
 实现模型如下：
 
-		insert(key, values)					DUMP to RRDB File
-Client	\-------------------> Server(Memory) \------------------> RRDB文件
-								 |
-								 |
-						Write to Journal File
-								 |
-								\|/
-							Journal文件
+![Architecture](/design/arch.png "Architecture")
 
 # Errdb应用
 
@@ -50,4 +44,10 @@ Errdb缺省情况下把数据文件存储在var/rrdb/目录, journal文件存储
 
 通过etc/errdb.config配置文件，可重设相关存储目录。
 
+# Errdb设计参考
+
+[Redis]: http://redis.io
+[RRDTOOL]: http://oss.oetiker.ch/rrdtool/
+[Cassandra]: http://cassandra.apache.org/
+[Mongodb]: http://www.mongodb.org/
 
