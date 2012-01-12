@@ -63,7 +63,7 @@ last(Key) when is_binary(Key) ->
 fetch(Key, Begin, End) when is_binary(Key) 
     and is_integer(Begin) and is_integer(End) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}).
+    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000).
 
 %data: "k=v,k1=v1,k2=v2"
 insert(Key, Time, Data) when is_binary(Key) 
