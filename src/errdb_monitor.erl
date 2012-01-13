@@ -56,6 +56,7 @@ init([]) ->
 handle_call(Req, _From, State) ->
     ?ERROR("badreq: ~p", [Req]),
     {reply, {error, badreq}, State}.
+
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
@@ -72,7 +73,8 @@ handle_cast(Msg, State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({monitor, GcPid, long_gc, Info}, State) ->
-    ?ERROR("long_gc warning! ~n ~p ~n ~p", [Info, errdb_misc:pinfo(GcPid)]),
+    ?ERROR("long_gc warning! ~n ~p ~n ~p", 
+		[Info, errdb_misc:pinfo(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, GcPid, large_heap, Info}, State) ->
