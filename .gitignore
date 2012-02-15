@@ -3,7 +3,6 @@
 ebin/*.beam
 ebin/*.app
 var/journal/*
-var/log/*
-var/rrdb/*
+var/rrdb
 libs/*
 rel/errdb/
