@@ -26,7 +26,6 @@ done
 ERRDB_HOME=$ROOTDIR
 DATETIME=`date "+%Y%m%d-%H%M%S"`
 ERRDB_SO_PATH="$ROOTDIR/priv/lib"
-ERRDB_DB="${ROOTDIR}/var/lib/$NODE_NAME"
 ERRDB_CONFIG_PATH="${ROOTDIR}/etc/errdb"
 ERRDB_LOG="${ROOTDIR}/log"
 SASL_LOG_PATH="$ERRDB_LOG/${NODE_NAME}_sasl.log"
@@ -47,7 +46,6 @@ export ERL_CRASH_DUMP
 DETACHED="-noinput -detached"
 ERLANG_OPTS="-smp $SMP +P $ERL_PROCESSES +K $POLL +A 32 "
 
-[ -d $ERRDB_DB ] || mkdir -p $ERRDB_DB
 [ -d $ERRDB_LOG ] || mkdir -p $ERRDB_LOG
 
 # start server
@@ -58,7 +56,6 @@ start ()
 	$DETACHED \
     -pa $EBINS \
     -setcookie public \
-	-mnesia dir "\"$ERRDB_DB\"" \
 	-config $ERRDB_CONFIG_PATH \
 	-sasl sasl_error_logger \{file,\"$SASL_LOG_PATH\"\} \
 	-boot start_sasl \
