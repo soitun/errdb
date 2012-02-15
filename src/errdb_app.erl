@@ -1,41 +1,22 @@
-%% @author author <author@example.com>
-%% @copyright YYYY author.
+%% @author author <ery.lee@gmail.com>
+%% @copyright 2012 www.opengoss.com.
 
 %% @doc Errdb application.
 
 -module(errdb_app).
 
--include_lib("elog/include/elog.hrl").
-
 -include("errdb.hrl").
 
--export([start/0, stop/0]).
+-include_lib("elog/include/elog.hrl").
 
 -behavior(application).
 %callback
 -export([start/2, stop/1]).
 
-%%@spec start() -> ok
-%%@doc Start the errdb server
-start() -> 
+start(_Type, _Args) ->
     init_elog(),
 	application:start(crypto),
-	application:start(core),
-	application:start(errdb).
-
-init_elog() ->
-    {ok, [[LogLevel]]} = init:get_argument(log_level),
-    {ok, [[LogPath]]} = init:get_argument(log_path),
-	elog:init(list_to_integer(LogLevel), LogPath).
-
-%%@spec stop() -> ok
-%%@doc Stop the errdb server
-stop() -> 
-    application:stop(errdb),
-	application:stop(core),
-	application:stop(crypto).
-
-start(_Type, _Args) ->
+	application:start(extlib),
     case erts_version_check() of
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),
@@ -46,14 +27,19 @@ start(_Type, _Args) ->
         Error
     end.
 
-
-stop(_State) ->
-	ok.
+init_elog() ->
+    {ok, [[LogLevel]]} = init:get_argument(log_level),
+    {ok, [[LogPath]]} = init:get_argument(log_path),
+	elog:init(list_to_integer(LogLevel), LogPath).
 
 erts_version_check() ->
     FoundVer = erlang:system_info(version),
     case errdb_misc:version_compare(?ERTS_MINIMUM, FoundVer, lte) of
-        true  -> ok;
-        false -> {error, {erlang_version_too_old,
-                          {found, FoundVer}, {required, ?ERTS_MINIMUM}}}
+	true  -> ok;
+	false -> {error, {erlang_version_too_old,
+					  {found, FoundVer}, {required, ?ERTS_MINIMUM}}}
     end.
+
+stop(_State) ->
+	ok.
+

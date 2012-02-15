@@ -5,3 +5,4 @@ var/journal/*
 var/log/*
 var/rrdb/*
 libs/*
+rel/errdb/

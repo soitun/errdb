@@ -5,6 +5,10 @@ all: deps
 deps:
 	./rebar get-deps
 
+dist:
+	rm -rf rel/errdb
+	./rebar generate
+
 clean:
 	./rebar clean
 

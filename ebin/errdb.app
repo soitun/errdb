@@ -1,11 +1,11 @@
 {application,errdb,
-             [{description,"errdb"},
+             [{description,"Extended Round-Robin Database"},
               {id,"Errdb"},
-              {vsn,"0.4.0"},
+              {vsn,"0.5.0"},
               {modules,[errdb,errdb_app,errdb_client,errdb_ctl,errdb_httpd,
                         errdb_journal,errdb_misc,errdb_monitor,errdb_socket,
                         errdb_store,errdb_sup,errdb_test]},
-              {registered,[errdb_journal]},
+              {registered,[errdb_httpd,errdb_socket]},
               {mod,{errdb_app,[]}},
               {env,[]},
-              {applications,[kernel,stdlib,sasl]}]}.
+              {applications,[kernel,stdlib,sasl,crypto,extlib]}]}.
