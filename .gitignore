@@ -4,3 +4,4 @@ ebin/*.beam
 var/journal/*
 var/log/*
 var/rrdb/*
+libs/*
