@@ -1,9 +1,0 @@
-[submodule "platform/elog"]
-	path = platform/elog
-	url = git@github.com:erylee/elog.git
-[submodule "lib/mochiweb"]
-	path = lib/mochiweb
-	url = https://github.com/mochi/mochiweb.git
-[submodule "lib/extlib"]
-	path = extlib
-	url = git@github.com:erylee/extlib.git
