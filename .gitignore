@@ -1,6 +1,7 @@
 *.swp
 *.swo
 ebin/*.beam
+ebin/*.app
 var/journal/*
 var/log/*
 var/rrdb/*
