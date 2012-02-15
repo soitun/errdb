@@ -9,9 +9,16 @@
 
 -include_lib("elog/include/elog.hrl").
 
+-export([start/0]).
+
 -behavior(application).
 %callback
 -export([start/2, stop/1]).
+
+start() ->
+	application:start(crypto),
+	application:start(extlib),
+	application:start(errdb).
 
 start(_Type, _Args) ->
     init_elog(),

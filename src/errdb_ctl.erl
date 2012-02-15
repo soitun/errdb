@@ -9,10 +9,7 @@
 -include("errdb.hrl").
 
 -export([start/0,
-         init/0,
-         process/1,
-         register_commands/3,
-         unregister_commands/3]).
+         process/1]).
 
 start() ->
     case init:get_plain_arguments() of
@@ -45,9 +42,6 @@ start() ->
 	    print_usage(),
 	    halt(?STATUS_USAGE)
     end.
-
-init() ->
-    ets:new(errdb_ctl_cmds, [named_table, set, public]).
 
 process(["status"]) ->
     Infos = lists:flatten(errdb:info()),
@@ -90,8 +84,7 @@ print_usage() ->
     CmdDescs =
 	[{"status", "get errdb status"},
 	 {"stop", "stop errdb "},
-	 {"restart", "restart errdb"}] ++
-	ets:tab2list(errdb_ctl_cmds),
+	 {"restart", "restart errdb"}],
     MaxCmdLen =
 	lists:max(lists:map(
 		    fun({Cmd, _Desc}) ->
@@ -114,14 +107,4 @@ print_usage() ->
       "  errdbctl stop~n"
       "  errdbctl --node errdb@host restart~n",
      []).
-
-register_commands(CmdDescs, _Module, _Function) ->
-    ets:insert(errdb_ctl_cmds, CmdDescs),
-    ok.
-
-unregister_commands(CmdDescs, _Module, _Function) ->
-    lists:foreach(fun(CmdDesc) ->
-			  ets:delete_object(errdb_ctl_cmds, CmdDesc)
-		  end, CmdDescs),
-    ok.
 

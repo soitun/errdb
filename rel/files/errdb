@@ -134,6 +134,14 @@ case "$1" in
             exit $ES
         fi
         ;;
+    status)
+        ## check errdb status
+        $NODETOOL status
+        ES=$?
+        if [ "$ES" -ne 0 ]; then
+            exit $ES
+        fi
+        ;;
 
     attach)
         # Make sure a node IS running
@@ -178,7 +186,7 @@ case "$1" in
         ;;
 
     *)
-        echo "Usage: $SCRIPT {start|stop|restart|reboot|ping|console|console_clean|attach}"
+        echo "Usage: $SCRIPT {start|stop|status|restart|reboot|ping|console|console_clean|attach}"
         exit 1
         ;;
 esac

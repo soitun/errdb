@@ -25,6 +25,8 @@ main(Args) ->
             %% If we got this far, the node already responsed to a ping, so just dump
             %% a "pong"
             io:format("pong\n");
+        ["status"] ->
+            rpc:call(TargetNode, errdb_ctl, process, [["status"]], 60000);
         ["stop"] ->
             io:format("~p\n", [rpc:call(TargetNode, init, stop, [], 60000)]);
         ["restart"] ->
@@ -53,7 +55,7 @@ main(Args) ->
             end;
         Other ->
             io:format("Other: ~p\n", [Other]),
-            io:format("Usage: nodetool {ping|stop|restart|reboot}\n")
+            io:format("Usage: nodetool {ping|status|stop|restart|reboot}\n")
     end,
     net_kernel:stop().
 
