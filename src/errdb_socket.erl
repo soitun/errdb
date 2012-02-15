@@ -1,6 +1,6 @@
 -module(errdb_socket).
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -import(errdb_misc, [b2i/1, line/1]).
 

@@ -4,7 +4,7 @@
 %% @doc Http server for errdb.
 -module(errdb_httpd).
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -import(errdb_misc, [line/1]).
 

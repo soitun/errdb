@@ -17,7 +17,7 @@
 
 -import(errdb_misc, [i2l/1, l2a/1]).
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -behavior(gen_server).
 

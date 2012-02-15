@@ -11,7 +11,7 @@
 
 -author('ery.lee@gmail.com').
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -behavior(gen_fsm).
 

@@ -5,7 +5,7 @@
 
 -module(errdb_app).
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -include("errdb.hrl").
 

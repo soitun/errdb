@@ -11,7 +11,7 @@
 
 -author('ery.lee@gmail.com').
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -import(extbif, [to_list/1]).
 
