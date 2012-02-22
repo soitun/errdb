@@ -6,3 +6,4 @@ var/journal/*
 var/rrdb
 libs/*
 rel/errdb/
+log/*.log

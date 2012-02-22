@@ -8,7 +8,8 @@ ERL_PROCESSES=250000
 ERL_MAX_ETS_TABLES=1400
 NODE_NAME=errdb
 ROOTDIR=`cd $(dirname $0); pwd`
-EBINS="$ROOTDIR/ebin $ROOTDIR/libs/elog/ebin $ROOTDIR/libs/extlib/ebin $ROOTDIR/libs/mochiweb/ebin"
+EBINS="$ROOTDIR/ebin"
+ERL_LIBS=lib
 
 ARGS=                                                                                                                                                                                                       
 while [ $# -ne 0 ] ; do                                                                                                                                                                                     
@@ -42,6 +43,7 @@ export SASL_LOG_PATH
 export ERL_MAX_PORTS
 export ERL_MAX_ETS_TABLES
 export ERL_CRASH_DUMP
+export ERL_LIBS
 
 DETACHED="-noinput -detached"
 ERLANG_OPTS="-smp $SMP +P $ERL_PROCESSES +K $POLL +A 32 "
@@ -49,17 +51,17 @@ ERLANG_OPTS="-smp $SMP +P $ERL_PROCESSES +K $POLL +A 32 "
 [ -d $ERRDB_LOG ] || mkdir -p $ERRDB_LOG
 
 # start server
+# $DETACHED \
 start ()
 {
     $ERL $ERLANG_OPTS \
     -sname $NODE_NAME \
-	$DETACHED \
     -pa $EBINS \
     -setcookie public \
 	-config $ERRDB_CONFIG_PATH \
 	-sasl sasl_error_logger \{file,\"$SASL_LOG_PATH\"\} \
 	-boot start_sasl \
-	-s reloader start -s errdb_app start -log_level $ERRDB_LOG_LEVEL -log_path $ERRDB_LOG_PATH
+	-s errdb_app start -log_level $ERRDB_LOG_LEVEL -log_path $ERRDB_LOG_PATH
 }
 
 stop()
