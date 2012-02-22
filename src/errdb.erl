@@ -109,6 +109,7 @@ init([Name, Opts]) ->
     process_flag(trap_exit, true),
     {value, Id} = dataset:get_value(id, Opts),
     {value, Dir} = dataset:get_value(dir, Opts),
+	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
     %start store process
     {ok, Store} = errdb_store:start_link(errdb_store:name(Id), Dir),
 
@@ -122,7 +123,7 @@ init([Name, Opts]) ->
         named_table, {keypos, 2}]),
 
     chash_pg:create(errdb),
-    chash_pg:join(errdb, self()),
+    chash_pg:join(errdb, self(), VNodes),
 
     CacheSize = proplists:get_value(cache, Opts),
     io:format("~n~p is started.~n ", [Name]),

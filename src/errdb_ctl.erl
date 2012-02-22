@@ -68,6 +68,16 @@ process(["status"]) ->
         ?STATUS_SUCCESS
     end;
 
+process(["cluster", Node]) ->
+	case net_adm:ping(list_to_atom(Node)) of
+	pong ->
+		?PRINT("cluster with ~p successfully.~n", [Node]),
+		?STATUS_SUCCESS;
+	pang ->
+        ?PRINT("failed to cluster with ~p~n", [Node]),
+        ?STATUS_ERROR
+	end;
+
 process(["stop"]) ->
     init:stop(),
     ?STATUS_SUCCESS;
