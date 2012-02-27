@@ -41,41 +41,66 @@ loop(Socket) ->
     end.
 
 request(Line) when is_binary(Line) ->
-    Req = list_to_tuple(binary:split(Line, [<<" ">>,<<"\r\n">>], [global])),
-    request(Req);
+	[Line1|_] = binary:split(Line, [<<"\r\n">>], [global]),
+    Req = list_to_tuple(binary:split(Line1, [<<" ">>], [global])),
+	request(Req);
 
-request({<<"insert">>, Key, Time, Value, <<>>}) ->
-    if
-    Value == <<>> ->
-        ?ERROR("null insert: ~p", [Key]);
-    true ->
-        try errdb:insert(Key, b2i(Time), Value) catch
-        _:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
-        end
-    end,
+request({<<"insert">>, Obj, Grp, _T, <<>>}) ->
+	?ERROR("null insert: ~p", [{Obj, Grp}]),
+	<<"ERROR: no metrics">>;
+
+request({<<"insert">>, Obj, Grp, Time, Value}) ->
+	try errdb:insert({Obj, Grp}, b2i(Time), Value) catch
+	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
+	end,
     "OK\r\n";
 
-request({<<"last">>, Key, <<>>}) ->
-    case errdb:last(Key) of
+request({<<"insert">>, _Key, _Time, <<>>}) ->
+	<<"ERROR: no metrics">>;
+
+request({<<"insert">>, Key, Time, Value}) ->
+	try errdb:insert(Key, b2i(Time), Value) catch
+	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
+	end,
+    "OK\r\n";
+
+request({<<"last">>, Obj, Grp}) ->
+    case errdb:last(Obj, Grp) of
     {ok, Fields, Record} -> 
-        Head = ["time: ", string:join(Fields, ",")],
-        Line = line(Record),
-        list_to_binary([Head, "\r\n", Line, "\r\nEND\r\n"]);
+		encode_records(Fields, [Record]);
     {error, Reason} ->
         "ERROR: " ++ atom_to_list(Reason) ++ "\r\n"
     end;
 
-request({<<"fetch">>, Key, Begin, End, <<>>}) ->
-	case errdb:fetch(Key, b2i(Begin), b2i(End)) of
+request({<<"last">>, Key}) ->
+    case errdb:last(Key) of
+    {ok, Fields, Record} -> 
+		encode_records(Fields, [Record]);
+    {error, Reason} ->
+        "ERROR: " ++ atom_to_list(Reason) ++ "\r\n"
+    end;
+
+request({<<"fetch">>, Obj, Grp, Begin, End}) ->
+	case errdb:fetch(Obj, Grp, b2i(Begin), b2i(End)) of
     {ok, Fields, Records} -> 
-        Head = ["time: ", string:join(Fields, ",")],
-        Lines = string:join([line(Record) || Record <- Records], "\r\n"),
-        list_to_binary([Head, "\r\n", Lines, "\r\nEND\r\n"]);
+		encode_records(Fields, Records);
     {error, Reason} ->
         "ERROR " ++ atom_to_list(Reason) ++ "\r\n"
 	end;
 
-request({<<"delete">>, Key, <<>>}) ->
+request({<<"fetch">>, Key, Begin, End}) ->
+	case errdb:fetch(Key, b2i(Begin), b2i(End)) of
+    {ok, Fields, Records} -> 
+		encode_records(Fields, Records);
+    {error, Reason} ->
+        "ERROR " ++ atom_to_list(Reason) ++ "\r\n"
+	end;
+
+request({<<"delete">>, Obj, Grp}) ->
+    ok = errdb:delete(Obj, Grp),
+    "OK\r\n";
+
+request({<<"delete">>, Key}) ->
     ok = errdb:delete(Key),
     "OK\r\n";
 
@@ -83,3 +108,7 @@ request(Req) ->
     ?ERROR("bad request: ~p", [Req]),
     "ERROR: bad request\r\n".
 
+encode_records(Fields, Records) ->
+	Head = ["time: ", string:join(Fields, ",")],
+	Lines = string:join([line(Record) || Record <- Records], "\r\n"),
+	list_to_binary([Head, "\r\n", Lines, "\r\nEND\r\n"]).

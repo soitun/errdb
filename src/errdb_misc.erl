@@ -7,6 +7,7 @@
         str/1,
         pinfo/1,
         number/1,
+		binary/1,
         line/1,
         dropdot/1,
         version_compare/2,
@@ -102,4 +103,9 @@ pinfo(Pid) ->
 		Name = proplists:get_value(registered_name, Info),
 		{Name, Info}
 	end.
+
+binary(L) when is_list(L) ->
+	list_to_binary(L);
+binary(B) when is_binary(B) ->
+	B.
 

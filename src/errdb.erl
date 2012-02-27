@@ -21,9 +21,11 @@
 
 -export([info/0,
         last/1,
+		last/2,
         fetch/3,
         insert/3,
-        delete/1]).
+        delete/1,
+		delete/2]).
 
 -behavior(gen_server).
 
@@ -56,9 +58,22 @@ info() ->
     Pids = chash_pg:get_pids(errdb),
     [gen_server2:call(Pid, info) || Pid <- Pids].
 
-last(Key) when is_binary(Key) -> 
+last(Key) when is_binary(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:call(Pid, {last, Key}).
+
+last(Obj, Grp) when is_binary(Obj)
+	and is_binary(Grp) -> 
+    Pid = chash_pg:get_pid(?MODULE, Obj),
+	Key = <<Obj/binary, ":", Grp/binary>>,
+    gen_server2:call(Pid, {last, Key}).
+
+fetch({Obj, Grp}, Begin, End) when
+	is_binary(Obj) and is_binary(Grp) 
+	and is_integer(Begin) and is_integer(End) ->
+    Pid = chash_pg:get_pid(?MODULE, Obj),
+	Key = <<Obj/binary, ":", Grp/binary>>,
+    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000);
 
 fetch(Key, Begin, End) when is_binary(Key) 
     and is_integer(Begin) and is_integer(End) ->
@@ -66,6 +81,14 @@ fetch(Key, Begin, End) when is_binary(Key)
     gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000).
 
 %data: "k=v,k1=v1,k2=v2"
+insert({Obj, Grp}, Time, Data) when 
+	is_binary(Obj) and is_binary(Grp)
+    and is_integer(Time) and is_binary(Data) ->
+    {Fields, Values} = decode(Data),
+    Pid = chash_pg:get_pid(?MODULE, Obj),
+	Key = <<Obj/binary, ":", Grp/binary>>,
+    gen_server2:cast(Pid, {insert, Key, Time, {Fields, Values}});
+
 insert(Key, Time, Data) when is_binary(Key) 
     and is_integer(Time) and is_binary(Data) ->
     {Fields, Values} = decode(Data),
@@ -91,6 +114,12 @@ decode([Name, Value|T], Acc) ->
 
 delete(Key) when is_binary(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
+    gen_server2:cast(Pid, {delete, Key}).
+
+delete(Obj, Grp) when is_binary(Obj) 
+	and is_binary(Grp) ->
+    Pid = chash_pg:get_pid(?MODULE, Obj),
+	Key = <<Obj/binary, ":", Grp/binary>>,
     gen_server2:cast(Pid, {delete, Key}).
 
 encode({Fields, Values}) ->
