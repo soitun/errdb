@@ -22,6 +22,7 @@
         last/2,
         fetch/4,
         insert/4,
+        insert/5,
         stop/1]).
 
 %% gen_fsm callbacks
@@ -57,12 +58,12 @@ fetch(_Pid, Key, Begin, End) when is_binary(Key)
 	and is_integer(Begin) and is_integer(End) ->
     {error, unsupport}.
 
-insert(Pid, {Obj, Grp}, Time, Data) when is_integer(Time) ->
-    gen_fsm:send_event(Pid, {insert, binary(Obj), binary(Grp),
-		Time, binary(Data)});
-
 insert(Pid, Key, Time, Data) when is_integer(Time) ->
     gen_fsm:send_event(Pid, {insert, Key, Time, binary(Data)}).
+
+insert(Pid, Obj, Grp, Time, Data) when is_integer(Time) ->
+    gen_fsm:send_event(Pid, {insert, binary(Obj), binary(Grp),
+		Time, binary(Data)}).
 
 status(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, status).
