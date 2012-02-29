@@ -40,12 +40,12 @@
         terminate/2,
         code_change/3]).
 
--record(state, {dbtab, reqtab, journal, store, cache, threshold = 1, dbdir}).
+-record(state, {dbtab, reqtab, journal, store, cache, threshold = 1, timeout, dbdir}).
 
 %ref: timer ref
 -record(read_req, {id, mon, timer, from, reader}). 
 
--record(errdb, {key, first=0, last=0, fields = [], list=[]}).
+-record(errdb, {key, first=0, last=0, timer, fields = [], list=[]}).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -139,6 +139,7 @@ init([Name, Opts]) ->
     {value, Id} = dataset:get_value(id, Opts),
     {value, Dir} = dataset:get_value(dir, Opts),
 	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
+	{value, Timeout} = dataset:get_value(timeout, Opts, 48),
     %start store process
     {ok, Store} = errdb_store:start_link(errdb_store:name(Id), Dir),
 
@@ -159,8 +160,10 @@ init([Name, Opts]) ->
 
     erlang:send_after(1000, self(), cron),
 
-    {ok, #state{dbtab = DbTab, reqtab = ReqTab, dbdir = Dir,
-        store = Store, journal = Journal, cache = CacheSize}}.
+    {ok, #state{dbtab = DbTab, reqtab = ReqTab,
+		dbdir = Dir, store = Store,
+		journal = Journal, cache = CacheSize,
+		timeout = Timeout*3600*1000}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -228,16 +231,19 @@ check_fields(OldFields, Fields) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab, 
-    journal = Journal, store = Store, cache = CacheSize, threshold = Threshold} = State) ->
+    journal = Journal, store = Store, cache = CacheSize,
+	timeout = Timeout, threshold = Threshold} = State) ->
     Result =
     case ets:lookup(DbTab, Key) of
-    [#errdb{last=Last,fields=OldFields,list=List} = OldRecord] -> 
+    [#errdb{last=Last, fields=OldFields, list=List, timer=Timer} = OldRecord] ->
         case [check_time(Last, Time), check_fields(OldFields, Fields)] of
         [true, true] ->
             case length(List) >= (CacheSize+Threshold) of
             true ->
+				NewTimer = reset_timer(Timer, Key, Timeout),
                 errdb_store:write(Store, Key, Fields, reverse(List)),
-                {ok, OldRecord#errdb{first = Time, last = Time, list = [{Time, Values}]}};
+                {ok, OldRecord#errdb{first = Time, last = Time, 
+					timer = NewTimer, list = [{Time, Values}]}};
             false ->
                 {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
             end;
@@ -307,6 +313,7 @@ handle_info({'DOWN', MonRef, process, _Pid, _Reason}, #state{reqtab = ReqTab} = 
 	end, Match),
     {noreply, State};
 
+%TODO: DEPRECATED CODE???
 handle_info({'EXIT', _Pid, normal}, State) ->
     %Reader pid is normaly down 
     {noreply, State};
@@ -322,6 +329,9 @@ handle_info({'EXIT', Pid, Reason}, #state{reqtab = ReqTab} = State) ->
         ets:delete(ReqTab, ReqId)
 	end, Match),
     {noreply, State};
+
+handle_info({timeout, Key}, State) ->
+	handle_cast({delete, Key}, State);
     
 handle_info(cron, #state{cache = CacheSize} = State) ->
     Threshold = random:uniform(CacheSize),
@@ -394,6 +404,11 @@ dbtab(Id) ->
 
 reqtab(Id) ->
     l2a("read_req_" ++ i2l(Id)).
+
+
+reset_timer(Ref, Key, Timeout) ->
+	cancel_timer(Ref),
+	erlang:send_after(Timeout, self(), {timeout, Key}).
 
 cancel_timer(undefined) ->
     ok;
