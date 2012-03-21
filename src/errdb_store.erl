@@ -5,7 +5,7 @@
 %%% Created : 03 Apr. 2010
 %%% License : http://www.opengoss.com
 %%%
-%%% Copyright (C) 2011, www.opengoss.com
+%%% Copyright (C) 2012, www.opengoss.com
 %%%----------------------------------------------------------------------
 -module(errdb_store).
 
@@ -13,17 +13,16 @@
 
 -include_lib("elog/include/elog.hrl").
 
--import(extbif, [zeropad/1]).
-
 -import(lists, [concat/1, reverse/1]).
+
+-import(extbif, [zeropad/1, timestamp/0, datetime/1,strfdate/1]).
 
 -import(errdb_misc, [b2l/1, i2l/1, l2a/1, l2b/1]).
 
--behavior(gen_server).
-
 -export([start_link/2,
-		name/1,
         insert/2]).
+
+-behavior(gen_server).
 
 -export([init/1, 
         handle_call/3, 
@@ -33,102 +32,132 @@
         terminate/2,
         code_change/3]).
 
--record(state, {db, dir}).
+-define(SCHEMA, "CREATE TABLE metrics ("
+				"node TEXT, object TEXT, "
+				"timestamp INTEGER, "
+				"metric INTEGER, value REAL);").
 
--record(head, {lastup, lastrow, dscnt, dssize, fields}).
+-define(INDEX, "CREATE INDEX node_time_idx on "
+			   "metrics(node, object, timestamp);").
 
--define(SCHEMA, "CREATE TABLE metrics (id INTEGER PRIMARY KEY, node TEXT, metric INTEGER, timestamp INTEGER, value REAL, CHECK ('am'='am'));").
+-define(PRAGMA, "pragma synchronous=normal;").
 
--define(INDEX, "CREATE INDEX node_time_idx on metrics(node, timestamp);").
+-define(ATTACH(File), ["attach '", File, "' as hourly;"]).
 
-name(Id) ->
-    l2a("errdb_store_" ++ i2l(Id)).
+-define(IMPORT, "insert into metrics(node,object,timestamp,metric,value) "
+				"select node,object,timestamp,metric,value from hourly.metrics").
 
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
+%db0: hour db
+%db1: today db
+%db2: yesterday db
+-record(state, {id, dir, db0, db1, db2}).
+
 start_link(Id, Dir) ->
-    gen_server2:start_link({local, name(Id)}, ?MODULE, [Id, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
+    gen_server2:start_link({local, sname(Id)}, ?MODULE, 
+		[Id, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
+
+sname(Id) ->
+    list_to_atom("errdb_store_" ++ integer_to_list(Id)).
 
 insert(Pid, Records) ->
 	gen_server2:cast(Pid, {insert, Records}).
 
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
 init([Id, Dir]) ->
-	File = lists:concat([Dir, "/", i2l(Id), ".db"]),
-	Db = list_to_atom(lists:concat(["errdb", i2l(Id)])),
-	{ok, _} = sqlite3:open(Db, [{file, File}]),
-	Tabs = [{Tab, sqlite3:table_info(Db, Tab)}
-			|| Tab <- sqlite3:list_tables(Db)],
-	case proplists:get_value(metrics, Tabs) of
-	undefined ->
-		%sqlite3:sql_exec(Db, "pragma synchronous=off;"),
-		sqlite3:sql_exec(Db, ?SCHEMA),
-		sqlite3:sql_exec(Db, ?INDEX);
-	_Schema ->
-		ok
-	end,
-    {ok, #state{db = Db}}.
+	{ok, DB0} = opendb(hourly, Id, Dir),
+	{ok, DB1} = opendb(today, Id, Dir),
+	{ok, DB2} = opendb(yesterday, Id, Dir),
+	sched_next_hourly_commit(),
+	sched_next_daily_commit(),
+	{ok, #state{id = Id, dir = Dir, 
+		db0=DB0, db1=DB1, db2=DB2}}.
+	
+opendb(hourly, Id, Dir) ->
+	Name = list_to_atom("hourly" ++ zeropad(hour())),
+	File = concat([Dir, "/", strfdate(today()), 
+		"/", zeropad(hour()), "/", dbfile(Id)]),
+	opendb(Name, File);
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(Req, _From, State) ->
-    ?ERROR("badreq: ~p", [Req]),
+opendb(today, Id, Dir) ->
+	Name = list_to_atom("today" ++ zeropad(Id)),
+	File = concat([Dir, "/", strfdate(today()), "/", dbfile(Id)]),
+	opendb(Name, File);
+
+opendb(yesterday, Id, Dir) ->
+	Name = list_to_atom("yesterday" ++ zeropad(Id)),
+	File = concat([Dir, "/", strfdate(yesterday()), "/", dbfile(Id)]),
+	opendb(Name, File).
+	
+opendb(Name, File) ->
+	filelib:ensure_dir(File),
+	{ok, DB} = sqlite3:open(Name, [{file, File}]),
+	schema(DB, sqlite3:list_tables(DB)),
+	{ok, DB}.
+
+schema(DB, []) ->
+	sqlite3:sql_exec(DB, ?PRAGMA),
+	sqlite3:sql_exec(DB, ?SCHEMA),
+	sqlite3:sql_exec(DB, ?INDEX);
+
+schema(_DB, [metrics]) ->
+	ok.
+
+dbfile(Id) ->
+	integer_to_list(Id) ++ ".db".
+	
+handle_call(_Req, _From, State) ->
     {reply, {error, badreq}, State}.
 
 priorities_call(_, _From, _State) ->
     0.
 
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({insert, Records}, #state{db = Db} = State) ->
-	sqlite3:write_many(Db, metrics, Records),
+handle_cast({insert, Records}, #state{db0= DB0} = State) ->
+	sqlite3:write_many(DB0, metrics, Records),
 	{noreply, State};
 
 handle_cast(Msg, State) ->
     {stop, {error, {badmsg, Msg}}, State}.
 
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
+handle_info({commit, hourly}, #state{id = Id, dir = Dir, db0 = DB0, db1 = DB1} = State) ->
+	sched_next_hourly_commit(),
+	File = sqlite3:file(DB0),
+	spawn(fun() -> 
+		sqlite3:sql_exec(DB1, ?ATTACH(File)),
+		sqlite3:sql_exec(DB1, ?IMPORT)
+	end),
+	sqlite3:close(DB0),
+	{ok, NewDB0} = opendb(hourly, Id, Dir),
+	{noreply, State#state{db0 = NewDB0}};
+
+handle_info({commit, daily}, #state{id = Id, dir = Dir, db1 = DB1, db2 = DB2} = State) ->
+	sched_next_daily_commit(),
+	sqlite3:close(DB2),
+	{ok, NewDB1} = opendb(today, Id, Dir),
+	{noreply, State#state{db1 = NewDB1, db2 = DB1}};
+	
 handle_info(Info, State) ->
     {stop, {error, {badinfo, Info}}, State}.
 
-%%--------------------------------------------------------------------
-%% Function: terminate(Reason, State) -> void()
-%% Description: This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any necessary
-%% cleaning up. When it returns, the gen_server terminates with Reason.
-%% The return value is ignored.
-%%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
-%%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+today() -> date().
+
+hour() -> {H,_,_} = time(), H.
+
+yesterday() -> {Date, _} = datetime(timestamp() - 86400), Date.
+
+sched_next_hourly_commit() ->
+	Ts1 = timestamp(),
+    Ts2 = (Ts1 div 3600 + 1) * 3600,
+	Diff = (Ts2 + 2 - Ts1) * 1000,
+    erlang:send_after(Diff, self(), {commit, hourly}).
+
+sched_next_daily_commit() ->
+	Ts1 = timestamp(),
+    Ts2 = (Ts1 div 86400 + 1) * 86400,
+	Diff = (Ts2 + 60 - Ts1) * 1000,
+    erlang:send_after(Diff, self(), {commit, daily}).
 

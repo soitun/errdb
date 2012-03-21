@@ -10,3 +10,5 @@ log/*.log
 lib/elog
 lib/mochiweb
 lib/extlib
+lib/sqlite3
+.exrc
