@@ -7,3 +7,6 @@ var/rrdb
 libs/*
 rel/errdb/
 log/*.log
+lib/elog
+lib/mochiweb
+lib/extlib
