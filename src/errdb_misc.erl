@@ -6,7 +6,6 @@
         l2a/1, l2b/1,
         str/1,
         pinfo/1,
-        number/1,
 		binary/1,
         line/1,
         dropdot/1,
@@ -43,14 +42,6 @@ str(V) when is_float(V) ->
     [S] = io_lib:format("~.6f", [V]),
     S.
 
-number(Bin) when is_binary(Bin) ->
-    number(binary_to_list(Bin));
-
-number(L) when is_list(L) ->
-    case string:to_float(L) of
-        {error,no_float} -> list_to_integer(L);
-        {F,_Rest} -> F 
-    end.
 
 line({Time, Values}) when is_integer(Time) and is_list(Values) ->
     Line = string:join([extbif:to_list(V) || V <- Values], ","),

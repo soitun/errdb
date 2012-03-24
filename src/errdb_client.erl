@@ -22,7 +22,6 @@
         last/2,
         fetch/4,
         insert/4,
-        insert/5,
         stop/1]).
 
 %% gen_fsm callbacks
@@ -58,12 +57,8 @@ fetch(_Pid, Key, Begin, End) when is_binary(Key)
 	and is_integer(Begin) and is_integer(End) ->
     {error, unsupport}.
 
-insert(Pid, Key, Time, Data) when is_integer(Time) ->
-    gen_fsm:send_event(Pid, {insert, Key, Time, binary(Data)}).
-
-insert(Pid, Obj, Grp, Time, Data) when is_integer(Time) ->
-    gen_fsm:send_event(Pid, {insert, binary(Obj), binary(Grp),
-		Time, binary(Data)}).
+insert(Pid, Object, Time, Data) when is_integer(Time) ->
+    gen_fsm:send_event(Pid, {insert, Object, Time, binary(Data)}).
 
 status(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, status).
@@ -99,9 +94,9 @@ connecting(Event, _From, S) ->
     ?ERROR("badevent when connecting: ~p", [Event]),
     {reply, {error, connecting}, connecting, S}.
 
-connected({insert, Obj, Grp, Time, Data}, 
+connected({insert, Object, Time, Data}, 
 	#state{socket = Socket} = State) ->
-    Insert = iolist_to_binary(["insert ", Obj, " ", Grp,
+    Insert = iolist_to_binary(["insert ", Object, 
 		 " ", integer_to_list(Time), " ", Data, "\r\n"]),
     gen_tcp:send(Socket, Insert),
     put(inserted, get(inserted)+1),

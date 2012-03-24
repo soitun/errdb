@@ -6,9 +6,7 @@
 
 -include_lib("elog/include/elog.hrl").
 
-%%TODO: FIXME
-
--import(errdb_misc, [line/1]).
+-import(string, [join/2, tokens/2]).
 
 -export([start/1, 
         loop/1, 
@@ -27,25 +25,31 @@ loop(Req) ->
 	Path = list_to_tuple(string:tokens(Req:get(path), "/")),
 	handle(Method, Path, Req).
 
-handle('GET', {"rrdb", Key, "last"}, Req) ->
-	case errdb:last(list_to_binary(Key)) of
-    {ok, Fields, Record} -> 
-        Head = string:join(Fields, ","),
-        Line = line(Record),
-        Resp = list_to_binary(["time:", Head, "\n", Line]),
+handle('GET', {"rrdb", Object, "last"}, Req) ->
+	case errdb:last(Object) of
+    {ok, Time, Fields, Values} ->
+        Resp = ["time:", join(Fields, ","), "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
-handle('GET', {"rrdb", Key, Range}, Req) ->
-    [Begin,End|_] = string:tokens(Range, "-"),
-	case errdb:fetch(list_to_binary(Key), 
+handle('GET', {"rrdb", Object, "last", Fields}, Req) ->
+	case errdb:last(Object, tokens(Fields, ",")) of
+    {ok, Time, Values} -> 
+        Resp = ["time:", Fields, "\n", errdb_lib:line(Time, Values)],
+        Req:ok({"text/plain", Resp});
+    {error, Reason} ->
+        Req:respond({500, [], atom_to_list(Reason)})
+	end;
+
+handle('GET', {"rrdb", Object, Fields, Range}, Req) ->
+    [Begin, End] = tokens(Range, "-"),
+	case errdb:fetch(Object, tokens(Fields, ","),
         list_to_integer(Begin), list_to_integer(End)) of
-    {ok, Fields, Records} -> 
-        Head = string:join(Fields, ","),
-        Lines = string:join([line(Record) || Record <- Records], "\n"),
-        Resp = list_to_binary(["time:", Head, "\n", Lines]),
+    {ok, Records} -> 
+        Lines = join([errdb_lib:line(Time, Values) || {Time, Values} <- Records], "\n"),
+        Resp = ["time:", Fields, "\n", Lines],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
         Req:respond({500, [], atom_to_list(Reason)})

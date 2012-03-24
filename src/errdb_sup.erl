@@ -23,7 +23,7 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    {ok, Env} = application:get_env(),
+    Env = application:get_all_env(),
 	PoolSize = get_value(pool, Env, 8),
     Errdbs = [worker(Id, Env) || Id <- lists:seq(1, PoolSize)],
 

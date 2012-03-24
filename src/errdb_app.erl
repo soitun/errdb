@@ -22,6 +22,7 @@ start(_Type, _Args) ->
     init_elog(),
 	application:start(crypto),
 	application:start(extlib),
+	application:start(sqlite3),
     case erts_version_check() of
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),

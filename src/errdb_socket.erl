@@ -2,7 +2,11 @@
 
 -include_lib("elog/include/elog.hrl").
 
--import(errdb_misc, [b2i/1, line/1]).
+-import(lists, [concat/1]).
+
+-import(errdb_lib, [decode/1, encode/1, encode/2]).
+
+-import(errdb_misc, [b2i/1]).
 
 -export([start/1, 
         loop/1, 
@@ -19,11 +23,14 @@ start(Options) ->
 stop() ->
     mochiweb_socket_server:stop(?MODULE).
 
+trim(Line) ->
+	[H|_] = binary:split(Line, [<<"\r\n">>], [global, trim]), H.
+
 loop(Socket) ->
     inet:setopts(Socket, [{packet, line},{keepalive, true}]),
     case gen_tcp:recv(Socket, 0, ?TIMEOUT) of
-    {ok, Line} -> 
-        Reply = request(Line),
+    {ok, Line} when is_binary(Line) -> 
+        Reply = request(binary_to_list(trim(Line))),
         case gen_tcp:send(Socket, Reply) of
         ok -> loop(Socket);
         _ -> exit(normal)
@@ -40,75 +47,47 @@ loop(Socket) ->
         exit(normal)
     end.
 
-request(Line) when is_binary(Line) ->
-	[Line1|_] = binary:split(Line, [<<"\r\n">>], [global]),
-    Req = list_to_tuple(binary:split(Line1, [<<" ">>], [global])),
-	request(Req);
+request(Line) when is_list(Line) ->
+	request(list_to_tuple(string:tokens(Line, " ")));
 
-request({<<"insert">>, Obj, Grp, _T, <<>>}) ->
-	?ERROR("null insert: ~p", [{Obj, Grp}]),
-	<<"ERROR: no metrics">>;
-
-request({<<"insert">>, Obj, Grp, Time, Value}) ->
-	try errdb:insert({Obj, Grp}, b2i(Time), Value) catch
-	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
+request({"insert", Object, Time, Metrics}) ->
+	try errdb:insert(Object, b2i(Time), decode(Metrics)) catch
+	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Metrics])
 	end,
     "OK\r\n";
 
-request({<<"insert">>, _Key, _Time, <<>>}) ->
-	<<"ERROR: no metrics">>;
-
-request({<<"insert">>, Key, Time, Value}) ->
-	try errdb:insert(Key, b2i(Time), Value) catch
-	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Value])
-	end,
-    "OK\r\n";
-
-request({<<"last">>, Obj, Grp}) ->
-    case errdb:last(Obj, Grp) of
-    {ok, Fields, Record} -> 
-		encode_records(Fields, [Record]);
+request({"last", Object}) ->
+    case errdb:last(Object) of
+    {ok, Time, Fields, Values} -> 
+		Head = string:join(Fields, ","),
+		Line = errdb_lib:line(Time, Values),
+		["time:", Head, "\r\n", Line, "\r\nEND\r\n"];
     {error, Reason} ->
-        "ERROR: " ++ atom_to_list(Reason) ++ "\r\n"
+        ["ERROR: ", atom_to_list(Reason), "\r\n"]
     end;
 
-request({<<"last">>, Key}) ->
-    case errdb:last(Key) of
-    {ok, Fields, Record} -> 
-		encode_records(Fields, [Record]);
+request({"last", Object, Fields}) ->
+    case errdb:last(Object, string:tokens(Fields, ",")) of
+    {ok, Time, Values} -> 
+		Line = errdb_lib:line(Time, Values),
+		["time:", Fields, "\r\n", Line, "\r\nEND\r\n"];
     {error, Reason} ->
-        "ERROR: " ++ atom_to_list(Reason) ++ "\r\n"
+        ["ERROR: ", atom_to_list(Reason), "\r\n"]
     end;
 
-request({<<"fetch">>, Obj, Grp, Begin, End}) ->
-	case errdb:fetch(Obj, Grp, b2i(Begin), b2i(End)) of
-    {ok, Fields, Records} -> 
-		encode_records(Fields, Records);
+request({"fetch", Object, Fields, Begin, End}) ->
+	case errdb:fetch(Object, string:tokens(Fields, ","), 
+		list_to_integer(Begin), list_to_integer(End)) of
+    {ok, Records} -> 
+		Head = ["time:", Fields],
+		Lines = string:join([errdb_lib:line(Time, Values) 
+			|| {Time, Values} <- Records], "\r\n"),
+		[Head, "\r\n", Lines, "\r\nEND\r\n"];
     {error, Reason} ->
-        "ERROR " ++ atom_to_list(Reason) ++ "\r\n"
+        ["ERROR ", atom_to_list(Reason), "\r\n"]
 	end;
-
-request({<<"fetch">>, Key, Begin, End}) ->
-	case errdb:fetch(Key, b2i(Begin), b2i(End)) of
-    {ok, Fields, Records} -> 
-		encode_records(Fields, Records);
-    {error, Reason} ->
-        "ERROR " ++ atom_to_list(Reason) ++ "\r\n"
-	end;
-
-request({<<"delete">>, Obj, Grp}) ->
-    ok = errdb:delete(Obj, Grp),
-    "OK\r\n";
-
-request({<<"delete">>, Key}) ->
-    ok = errdb:delete(Key),
-    "OK\r\n";
 
 request(Req) ->
     ?ERROR("bad request: ~p", [Req]),
     "ERROR: bad request\r\n".
 
-encode_records(Fields, Records) ->
-	Head = ["time: ", string:join(Fields, ",")],
-	Lines = string:join([line(Record) || Record <- Records], "\r\n"),
-	list_to_binary([Head, "\r\n", Lines, "\r\nEND\r\n"]).

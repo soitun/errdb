@@ -13,19 +13,14 @@
 
 -include_lib("elog/include/elog.hrl").
 
--import(extbif, [to_list/1]).
+-import(lists, [concat/1, reverse/1]).
 
--import(lists, [concat/1,reverse/1]).
-
--import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,str/1,number/1]).
+-import(proplists, [get_value/2, get_value/3]).
 
 -export([info/0,
-        last/1,
-		last/2,
-        fetch/3,
-        insert/3,
-        delete/1,
-		delete/2]).
+		last/1, last/2,
+        fetch/4,
+        insert/3]).
 
 -behavior(gen_server).
 
@@ -40,92 +35,52 @@
         terminate/2,
         code_change/3]).
 
--record(state, {dbtab, reqtab, journal, store, cache, threshold = 1, timeout, dbdir}).
-
 %ref: timer ref
--record(read_req, {id, mon, timer, from, reader}). 
+-record(read_req, {id, mon, timer, from, reader}).
 
--record(errdb, {key, first=0, last=0, timer, fields = [], list=[]}).
+%records: [{Timestamp, Metrics},...]
+-record(errdb_last, {object, time, metrics=[]}).
+
+%cache objects
+-record(errdb, {object, first, last, timeout_timer, records=[]}).
+
+-record(state, {dbtab, lasttab, reqtab, store, buffer=[], buffer_size, commit_size, commit_timer}).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 4096}]}]).
+start_link(Id, Env) ->
+    gen_server2:start_link({local, name(Id)}, ?MODULE, [Id, Env], 
+		[{spawn_opt, [{min_heap_size, 4096}]}]).
+
+name(Id) ->
+	list_to_atom("errdb_" ++ integer_to_list(Id)).
 
 info() ->
-    Pids = chash_pg:get_pids(errdb),
-    [gen_server2:call(Pid, info) || Pid <- Pids].
+    [gen_server2:call(Pid, info) || 
+		Pid <- chash_pg:get_pids(?MODULE)].
 
-last(Key) when is_binary(Key) ->
-    Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:call(Pid, {last, Key}).
+last(Object) when is_list(Object) ->
+    gen_server2:call(chash_pg:get_pid(?MODULE, Object),
+		{last, Object}).
 
-last(Obj, Grp) when is_binary(Obj)
-	and is_binary(Grp) -> 
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:call(Pid, {last, Key}).
+last(Object, Fields) when is_list(Object)
+	and is_list(Fields) ->
+    gen_server2:call(chash_pg:get_pid(?MODULE, Object),
+		{last, Object, Fields}).
 
-fetch({Obj, Grp}, Begin, End) when
-	is_binary(Obj) and is_binary(Grp) 
+fetch(Object, Fields, Begin, End) when
+	is_list(Object) and is_list(Fields) 
 	and is_integer(Begin) and is_integer(End) ->
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000);
+    gen_server2:call(chash_pg:get_pid(?MODULE, Object),
+		{fetch, self(), Object, Fields, Begin, End}, 15000).
 
-fetch(Key, Begin, End) when is_binary(Key) 
-    and is_integer(Begin) and is_integer(End) ->
-    Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000).
-
-%data: "k=v,k1=v1,k2=v2"
-insert({Obj, Grp}, Time, Data) when 
-	is_binary(Obj) and is_binary(Grp)
-    and is_integer(Time) and is_binary(Data) ->
-    {Fields, Values} = decode(Data),
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:cast(Pid, {insert, Key, Time, {Fields, Values}});
-
-insert(Key, Time, Data) when is_binary(Key) 
-    and is_integer(Time) and is_binary(Data) ->
-    {Fields, Values} = decode(Data),
-    Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:cast(Pid, {insert, Key, Time, {Fields, Values}}).
-
-%Data: k=v,k1=v1,k2=v2
-%return: {["k","k1","k2"], [v,v1,v2]}
-decode(Data) when is_binary(Data) ->
-    Tokens = binary:split(Data, [<<",">>, <<"=">>], [global]),
-    decode(Tokens, []).
-
-decode([], Acc) ->
-    Sorted = 
-    lists:sort(fun({Name1, _}, {Name2, _}) -> 
-        Name1 =< Name2
-    end, Acc),
-    lists:unzip(Sorted);
-
-decode([Name, Value|T], Acc) ->
-    Tup = {b2l(Name), number(Value)},
-    decode(T, [Tup|Acc]).
-
-delete(Key) when is_binary(Key) ->
-    Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:cast(Pid, {delete, Key}).
-
-delete(Obj, Grp) when is_binary(Obj) 
-	and is_binary(Grp) ->
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:cast(Pid, {delete, Key}).
-
-encode({Fields, Values}) ->
-    TupList = lists:zip(Fields, Values),
-    Tokens = [concat([Name, "=", str(Val)]) || {Name, Val} <- TupList],
-    string:join(Tokens, ",").
+%metrics: [{k, v}, {k, v}...]
+insert(Object, Time, Metrics) when is_list(Object) 
+	and is_integer(Time) and is_list(Metrics) ->
+    gen_server2:cast(chash_pg:get_pid(?MODULE, Object), 
+		{insert, Object, Time, Metrics}).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -134,36 +89,31 @@ encode({Fields, Values}) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Name, Opts]) ->
+init([Id, Env]) ->
+	put(commit, 0),
+	random:seed(now()),
     process_flag(trap_exit, true),
-    {value, Id} = dataset:get_value(id, Opts),
-    {value, Dir} = dataset:get_value(dir, Opts),
-	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
-	{value, Timeout} = dataset:get_value(timeout, Opts, 48),
+    {value, Dir} = dataset:get_value(store, Env),
+	{value, VNodes} = dataset:get_value(vnodes, Env, 40),
     %start store process
-    {ok, Store} = errdb_store:start_link(errdb_store:name(Id), Dir),
-
-    %start journal process
-    JournalOpts = proplists:get_value(journal, Opts),
-    {ok, Journal} = errdb_journal:start_link(errdb_journal:name(Id), [{id, Id} | JournalOpts]),
+    {ok, Store} = errdb_store:start_link(Id, Dir),
 
     DbTab = ets:new(dbtab(Id), [set, protected, 
+        named_table, {keypos, 2}]),
+    LastTab = ets:new(lasttab(Id), [set, protected, 
         named_table, {keypos, 2}]),
     ReqTab = ets:new(reqtab(Id), [set, protected, 
         named_table, {keypos, 2}]),
 
-    chash_pg:create(errdb),
-    chash_pg:join(errdb, self(), VNodes),
+    chash_pg:create(?MODULE),
+    chash_pg:join(?MODULE, self(), VNodes),
 
-    CacheSize = proplists:get_value(cache, Opts),
-    io:format("~n~p is started.~n ", [Name]),
-
-    erlang:send_after(1000, self(), cron),
-
-    {ok, #state{dbtab = DbTab, reqtab = ReqTab,
-		dbdir = Dir, store = Store,
-		journal = Journal, cache = CacheSize,
-		timeout = Timeout*3600*1000}}.
+    Size = proplists:get_value(buffer, Env),
+    io:format("~n~p is started.~n ", [name(Id)]),
+    erlang:send_after(1000+random:uniform(1000), self(), cron),
+    erlang:send_after(2000+random:uniform(2000), self(), commit),
+    {ok, #state{dbtab = DbTab, lasttab = LastTab, reqtab = ReqTab,
+		store = Store, buffer_size = Size, commit_size = Size}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -174,37 +124,64 @@ init([Name, Opts]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call(info, _From, #state{store=Store, journal=Journal} = State) ->
+handle_call(info, _From, #state{store=Store} = State) ->
     Reply = [errdb_misc:pinfo(self()), 
-            errdb_misc:pinfo(Store),
-            errdb_misc:pinfo(Journal)],
+            errdb_misc:pinfo(Store)],
     {reply, Reply, State};
     
-handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
-    Reply = 
-    case ets:lookup(DbTab, Key) of
-    [#errdb{fields=Fields, list=[Last|_]}] -> 
-        {ok, Fields, Last};
-    [] -> 
-        {error, notfound}
-    end,
-    {reply, Reply, State};
+handle_call({last, Object}, _From, #state{lasttab = LastTab} = State) ->
+    case ets:lookup(LastTab, Object) of
+	[#errdb_last{time = Time, metrics = Metrics}] ->
+		{Fields, Values} = lists:unzip(Metrics),
+		{reply, {ok, Time, Fields, Values}, State};
+	[] ->
+		{reply, {error, notfound}, State}
+	end;
 
-handle_call({fetch, Pid, Key, Begin, End}, From, #state{dbtab = DbTab} = State) ->
-    case ets:lookup(DbTab, Key) of
-    [#errdb{first=First, last=Last, fields=Fields, list=List}] -> 
-        case (Begin >= First) and (End =< Last) of
-        true ->
-            Reply = {ok, Fields, filter(Begin, End, List)},
-            {reply, Reply, State};
-        false -> 
-            fetch_from_store({Pid, Key, Begin, End}, {Fields, List}, From, State),
-            {noreply, State}
-        end;
+	
+handle_call({last, Object, Fields}, _From, #state{lasttab = LastTab} = State) ->
+    case ets:lookup(LastTab, Object) of
+    [#errdb_last{time = Time, metrics = Metrics}] -> 
+		Values = [get_value(Field, Metrics, "NaN") || Field <- Fields],
+		{reply, {ok, Time, Values}, State};
     [] -> 
-        {reply, {error, notfound}, State}
+		{reply, {error, notfound}, State}
     end;
 
+handle_call({fetch, Pid, Object, Fields, Begin, End}, From, 
+	#state{store = Store, dbtab = DbTab, reqtab = ReqTab} = State) ->
+    case ets:lookup(DbTab, Object) of
+    [#errdb{records = Records}] -> 
+		Values = fun(Metrics) -> 
+			[get_value(F, Metrics, "NaN") || F <- Fields]
+		end,
+		Reply = [{Time, Values(Metrics)} || {Time, Metrics}
+			<- Records, Time >= Begin, Time =< End],
+		{reply, {ok, Reply}, State};
+    [] -> 
+		Parent = self(),
+		ReqId = make_ref(),
+		MonRef = erlang:monitor(process, Pid),
+		Timer = erlang:send_after(10000, self, {read_timeout, ReqId, From}),
+		Reader = 
+		spawn_link(fun() -> 
+			Reply = 
+			case errdb_store:read(Store, Object, Fields, Begin, End) of
+			{ok, Records} ->
+				{ok, Records};
+			{error, Reason} ->
+				{error, Reason}
+			end,
+			Parent ! {read_rep, ReqId, Reply}  
+		end),
+		Req = #read_req{id = ReqId, 
+			mon = MonRef, 
+			timer = Timer,
+			from = From,
+			reader = Reader},
+		ets:insert(ReqTab, Req),
+        {noreply, State}
+    end;
 
 handle_call(Req, _From, State) ->
     ?ERROR("badreq: ~p", [Req]),
@@ -214,15 +191,15 @@ priorities_call(info, _From, _State) ->
     10;
 priorities_call({last, _}, _From, _State) ->
     10;
-priorities_call({fetch,_,_,_,_}, _From, _State) ->
+priorities_call({last, _, _}, _From, _State) ->
+    10;
+priorities_call({fetch,_,_,_,_,_}, _From, _State) ->
     10;
 priorities_call(_, _From, _State) ->
     0.
 
 check_time(Last, Time) ->
     Time > Last.
-check_fields(OldFields, Fields) ->
-    OldFields == Fields.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
@@ -230,46 +207,23 @@ check_fields(OldFields, Fields) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab, 
-    journal = Journal, store = Store, cache = CacheSize,
-	timeout = Timeout, threshold = Threshold} = State) ->
-    Result =
-    case ets:lookup(DbTab, Key) of
-    [#errdb{last=Last, fields=OldFields, list=List, timer=Timer} = OldRecord] ->
-        case [check_time(Last, Time), check_fields(OldFields, Fields)] of
-        [true, true] ->
-            case length(List) >= (CacheSize+Threshold) of
-            true ->
-				NewTimer = reset_timer(Timer, Key, Timeout),
-                errdb_store:write(Store, Key, Fields, reverse(List)),
-                {ok, OldRecord#errdb{first = Time, last = Time, 
-					timer = NewTimer, list = [{Time, Values}]}};
-            false ->
-                {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
-            end;
-        [false, _] ->
-            ?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
-            {error, badtime};
-        [_, false] ->
-            ?ERROR("key: ~p, badfield: fields=~p, oldfields=~p ", [Key, Fields, OldFields]),
-            {error, badfield}
-        end;
-    [] ->
-        {ok, #errdb{key=Key, first=Time, last=Time, fields=Fields, list=[{Time, Values}]}}
-    end,
-    case Result of
-    {ok, NewRecord} ->
-        ets:insert(DbTab, NewRecord),
-        errdb_journal:write(Journal, Key, Time, encode({Fields, Values}));
-    {error, _Reason} ->
-        ignore %here
-    end,
-    {noreply, State};
-
-handle_cast({delete, Key}, #state{store = Store, dbtab = DbTab} = State) ->
-    errdb_store:delete(Store, Key),
-    ets:delete(DbTab, Key),
-    {noreply, State};
+handle_cast({insert, Object, Time, Metrics}, #state{lasttab = LastTab, 
+    store = Store, commit_size = CommitSize, buffer = Buffer} = State) ->
+	%case check_time(Object, Time) of
+	%true ->
+		ets:insert(LastTab, #errdb_last{object = Object,
+			time = Time, metrics = Metrics}),
+		NewBuffer = [{Object, Time, Metrics} | Buffer],
+		case length(Buffer) >= CommitSize of
+		true ->
+			handle_info(commit, State#state{buffer = NewBuffer});
+		false ->
+			{noreply, State#state{buffer = NewBuffer}}
+		end;
+	%false ->
+	%	?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
+	%	{noreply, State}
+	%end.
 
 handle_cast(Msg, State) ->
     ?ERROR("badmsg: ~p", [Msg]),
@@ -313,6 +267,13 @@ handle_info({'DOWN', MonRef, process, _Pid, _Reason}, #state{reqtab = ReqTab} = 
 	end, Match),
     {noreply, State};
 
+handle_info(commit, #state{store = Store, buffer = Buffer, commit_timer = Timer} = State) ->
+	incr(commit),
+	cancel_timer(Timer),
+	commit(Store, Buffer),
+	Timer1 = erlang:send_after(1000, self(), commit),
+	{noreply, State#state{buffer = [], commit_timer = Timer1}};
+
 %TODO: DEPRECATED CODE???
 handle_info({'EXIT', _Pid, normal}, State) ->
     %Reader pid is normaly down 
@@ -333,10 +294,10 @@ handle_info({'EXIT', Pid, Reason}, #state{reqtab = ReqTab} = State) ->
 handle_info({timeout, Key}, State) ->
 	handle_cast({delete, Key}, State);
     
-handle_info(cron, #state{cache = CacheSize} = State) ->
-    Threshold = random:uniform(CacheSize),
+handle_info(cron, #state{buffer_size = BufferSize} = State) ->
+    CommitSize = BufferSize + random:uniform(BufferSize),
     erlang:send_after(1000, self(), cron),
-    {noreply, State#state{threshold = Threshold}};
+    {noreply, State#state{commit_size = CommitSize}};
 
 handle_info(Info, State) ->
     ?ERROR("badinfo: ~p", [Info]),
@@ -367,43 +328,20 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-fetch_from_store({Pid, Key, Begin, End}, {MemFields, MemList}, From, 
-    #state{dbdir = Dir, reqtab = ReqTab}) ->
-    Parent = self(),
-    ReqId = make_ref(),
-    MonRef = erlang:monitor(process, Pid),
-    Timer = erlang:send_after(4000, self, {read_timeout, ReqId, From}),
-    Reader = 
-    spawn_link(fun() -> 
-        Reply = 
-        case errdb_store:read(Dir, Key) of
-        {ok, Fields, Records} ->
-            {ok, Fields, filter(Begin, End, MemList ++ Records)};
-        {ok, []} ->
-            {ok, MemFields, filter(Begin, End, MemList)};
-        {error, Reason} ->
-            {error, Reason}
-        end,
-        Parent ! {read_rep, ReqId, Reply}  
-    end),
-    Req = #read_req{id = ReqId, 
-        mon = MonRef, 
-        timer = Timer,
-        from = From,
-        reader = Reader},
-    ets:insert(ReqTab, Req).
-
-filter(Begin, End, List) ->
-    Match = [{Time, Data} || {Time, Data} <- List, Time >= Begin, Time =< End],
-    lists:sort(fun({T1,_}, {T2,_}) -> 
-        T1 =< T2
-    end, Match).
+commit(_Store, []) ->
+	ignore;
+commit(Store, Buffer) ->
+	?INFO("~p commit: ~p", [get(commit), length(Buffer)]),
+	errdb_store:write(Store, Buffer).
 
 dbtab(Id) ->
-    l2a("errdb_" ++ i2l(Id)).
+    list_to_atom("errdb_" ++ integer_to_list(Id)).
+
+lasttab(Id) ->
+    list_to_atom("errdb_last_" ++ integer_to_list(Id)).
 
 reqtab(Id) ->
-    l2a("read_req_" ++ i2l(Id)).
+    list_to_atom("read_req_" ++ integer_to_list(Id)).
 
 
 reset_timer(Ref, Key, Timeout) ->
@@ -415,3 +353,8 @@ cancel_timer(undefined) ->
 cancel_timer(Ref) ->
     (catch erlang:cancel_timer(Ref)).
 
+incr(Key) ->
+    case get(Key) of
+    undefined -> put(Key, 1);
+    V -> put(Key, V+1)
+    end.
