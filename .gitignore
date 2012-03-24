@@ -12,3 +12,4 @@ lib/mochiweb
 lib/extlib
 lib/sqlite3
 .exrc
+var
