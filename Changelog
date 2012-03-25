@@ -1,3 +1,5 @@
+2012-03-27 release v2.0(erylee): user sqlite3 as backend
+
 2012-02-27 release v0.6.0(erylee): api changes to ensure metrics of one object in the same file
 
 2012-02-15 release v0.5.0(erylee): use rebar to compile and release
