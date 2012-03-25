@@ -142,7 +142,19 @@ handle_cast({write, Records}, #state{db0= DB0} = State) ->
 		Rows = [Row(Metric, Value) || {Metric, Value} <- Metrics],
 		Rows ++ Acc
 	end, [], Records),
-	sqlite3:write_many(DB0, metrics, Rows),
+	sqlite3:write_many(DB0, metrics, Rows), 
+	%lists:foreach(fun(Row) -> 
+	%	case sqlite3:write(DB0, metrics, Row) of
+	%	{error, Id, Reason} ->
+	%		?WARNING("sqlite write error, Id: ~p, Reason: ~p", [Id, Reason]),
+	%		?WARNING("error row: ~p", [Row]);
+	%	{error, Reason} ->
+	%		?WARNING("sqlite write error, Reason: ~p", [Reason]),
+	%		?WARNING("error row: ~p", [Row]);
+	%	_ ->
+	%		ok
+	%	end
+	%end, Rows),
 	{noreply, State};
 
 handle_cast(Msg, State) ->

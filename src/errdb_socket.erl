@@ -27,11 +27,17 @@ trim(Line) ->
 loop(Socket) ->
     inet:setopts(Socket, [{packet, line},{keepalive, true}]),
     case gen_tcp:recv(Socket, 0, ?TIMEOUT) of
-    {ok, Line} when is_binary(Line) -> 
-        Reply = request(binary_to_list(trim(Line))),
-        case gen_tcp:send(Socket, Reply) of
-        ok -> loop(Socket);
-        _ -> exit(normal)
+    {ok, Line} -> 
+        case handle_req(binary_to_list(trim(Line))) of
+		{reply, Reply} ->
+			case gen_tcp:send(Socket, Reply) of
+			ok -> loop(Socket);
+			_ -> exit(normal)
+			end;
+		noreply ->
+			loop(Socket);
+		{stop, _Err} ->
+			exit(normal)
         end;
     {error, closed} ->
         gen_tcp:close(Socket),
@@ -40,52 +46,52 @@ loop(Socket) ->
         gen_tcp:close(Socket),
         exit(normal);
     Other ->
-        ?ERROR("invalid request: ~p", [Other]),
+        ?ERROR("bad socket data: ~p", [Other]),
         gen_tcp:close(Socket),
         exit(normal)
     end.
 
-request(Line) when is_list(Line) ->
-	request(list_to_tuple(string:tokens(Line, " ")));
+handle_req(Line) when is_list(Line) ->
+	handle_req(list_to_tuple(string:tokens(Line, " ")));
 
-request({"insert", Object, Time, Metrics}) ->
+handle_req({"insert", Object, Time, Metrics}) ->
 	try errdb:insert(Object, list_to_integer(Time), decode(Metrics)) catch
 	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Metrics])
 	end,
-    "OK\r\n";
+	noreply;
 
-request({"last", Object}) ->
+handle_req({"last", Object}) ->
     case errdb:last(Object) of
     {ok, Time, Fields, Values} -> 
 		Head = string:join(Fields, ","),
 		Line = errdb_lib:line(Time, Values),
-		["time:", Head, "\r\n", Line, "\r\nEND\r\n"];
+		{reply, ["TIME:", Head, "\r\n", Line, "\r\nEND\r\n"]};
     {error, Reason} ->
-        ["ERROR: ", atom_to_list(Reason), "\r\n"]
+        {reply, ["ERROR:", atom_to_list(Reason), "\r\n"]}
     end;
 
-request({"last", Object, Fields}) ->
+handle_req({"last", Object, Fields}) ->
     case errdb:last(Object, string:tokens(Fields, ",")) of
     {ok, Time, Values} -> 
 		Line = errdb_lib:line(Time, Values),
-		["time:", Fields, "\r\n", Line, "\r\nEND\r\n"];
+		{reply, ["TIME:", Fields, "\r\n", Line, "\r\nEND\r\n"]};
     {error, Reason} ->
-        ["ERROR: ", atom_to_list(Reason), "\r\n"]
+        {reply, ["ERROR:", atom_to_list(Reason), "\r\n"]}
     end;
 
-request({"fetch", Object, Fields, Begin, End}) ->
+handle_req({"fetch", Object, Fields, Begin, End}) ->
 	case errdb:fetch(Object, string:tokens(Fields, ","), 
 		list_to_integer(Begin), list_to_integer(End)) of
     {ok, Records} -> 
-		Head = ["time:", Fields],
+		Head = ["TIME:", Fields],
 		Lines = string:join([errdb_lib:line(Time, Values) 
 			|| {Time, Values} <- Records], "\r\n"),
-		[Head, "\r\n", Lines, "\r\nEND\r\n"];
+		{reply, [Head, "\r\n", Lines, "\r\nEND\r\n"]};
     {error, Reason} ->
-        ["ERROR ", atom_to_list(Reason), "\r\n"]
+        {reply, ["ERROR:", atom_to_list(Reason), "\r\n"]}
 	end;
 
-request(Req) ->
-    ?ERROR("bad request: ~p", [Req]),
-    "ERROR: bad request\r\n".
+handle_req(Req) ->
+    ?ERROR("badreq: ~p", [Req]),
+	{stop, badreq}.
 
