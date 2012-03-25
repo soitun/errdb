@@ -12,6 +12,7 @@
 -smb true
 +K true
 +A 32
+-init_debug
 
 ## Increase number of concurrent ports/sockets
 -env ERL_MAX_PORTS 4096
