@@ -65,7 +65,7 @@ read(Pid, Object, Fields, Begin, End) ->
 
 %Record: {Object, Timestamp, Metrics}
 write(Pid, Records) ->
-	gen_server2:cast(Pid, {insert, Records}).
+	gen_server2:cast(Pid, {write, Records}).
 
 init([Id, Dir]) ->
 	{ok, DB0} = opendb(hourly, Id, Dir),
@@ -132,7 +132,7 @@ priorities_call({read, _Object, _Fields, _Begin, _End}, _From, _State) ->
 priorities_call(_, _From, _State) ->
     0.
 
-handle_cast({insert, Records}, #state{db0= DB0} = State) ->
+handle_cast({write, Records}, #state{db0= DB0} = State) ->
 	Rows =
 	lists:foldl(fun({Object, Time, Metrics}, Acc) ->
 		Row = fun(Metric, Value) ->
