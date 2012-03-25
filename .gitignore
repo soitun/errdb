@@ -13,6 +13,3 @@ lib/extlib
 lib/sqlite3
 .exrc
 var
-rel/files/errdb
-rel/files/nodetool
-
