@@ -43,8 +43,9 @@ number(L) when is_list(L) ->
 
 str(V) when is_integer(V) ->
     integer_to_list(V);
-
 str(V) when is_float(V) ->
-    [S] = io_lib:format("~.6f", [V]),
-    S.
-
+    [S] = io_lib:format("~.6f", [V]), S;
+str(V) when is_list(V) ->
+	V;
+str(V) when is_binary(V) ->
+	binary_to_list(V).

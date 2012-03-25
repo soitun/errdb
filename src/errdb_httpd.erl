@@ -31,6 +31,7 @@ handle('GET', {"rrdb", Object, "last"}, Req) ->
         Resp = ["time:", join(Fields, ","), "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
+		?ERROR("~p", [Reason]),
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
@@ -40,6 +41,7 @@ handle('GET', {"rrdb", Object, "last", Fields}, Req) ->
         Resp = ["time:", Fields, "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
+		?ERROR("~p", [Reason]),
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
@@ -52,6 +54,7 @@ handle('GET', {"rrdb", Object, Fields, Range}, Req) ->
         Resp = ["time:", Fields, "\n", Lines],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
+		?ERROR("~p", [Reason]),
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 

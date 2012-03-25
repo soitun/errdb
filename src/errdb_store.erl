@@ -15,6 +15,8 @@
 
 -import(lists, [concat/1, reverse/1]).
 
+-import(proplists, [get_value/3]).
+
 -import(extbif, [zeropad/1, timestamp/0, datetime/1,strfdate/1]).
 
 -import(errdb_misc, [b2l/1, i2l/1, l2a/1, l2b/1]).
@@ -34,18 +36,18 @@
         code_change/3]).
 
 -define(SCHEMA, "CREATE TABLE metrics ("
-				"object TEXT, metric TEXT, "
-				"time INTEGER, value REAL);").
+				"object TEXT, time INTEGER, "
+				"metric TEXT, value REAL);").
 
--define(INDEX, "CREATE INDEX object_metric_time_idx on "
-			   "metrics(object, metric, time);").
+-define(INDEX, "CREATE UNIQUE INDEX object_time_metric_idx on "
+			   "metrics(object, time, metric);").
 
 -define(PRAGMA, "pragma synchronous=normal;").
 
 -define(ATTACH(File), ["attach '", File, "' as hourly;"]).
 
--define(IMPORT, "insert into metrics(object,metric,time,value) "
-				"select object,metric,time,value from hourly.metrics").
+-define(IMPORT, "insert into metrics(object,time,metric,value) "
+				"select object,time,metric,value from hourly.metrics").
 
 %db0: hour db
 %db1: today db
@@ -89,6 +91,7 @@ opendb(yesterday, Id, Dir) ->
 	opendb(dbname("yesterday", Id), File).
 	
 opendb(Name, File) ->
+	?INFO("opendb: ~p", [File]),
 	filelib:ensure_dir(File),
 	{ok, DB} = sqlite3:open(Name, [{file, File}]),
 	schema(DB, sqlite3:list_tables(DB)),
@@ -108,17 +111,18 @@ dbname(Prefix, Id) when is_list(Prefix) ->
 dbfile(Id) ->
 	integer_to_list(Id) ++ ".db".
 
-handle_call({read, Object, Fields, Begin, End}, _From, #state{db0 = DB0} = State) ->
-	?INFO("~p, ~p, ~p, ~p", [Object, Fields, Begin, End]),
-	SQL = ["select metric, time, value from metrics "
+handle_call({read, Object, Fields, Begin, End}, _From, 
+	#state{db0 = DB0, db1 = DB1, db2 = DB2} = State) ->
+	%?INFO("read: ~p, ~p, ~p, ~p", [Object, Fields, Begin, End]),
+	SQL = ["select time, metric, value from metrics "
 		   "where object = '", Object, "' and metric in ",
 		    "(", string:join(["'"++F++"'" || F <- Fields], ","), ")"
 			" and time >= ", integer_to_list(Begin), 
 			" and time <= ", integer_to_list(End), ";"],
-	?INFO("~p", [list_to_binary(SQL)]),
-	Res = sqlite3:sql_exec(DB0, SQL),
-	?INFO("~p", [Res]),
-    {reply, {ok, Res}, State};
+	Results = [sqlite3:sql_exec(DB, SQL) || DB <- [DB2, DB1, DB0]], 
+	Rows = lists:flatten([Rows || [{columns, _}, {rows, Rows}] <- Results]),
+	Reply = {ok, transform([list_to_binary(F)|| F <- Fields], Rows)},
+    {reply, Reply, State};
 	
 handle_call(_Req, _From, State) ->
     {reply, {error, badreq}, State}.
@@ -182,7 +186,7 @@ yesterday() -> {Date, _} = datetime(timestamp() - 86400), Date.
 sched_next_hourly_commit() ->
 	Ts1 = timestamp(),
     Ts2 = (Ts1 div 3600 + 1) * 3600,
-	Diff = (Ts2 + 2 - Ts1) * 1000,
+	Diff = (Ts2 + 1 - Ts1) * 1000,
     erlang:send_after(Diff, self(), {commit, hourly}).
 
 sched_next_daily_commit() ->
@@ -190,4 +194,17 @@ sched_next_daily_commit() ->
     Ts2 = (Ts1 div 86400 + 1) * 86400,
 	Diff = (Ts2 + 60 - Ts1) * 1000,
     erlang:send_after(Diff, self(), {commit, daily}).
+
+transform(Fields, Rows) ->
+	TimeDict = 
+	lists:foldl(fun({Time, Metric, Value}, Dict) -> 
+		case orddict:find(Time, Dict) of
+		{ok, Metrics} -> orddict:store(Time, [{Metric, Value}|Metrics], Dict);
+		error -> orddict:store(Time, [{Metric, Value}], Dict)
+		end	
+	end, orddict:new(), Rows),
+	Values = fun(Metrics) -> 
+		[get_value(Name, Metrics, "NaN") || Name <- Fields]
+	end,
+	[{Time, Values(Metrics)} || {Time, Metrics} <- orddict:to_list(TimeDict)].
 
