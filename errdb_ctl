@@ -51,11 +51,11 @@ ERLANG_OPTS="-smp $SMP +P $ERL_PROCESSES +K $POLL +A 32 "
 [ -d $ERRDB_LOG ] || mkdir -p $ERRDB_LOG
 
 # start server
-# $DETACHED \
 start ()
 {
     $ERL $ERLANG_OPTS \
     -sname $NODE_NAME \
+	$DETACHED \
     -pa $EBINS \
     -setcookie public \
 	-config $ERRDB_CONFIG_PATH \

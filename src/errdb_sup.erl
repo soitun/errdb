@@ -11,8 +11,6 @@
 
 -author('<ery.lee@gmail.com>').
 
--import(errdb_misc, [l2a/1, i2l/1]).
-
 -import(proplists, [get_value/2, get_value/3]).
 
 -behaviour(supervisor).
@@ -46,8 +44,6 @@ init([]) ->
     {ok, {{one_for_all, 0, 1}, Errdbs ++ [Httpd, Socket, Monitor]}}.
 
 worker(Id, Env) ->
-	Name = l2a("errdb_" ++ i2l(Id)),
-	{Name, {errdb, start_link, [Id, Env]},
+	{errdb:name(Id), {errdb, start_link, [Id, Env]},
 	   permanent, 5000, worker, [errdb]}.
-
 

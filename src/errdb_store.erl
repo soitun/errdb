@@ -19,8 +19,6 @@
 
 -import(extbif, [zeropad/1, timestamp/0, datetime/1,strfdate/1]).
 
--import(errdb_misc, [b2l/1, i2l/1, l2a/1, l2b/1]).
-
 -export([start_link/2,
 		read/5,
         write/2]).
@@ -32,6 +30,7 @@
         priorities_call/3,
         handle_cast/2,
         handle_info/2,
+        priorities_info/2,
         terminate/2,
         code_change/3]).
 
@@ -74,6 +73,7 @@ init([Id, Dir]) ->
 	{ok, DB2} = opendb(yesterday, Id, Dir),
 	sched_next_hourly_commit(),
 	sched_next_daily_commit(),
+	?INFO("~p is started.", [name(Id)]),
 	{ok, #state{id = Id, dir = Dir,
 		db0=DB0, db1=DB1, db2=DB2}}.
 
@@ -127,6 +127,8 @@ handle_call({read, Object, Fields, Begin, End}, _From,
 handle_call(_Req, _From, State) ->
     {reply, {error, badreq}, State}.
 
+priorities_call({read, _Object, _Fields, _Begin, _End}, _From, _State) ->
+    10;
 priorities_call(_, _From, _State) ->
     0.
 
@@ -148,7 +150,7 @@ handle_cast(Msg, State) ->
 
 handle_info({commit, hourly}, #state{id = Id, dir = Dir, db0 = DB0, db1 = DB1} = State) ->
 	sched_next_hourly_commit(),
-	File = sqlite3:file(DB0),
+	File = sqlite3:dbfile(DB0),
 	case filelib:is_file(File) of
 	true ->
 		spawn(fun() -> 
@@ -170,6 +172,13 @@ handle_info({commit, daily}, #state{id = Id, dir = Dir, db1 = DB1, db2 = DB2} = 
 	
 handle_info(Info, State) ->
     {stop, {error, {badinfo, Info}}, State}.
+
+priorities_info({commit, hourly}, _) ->
+	11;
+priorities_info({commit, daily}, _) ->
+	10;
+priorities_info(_, _) ->
+    1.
 
 terminate(_Reason, _State) ->
     ok.

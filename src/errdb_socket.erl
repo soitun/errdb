@@ -6,8 +6,6 @@
 
 -import(errdb_lib, [decode/1, encode/1, encode/2]).
 
--import(errdb_misc, [b2i/1]).
-
 -export([start/1, 
         loop/1, 
         stop/0]).
@@ -51,9 +49,11 @@ request(Line) when is_list(Line) ->
 	request(list_to_tuple(string:tokens(Line, " ")));
 
 request({"insert", Object, Time, Metrics}) ->
-	try errdb:insert(Object, b2i(Time), decode(Metrics)) catch
-	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Metrics])
-	end,
+	?INFO("insert ~p ~p ~p", [Object, Time, Metrics]),
+	errdb:insert(Object, list_to_integer(Time), decode(Metrics)),
+	%try errdb:insert(Object, list_to_integer(Time), decode(Metrics)) catch
+	%_:Error -> ?ERROR("error insert:~p, ~p", [Error, Metrics])
+	%end,
     "OK\r\n";
 
 request({"last", Object}) ->

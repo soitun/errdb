@@ -11,9 +11,11 @@
 
 -author('ery.lee@gmail.com').
 
--import(errdb_misc, [binary/1]).
-
 -include_lib("elog/include/elog.hrl").
+
+-import(lists, [concat/1]).
+
+-import(errdb_lib, [str/1]).
 
 -behavior(gen_fsm).
 
@@ -57,8 +59,8 @@ fetch(_Pid, Key, Begin, End) when is_binary(Key)
 	and is_integer(Begin) and is_integer(End) ->
     {error, unsupport}.
 
-insert(Pid, Object, Time, Data) when is_integer(Time) ->
-    gen_fsm:send_event(Pid, {insert, Object, Time, binary(Data)}).
+insert(Pid, Object, Time, Metrics) when is_integer(Time) ->
+    gen_fsm:send_event(Pid, {insert, Object, Time, Metrics}).
 
 status(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, status).
@@ -94,17 +96,11 @@ connecting(Event, _From, S) ->
     ?ERROR("badevent when connecting: ~p", [Event]),
     {reply, {error, connecting}, connecting, S}.
 
-connected({insert, Object, Time, Data}, 
+connected({insert, Object, Time, Metrics}, 
 	#state{socket = Socket} = State) ->
-    Insert = iolist_to_binary(["insert ", Object, 
-		 " ", integer_to_list(Time), " ", Data, "\r\n"]),
-    gen_tcp:send(Socket, Insert),
-    put(inserted, get(inserted)+1),
-    {next_state, connected, State};
-
-connected({insert, Key, Time, Data}, #state{socket = Socket} = State) ->
-    Insert = list_to_binary(["insert ", Key, " ",
-		integer_to_list(Time), " ", Data, "\r\n"]),
+    Insert = ["insert ", Object, 
+		 " ", integer_to_list(Time), 
+		 " ", encode(Metrics), "\r\n"],
     gen_tcp:send(Socket, Insert),
     put(inserted, get(inserted)+1),
     {next_state, connected, State}.
@@ -156,4 +152,8 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 
 retry_connect() ->
     erlang:send_after(30000, self(), {timeout, retry_connect}).
+
+encode(Metrics) ->
+	Tokens = [concat([str(N), "=", str(V)]) || {N, V} <- Metrics],
+	string:join(Tokens, ",").
 

@@ -17,8 +17,10 @@
 
 -import(proplists, [get_value/2, get_value/3]).
 
--export([info/0,
-		last/1, last/2,
+-export([name/1,
+		info/0,
+		last/1,
+		last/2,
         fetch/4,
         insert/3]).
 
@@ -44,7 +46,9 @@
 %cache objects
 -record(errdb, {object, first, last, timeout_timer, records=[]}).
 
--record(state, {dbtab, lasttab, reqtab, store, buffer=[], buffer_size, commit_size, commit_timer}).
+-record(state, {name, dbtab, lasttab, reqtab, store, 
+				buffer=[], buffer_size, 
+				commit_size, commit_timer}).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -109,11 +113,12 @@ init([Id, Env]) ->
     chash_pg:join(?MODULE, self(), VNodes),
 
     Size = proplists:get_value(buffer, Env),
-    io:format("~n~p is started.~n ", [name(Id)]),
+    ?INFO("~p is started.", [name(Id)]),
     erlang:send_after(1000+random:uniform(1000), self(), cron),
     erlang:send_after(2000+random:uniform(2000), self(), commit),
-    {ok, #state{dbtab = DbTab, lasttab = LastTab, reqtab = ReqTab,
-		store = Store, buffer_size = Size, commit_size = Size}}.
+    {ok, #state{name = name(Id), store = Store, 
+		reqtab = ReqTab, dbtab = DbTab, lasttab = LastTab,
+		buffer_size = Size, commit_size = Size}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -124,10 +129,8 @@ init([Id, Env]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call(info, _From, #state{store=Store} = State) ->
-    Reply = [errdb_misc:pinfo(self()), 
-            errdb_misc:pinfo(Store)],
-    {reply, Reply, State};
+handle_call(info, _From, #state{name = Name} = State) ->
+    {reply, {Name, process_info(self())}, State};
     
 handle_call({last, Object}, _From, #state{lasttab = LastTab} = State) ->
     case ets:lookup(LastTab, Object) of
@@ -198,9 +201,6 @@ priorities_call({fetch,_,_,_,_,_}, _From, _State) ->
 priorities_call(_, _From, _State) ->
     0.
 
-check_time(Last, Time) ->
-    Time > Last.
-
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
@@ -208,9 +208,9 @@ check_time(Last, Time) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast({insert, Object, Time, Metrics}, #state{lasttab = LastTab, 
-    store = Store, commit_size = CommitSize, buffer = Buffer} = State) ->
-	%case check_time(Object, Time) of
-	%true ->
+    commit_size = CommitSize, buffer = Buffer} = State) ->
+	case check_time(ets:lookup(LastTab, Object), Time) of
+	true ->
 		ets:insert(LastTab, #errdb_last{object = Object,
 			time = Time, metrics = Metrics}),
 		NewBuffer = [{Object, Time, Metrics} | Buffer],
@@ -220,10 +220,10 @@ handle_cast({insert, Object, Time, Metrics}, #state{lasttab = LastTab,
 		false ->
 			{noreply, State#state{buffer = NewBuffer}}
 		end;
-	%false ->
-	%	?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
-	%	{noreply, State}
-	%end.
+	false ->
+		?WARNING("object: ~p, badtime: time=~p", [Object, Time]),
+		{noreply, State}
+	end;
 
 handle_cast(Msg, State) ->
     ?ERROR("badmsg: ~p", [Msg]),
@@ -343,10 +343,10 @@ lasttab(Id) ->
 reqtab(Id) ->
     list_to_atom("read_req_" ++ integer_to_list(Id)).
 
-
-reset_timer(Ref, Key, Timeout) ->
-	cancel_timer(Ref),
-	erlang:send_after(Timeout, self(), {timeout, Key}).
+check_time([], _Time) ->
+	true;
+check_time([#errdb_last{time = LastTime}], Time) ->
+    Time > LastTime.
 
 cancel_timer(undefined) ->
     ok;

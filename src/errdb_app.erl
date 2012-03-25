@@ -40,7 +40,7 @@ init_elog() ->
 
 erts_version_check() ->
     FoundVer = erlang:system_info(version),
-    case errdb_misc:version_compare(?ERTS_MINIMUM, FoundVer, lte) of
+    case version_compare(?ERTS_MINIMUM, FoundVer, lte) of
 	true  -> ok;
 	false -> {error, {erlang_version_too_old,
 					  {found, FoundVer}, {required, ?ERTS_MINIMUM}}}
@@ -48,4 +48,41 @@ erts_version_check() ->
 
 stop(_State) ->
 	ok.
+
+version_compare(A, B, lte) ->
+    case version_compare(A, B) of
+        eq -> true;
+        lt -> true;
+        gt -> false
+    end;
+version_compare(A, B, gte) ->
+    case version_compare(A, B) of
+        eq -> true;
+        gt -> true;
+        lt -> false
+    end;
+version_compare(A, B, Result) ->
+    Result =:= version_compare(A, B).
+
+version_compare(A, A) ->
+    eq;
+version_compare([], [$0 | B]) ->
+    version_compare([], dropdot(B));
+version_compare([], _) ->
+    lt; %% 2.3 < 2.3.1
+version_compare([$0 | A], []) ->
+    version_compare(dropdot(A), []);
+version_compare(_, []) ->
+    gt; %% 2.3.1 > 2.3
+version_compare(A,  B) ->
+    {AStr, ATl} = lists:splitwith(fun (X) -> X =/= $. end, A),
+    {BStr, BTl} = lists:splitwith(fun (X) -> X =/= $. end, B),
+    ANum = list_to_integer(AStr),
+    BNum = list_to_integer(BStr),
+    if ANum =:= BNum -> version_compare(dropdot(ATl), dropdot(BTl));
+       ANum < BNum   -> lt;
+       ANum > BNum   -> gt
+    end.
+
+dropdot(A) -> lists:dropwhile(fun (X) -> X =:= $. end, A).
 

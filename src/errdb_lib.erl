@@ -2,7 +2,7 @@
 
 -export([decode/1, encode/1, encode/2, line/2]).
 
--export([binary/1, number/1]).
+-export([binary/1, number/1, str/1]).
 
 %Data: k=v,k1=v1,k2=v2
 %return: {["k","k1","k2"], [v,v1,v2]}
@@ -45,6 +45,8 @@ str(V) when is_integer(V) ->
     integer_to_list(V);
 str(V) when is_float(V) ->
     [S] = io_lib:format("~.6f", [V]), S;
+str(V) when is_atom(V) ->
+	atom_to_list(V);
 str(V) when is_list(V) ->
 	V;
 str(V) when is_binary(V) ->

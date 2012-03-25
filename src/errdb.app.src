@@ -7,7 +7,6 @@
     errdb_app,
     errdb_ctl,
     errdb_httpd,
-	errdb_misc,
 	errdb_lib,
 	errdb_monitor,
 	errdb_client,
