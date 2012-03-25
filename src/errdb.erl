@@ -327,6 +327,7 @@ code_change(_OldVsn, State, _Extra) ->
 commit(_Store, []) ->
 	ignore;
 commit(Store, Buffer) ->
+	%?INFO("~p commit: ~p", [get(commit), length(Buffer)]),
 	errdb_store:write(Store, Buffer).
 
 dbtab(Id) ->

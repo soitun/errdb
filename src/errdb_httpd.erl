@@ -28,7 +28,7 @@ loop(Req) ->
 handle('GET', {"rrdb", Object, "last"}, Req) ->
 	case errdb:last(Object) of
     {ok, Time, Fields, Values} ->
-        Resp = ["time:", join(Fields, ","), "\n", errdb_lib:line(Time, Values)],
+        Resp = ["TIME:", join(Fields, ","), "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
 		?ERROR("~p", [Reason]),
@@ -38,7 +38,7 @@ handle('GET', {"rrdb", Object, "last"}, Req) ->
 handle('GET', {"rrdb", Object, "last", Fields}, Req) ->
 	case errdb:last(Object, tokens(Fields, ",")) of
     {ok, Time, Values} -> 
-        Resp = ["time:", Fields, "\n", errdb_lib:line(Time, Values)],
+        Resp = ["TIME:", Fields, "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
 		?ERROR("~p", [Reason]),
@@ -51,7 +51,7 @@ handle('GET', {"rrdb", Object, Fields, Range}, Req) ->
         list_to_integer(Begin), list_to_integer(End)) of
     {ok, Records} -> 
         Lines = join([errdb_lib:line(Time, Values) || {Time, Values} <- Records], "\n"),
-        Resp = ["time:", Fields, "\n", Lines],
+        Resp = ["TIME:", Fields, "\n", Lines],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
 		?ERROR("~p", [Reason]),

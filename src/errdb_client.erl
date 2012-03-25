@@ -24,7 +24,7 @@
         status/1, 
         last/2,
 		last/3,
-        fetch/4,
+        fetch/5,
         insert/4,
         stop/1]).
 
@@ -63,9 +63,9 @@ last(Pid, Object) ->
 last(Pid, Object, Fields) ->
 	gen_fsm:sync_send_event(Pid, {last, Object, Fields}).
 
-fetch(Pid, Object, Begin, End) when is_integer(Begin)
+fetch(Pid, Object, Fields, Begin, End) when is_integer(Begin)
 	and is_integer(End) ->
-	gen_fsm:sync_send_event(Pid, {fetch, Object, Begin, End}).
+	gen_fsm:sync_send_event(Pid, {fetch, Object, Fields, Begin, End}).
 
 insert(Pid, Object, Time, Metrics) when is_integer(Time) ->
     gen_fsm:send_event(Pid, {insert, Object, Time, Metrics}).
@@ -147,18 +147,19 @@ handle_info({tcp, _Socket, Data}, connected, #state{reply = Lines, queue = Q} = 
 		{{value, Req}, Q1} = queue:out(Q),
 		{req, _Ref, From, Timer, _} = Req,
 		erlang:cancel_timer(Timer),
-		gen_fsm:reply(From, {error, binary_to_list(Reason)}),
+		gen_fsm:reply(From, {error, binary_to_list(trimlf(Reason))}),
 		{next_state, connected, State#state{queue = Q1}};
     <<"TIME:", _Fields/binary>> = Line -> 
-		{next_state, connected, State#state{reply = [Line]}};
+		{next_state, connected, State#state{reply = [trimlf(Line)]}};
 	<<"END\r\n">> ->
 		{{value, Req}, Q1} = queue:out(Q),
 		{req, _Ref, From, Timer, _} = Req,
 		erlang:cancel_timer(Timer),
-		gen_fsm:reply(From, {ok, lists:reverse(Lines)}),
+		Reply = [binary_to_list(Line) || Line <- lists:reverse(Lines)],
+		gen_fsm:reply(From, {ok, Reply}),
 		{next_state, connected, State#state{reply = [], queue = Q1}};
 	Line ->
-		{next_state, connected, State#state{reply = [Line|Lines]}}
+		{next_state, connected, State#state{reply = [trimlf(Line)|Lines]}}
     end;
 
 handle_info({tcp_closed, Socket}, _StateName, 
@@ -216,4 +217,9 @@ newreq(From, Cmd) ->
 encode(Metrics) ->
 	Tokens = [concat([str(N), "=", strnum(V)]) || {N, V} <- Metrics],
 	string:join(Tokens, ",").
+
+trimlf(B) when is_binary(B) ->
+	Len = size(B) - 2,
+	<<Line:Len/binary, _/binary>> = B,
+	Line.
 
