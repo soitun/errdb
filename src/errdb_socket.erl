@@ -49,11 +49,9 @@ request(Line) when is_list(Line) ->
 	request(list_to_tuple(string:tokens(Line, " ")));
 
 request({"insert", Object, Time, Metrics}) ->
-	?INFO("insert ~p ~p ~p", [Object, Time, Metrics]),
-	errdb:insert(Object, list_to_integer(Time), decode(Metrics)),
-	%try errdb:insert(Object, list_to_integer(Time), decode(Metrics)) catch
-	%_:Error -> ?ERROR("error insert:~p, ~p", [Error, Metrics])
-	%end,
+	try errdb:insert(Object, list_to_integer(Time), decode(Metrics)) catch
+	_:Error -> ?ERROR("error insert:~p, ~p", [Error, Metrics])
+	end,
     "OK\r\n";
 
 request({"last", Object}) ->

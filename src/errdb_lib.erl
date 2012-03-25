@@ -2,12 +2,12 @@
 
 -export([decode/1, encode/1, encode/2, line/2]).
 
--export([binary/1, number/1, str/1]).
+-export([binary/1, number/1, str/1, strnum/1]).
 
-%Data: k=v,k1=v1,k2=v2
-%return: {["k","k1","k2"], [v,v1,v2]}
+%Data: "k=v,k1=v1,k2=v2"
+%return: [{"k",v}, {"k1", v1}]
 decode(S) when is_list(S) ->
-	Metrics = [ list_to_tuple(string:token(Token, "=")) 
+	Metrics = [ list_to_tuple(string:tokens(Token, "=")) 
 		|| Token <- string:tokens(S, ",") ],
 	[{Field, number(Value)} || {Field, Value} <- Metrics].
 
@@ -51,3 +51,11 @@ str(V) when is_list(V) ->
 	V;
 str(V) when is_binary(V) ->
 	binary_to_list(V).
+
+strnum(V) when is_integer(V) ->
+    integer_to_list(V);
+strnum(V) when is_float(V) ->
+    [S] = io_lib:format("~.6f", [V]), S;
+strnum(_) ->
+	"0".
+

@@ -114,8 +114,7 @@ init([Id, Env]) ->
 
     Size = proplists:get_value(buffer, Env),
     ?INFO("~p is started.", [name(Id)]),
-    erlang:send_after(1000+random:uniform(1000), self(), cron),
-    erlang:send_after(2000+random:uniform(2000), self(), commit),
+    erlang:send_after(1000+random:uniform(1000), self(), commit),
     {ok, #state{name = name(Id), store = Store, 
 		reqtab = ReqTab, dbtab = DbTab, lasttab = LastTab,
 		buffer_size = Size, commit_size = Size}}.
@@ -209,19 +208,21 @@ priorities_call(_, _From, _State) ->
 %%--------------------------------------------------------------------
 handle_cast({insert, Object, Time, Metrics}, #state{lasttab = LastTab, 
     commit_size = CommitSize, buffer = Buffer} = State) ->
-	case check_time(ets:lookup(LastTab, Object), Time) of
+	LastTime = last_time(ets:lookup(LastTab, Object)),
+	case LastTime < Time of
 	true ->
 		ets:insert(LastTab, #errdb_last{object = Object,
 			time = Time, metrics = Metrics}),
 		NewBuffer = [{Object, Time, Metrics} | Buffer],
-		case length(Buffer) >= CommitSize of
+		case length(NewBuffer) >= CommitSize of
 		true ->
 			handle_info(commit, State#state{buffer = NewBuffer});
 		false ->
 			{noreply, State#state{buffer = NewBuffer}}
 		end;
 	false ->
-		?WARNING("object: ~p, badtime: time=~p", [Object, Time]),
+		?WARNING("badtime error! object: ~p, lasttime: ~p, time: ~p",
+			[Object, LastTime, Time]),
 		{noreply, State}
 	end;
 
@@ -267,12 +268,14 @@ handle_info({'DOWN', MonRef, process, _Pid, _Reason}, #state{reqtab = ReqTab} = 
 	end, Match),
     {noreply, State};
 
-handle_info(commit, #state{store = Store, buffer = Buffer, commit_timer = Timer} = State) ->
+handle_info(commit, #state{store = Store, buffer = Buffer,
+	buffer_size = BufferSize, commit_timer = Timer} = State) ->
 	incr(commit),
 	cancel_timer(Timer),
 	commit(Store, Buffer),
+    CommitSize = BufferSize + random:uniform(BufferSize),
 	Timer1 = erlang:send_after(1000, self(), commit),
-	{noreply, State#state{buffer = [], commit_timer = Timer1}};
+	{noreply, State#state{buffer = [], commit_size = CommitSize, commit_timer = Timer1}};
 
 %TODO: DEPRECATED CODE???
 handle_info({'EXIT', _Pid, normal}, State) ->
@@ -294,17 +297,10 @@ handle_info({'EXIT', Pid, Reason}, #state{reqtab = ReqTab} = State) ->
 handle_info({timeout, Key}, State) ->
 	handle_cast({delete, Key}, State);
     
-handle_info(cron, #state{buffer_size = BufferSize} = State) ->
-    CommitSize = BufferSize + random:uniform(BufferSize),
-    erlang:send_after(1000, self(), cron),
-    {noreply, State#state{commit_size = CommitSize}};
-
 handle_info(Info, State) ->
     ?ERROR("badinfo: ~p", [Info]),
     {noreply, State}.
 
-priorities_info(cron, _State) ->
-    11;
 priorities_info({read_rep,_,_}, _State) ->
     10;
 priorities_info({read_timeout,_,_}, _State) ->
@@ -343,10 +339,10 @@ lasttab(Id) ->
 reqtab(Id) ->
     list_to_atom("read_req_" ++ integer_to_list(Id)).
 
-check_time([], _Time) ->
-	true;
-check_time([#errdb_last{time = LastTime}], Time) ->
-    Time > LastTime.
+last_time([]) ->
+	0;
+last_time([#errdb_last{time = LastTime}]) ->
+    LastTime.
 
 cancel_timer(undefined) ->
     ok;

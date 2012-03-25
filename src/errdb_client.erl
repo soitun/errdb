@@ -15,7 +15,7 @@
 
 -import(lists, [concat/1]).
 
--import(errdb_lib, [str/1]).
+-import(errdb_lib, [str/1, strnum/1]).
 
 -behavior(gen_fsm).
 
@@ -154,6 +154,6 @@ retry_connect() ->
     erlang:send_after(30000, self(), {timeout, retry_connect}).
 
 encode(Metrics) ->
-	Tokens = [concat([str(N), "=", str(V)]) || {N, V} <- Metrics],
+	Tokens = [concat([str(N), "=", strnum(V)]) || {N, V} <- Metrics],
 	string:join(Tokens, ",").
 
