@@ -4,15 +4,12 @@
 %% @doc errdb controller
 -module(errdb_ctl).
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -include("errdb.hrl").
 
 -export([start/0,
-         init/0,
-         process/1,
-         register_commands/3,
-         unregister_commands/3]).
+         process/1]).
 
 start() ->
     case init:get_plain_arguments() of
@@ -46,9 +43,6 @@ start() ->
 	    halt(?STATUS_USAGE)
     end.
 
-init() ->
-    ets:new(errdb_ctl_cmds, [named_table, set, public]).
-
 process(["status"]) ->
     Infos = lists:flatten(errdb:info()),
     [?PRINT("process ~p: ~n~p~n", [Name, Info]) || {Name, Info} <- Infos],
@@ -74,6 +68,16 @@ process(["status"]) ->
         ?STATUS_SUCCESS
     end;
 
+process(["cluster", Node]) ->
+	case net_adm:ping(list_to_atom(Node)) of
+	pong ->
+		?PRINT("cluster with ~p successfully.~n", [Node]),
+		?STATUS_SUCCESS;
+	pang ->
+        ?PRINT("failed to cluster with ~p~n", [Node]),
+        ?STATUS_ERROR
+	end;
+
 process(["stop"]) ->
     init:stop(),
     ?STATUS_SUCCESS;
@@ -90,8 +94,7 @@ print_usage() ->
     CmdDescs =
 	[{"status", "get errdb status"},
 	 {"stop", "stop errdb "},
-	 {"restart", "restart errdb"}] ++
-	ets:tab2list(errdb_ctl_cmds),
+	 {"restart", "restart errdb"}],
     MaxCmdLen =
 	lists:max(lists:map(
 		    fun({Cmd, _Desc}) ->
@@ -114,14 +117,4 @@ print_usage() ->
       "  errdbctl stop~n"
       "  errdbctl --node errdb@host restart~n",
      []).
-
-register_commands(CmdDescs, _Module, _Function) ->
-    ets:insert(errdb_ctl_cmds, CmdDescs),
-    ok.
-
-unregister_commands(CmdDescs, _Module, _Function) ->
-    lists:foreach(fun(CmdDesc) ->
-			  ets:delete_object(errdb_ctl_cmds, CmdDesc)
-		  end, CmdDescs),
-    ok.
 

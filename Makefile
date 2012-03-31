@@ -1,13 +1,14 @@
-PLATFORM=/opt/platform
+
 all: deps
-	(cd src;$(MAKE))
+	./rebar compile
 
 deps:
-	cp ${PLATFORM}/elog/ebin/* ebin
-	cp ${PLATFORM}/elog/include/* include 
-	cp ${PLATFORM}/core/ebin/* ebin
-	cp ${PLATFORM}/mochiweb/ebin/* ebin
+	./rebar get-deps
+
+dist:
+	rm -rf rel/errdb
+	./rebar generate
 
 clean:
-	(cd src;$(MAKE) clean)
+	./rebar clean
 

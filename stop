@@ -1,3 +1,0 @@
-#!/bin/bash
-
-./errdb_ctl stop

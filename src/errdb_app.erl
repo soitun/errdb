@@ -1,41 +1,28 @@
-%% @author author <author@example.com>
-%% @copyright YYYY author.
+%% @author author <ery.lee@gmail.com>
+%% @copyright 2012 www.opengoss.com.
 
 %% @doc Errdb application.
 
 -module(errdb_app).
 
--include("elog.hrl").
-
 -include("errdb.hrl").
 
--export([start/0, stop/0]).
+-include_lib("elog/include/elog.hrl").
+
+-export([start/0]).
 
 -behavior(application).
 %callback
 -export([start/2, stop/1]).
 
-%%@spec start() -> ok
-%%@doc Start the errdb server
-start() -> 
-    init_elog(),
-	application:start(crypto),
-	application:start(core),
+start() ->
 	application:start(errdb).
 
-init_elog() ->
-    {ok, [[LogLevel]]} = init:get_argument(log_level),
-    {ok, [[LogPath]]} = init:get_argument(log_path),
-	elog:init(list_to_integer(LogLevel), LogPath).
-
-%%@spec stop() -> ok
-%%@doc Stop the errdb server
-stop() -> 
-    application:stop(errdb),
-	application:stop(core),
-	application:stop(crypto).
-
 start(_Type, _Args) ->
+    init_elog(),
+	application:start(crypto),
+	application:start(extlib),
+	application:start(sqlite3),
     case erts_version_check() of
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),
@@ -46,14 +33,56 @@ start(_Type, _Args) ->
         Error
     end.
 
+init_elog() ->
+    {ok, [[LogLevel]]} = init:get_argument(log_level),
+    {ok, [[LogPath]]} = init:get_argument(log_path),
+	elog:init(list_to_integer(LogLevel), LogPath).
+
+erts_version_check() ->
+    FoundVer = erlang:system_info(version),
+    case version_compare(?ERTS_MINIMUM, FoundVer, lte) of
+	true  -> ok;
+	false -> {error, {erlang_version_too_old,
+					  {found, FoundVer}, {required, ?ERTS_MINIMUM}}}
+    end.
 
 stop(_State) ->
 	ok.
 
-erts_version_check() ->
-    FoundVer = erlang:system_info(version),
-    case errdb_misc:version_compare(?ERTS_MINIMUM, FoundVer, lte) of
-        true  -> ok;
-        false -> {error, {erlang_version_too_old,
-                          {found, FoundVer}, {required, ?ERTS_MINIMUM}}}
+version_compare(A, B, lte) ->
+    case version_compare(A, B) of
+        eq -> true;
+        lt -> true;
+        gt -> false
+    end;
+version_compare(A, B, gte) ->
+    case version_compare(A, B) of
+        eq -> true;
+        gt -> true;
+        lt -> false
+    end;
+version_compare(A, B, Result) ->
+    Result =:= version_compare(A, B).
+
+version_compare(A, A) ->
+    eq;
+version_compare([], [$0 | B]) ->
+    version_compare([], dropdot(B));
+version_compare([], _) ->
+    lt; %% 2.3 < 2.3.1
+version_compare([$0 | A], []) ->
+    version_compare(dropdot(A), []);
+version_compare(_, []) ->
+    gt; %% 2.3.1 > 2.3
+version_compare(A,  B) ->
+    {AStr, ATl} = lists:splitwith(fun (X) -> X =/= $. end, A),
+    {BStr, BTl} = lists:splitwith(fun (X) -> X =/= $. end, B),
+    ANum = list_to_integer(AStr),
+    BNum = list_to_integer(BStr),
+    if ANum =:= BNum -> version_compare(dropdot(ATl), dropdot(BTl));
+       ANum < BNum   -> lt;
+       ANum > BNum   -> gt
     end.
+
+dropdot(A) -> lists:dropwhile(fun (X) -> X =:= $. end, A).
+

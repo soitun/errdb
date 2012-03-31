@@ -5,243 +5,218 @@
 %%% Created : 03 Apr. 2010
 %%% License : http://www.opengoss.com
 %%%
-%%% Copyright (C) 2011, www.opengoss.com
+%%% Copyright (C) 2012, www.opengoss.com
 %%%----------------------------------------------------------------------
 -module(errdb_store).
 
 -author('ery.lee@gmail.com').
 
--include("elog.hrl").
-
--import(extbif, [zeropad/1]).
+-include_lib("elog/include/elog.hrl").
 
 -import(lists, [concat/1, reverse/1]).
 
--import(errdb_misc, [b2l/1, i2l/1, l2a/1, l2b/1]).
+-import(proplists, [get_value/3]).
+
+-import(extbif, [zeropad/1, timestamp/0, datetime/1,strfdate/1]).
+
+-export([start_link/2,
+		read/5,
+        write/2]).
 
 -behavior(gen_server).
-
--export([name/1,
-        start_link/2,
-        read/2,
-        write/4,
-        delete/2]).
 
 -export([init/1, 
         handle_call/3, 
         priorities_call/3,
         handle_cast/2,
         handle_info/2,
+        priorities_info/2,
         terminate/2,
         code_change/3]).
 
--record(state, {dbdir}).
+-define(SCHEMA, "CREATE TABLE metrics ("
+				"object TEXT, time INTEGER, "
+				"metric TEXT, value REAL);").
 
--record(head, {lastup, lastrow, dscnt, dssize, fields}).
+-define(INDEX, "CREATE UNIQUE INDEX object_time_metric_idx on "
+			   "metrics(object, time, metric);").
+
+-define(PRAGMA, "pragma synchronous=normal;").
+
+-define(ATTACH(File), ["attach '", File, "' as hourly;"]).
+
+-define(IMPORT, "insert into metrics(object,time,metric,value) "
+				"select object,time,metric,value from hourly.metrics").
+
+%db0: hour db
+%db1: today db
+%db2: yesterday db
+-record(state, {id, dir, db0, db1, db2}).
+
+start_link(Id, Dir) ->
+    gen_server2:start_link({local, name(Id)}, ?MODULE, 
+		[Id, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
 
 name(Id) ->
-    l2a("errdb_store_" ++ i2l(Id)).
+    list_to_atom("errdb_store_" ++ integer_to_list(Id)).
 
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link(Name, Dir) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
+read(Pid, Object, Fields, Begin, End) ->
+	gen_server2:call(Pid, {read, Object, Fields, Begin, End}).
 
-read(DbDir, Key) ->
-    FileName = filename(DbDir, Key),
-    case file:read_file(FileName) of
-    {ok, Binary} ->
-        case decode(Binary) of
-        {ok, #head{fields=Fields}=Head, Records} ->
-            ?INFO("~p", [Head]),
-            {ok, Fields, Records};
-        {error, Reason} ->
-            {error, Reason}
-        end;
-    {error, enoent} ->
-        {ok, []}; %no file and data.
-    {error, Error} -> 
-        {error, Error}
-    end.
-    
-write(Pid, Key, Fields, Records) ->
-    gen_server2:cast(Pid, {write, Key, Fields, Records}).
+%Record: {Object, Timestamp, Metrics}
+write(Pid, Records) ->
+	gen_server2:cast(Pid, {write, Records}).
 
-delete(Pid, Key) ->
-    gen_server2:cast(Pid, {delete, Key}).
+init([Id, Dir]) ->
+	{ok, DB0} = opendb(hourly, Id, Dir),
+	{ok, DB1} = opendb(today, Id, Dir),
+	{ok, DB2} = opendb(yesterday, Id, Dir),
+	sched_next_hourly_commit(),
+	sched_next_daily_commit(),
+	?INFO("~p is started.", [name(Id)]),
+	{ok, #state{id = Id, dir = Dir,
+		db0=DB0, db1=DB1, db2=DB2}}.
 
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([Name, Dir]) ->
-    io:format("~n~p is started.~n", [Name]),
-    {ok, #state{dbdir = Dir}}.
+opendb(hourly, Id, Dir) ->
+	File = concat([Dir, "/", strfdate(today()), 
+		"/", zeropad(hour()), "/", dbfile(Id)]),
+	opendb(dbname("hourly", Id), File);
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(Req, _From, State) ->
-    ?ERROR("badreq: ~p", [Req]),
+opendb(today, Id, Dir) ->
+	File = concat([Dir, "/", strfdate(today()), "/", dbfile(Id)]),
+	opendb(dbname("today", Id), File);
+
+opendb(yesterday, Id, Dir) ->
+	File = concat([Dir, "/", strfdate(yesterday()), "/", dbfile(Id)]),
+	opendb(dbname("yesterday", Id), File).
+	
+opendb(Name, File) ->
+	?INFO("opendb: ~p", [File]),
+	filelib:ensure_dir(File),
+	{ok, DB} = sqlite3:open(Name, [{file, File}]),
+	schema(DB, sqlite3:list_tables(DB)),
+	{ok, DB}.
+
+schema(DB, []) ->
+	sqlite3:sql_exec(DB, ?PRAGMA),
+	sqlite3:sql_exec(DB, ?SCHEMA);
+	%sqlite3:sql_exec(DB, ?INDEX);
+
+schema(_DB, [metrics]) ->
+	ok.
+
+dbname(Prefix, Id) when is_list(Prefix) ->
+	list_to_atom(Prefix ++ zeropad(Id)).
+
+dbfile(Id) ->
+	integer_to_list(Id) ++ ".db".
+
+handle_call({read, Object, Fields, Begin, End}, _From, 
+	#state{db0 = DB0, db1 = DB1, db2 = DB2} = State) ->
+	%?INFO("read: ~p, ~p, ~p, ~p", [Object, Fields, Begin, End]),
+	SQL = ["select time, metric, value from metrics "
+		   "where object = '", Object, "' and metric in ",
+		    "(", string:join(["'"++F++"'" || F <- Fields], ","), ")"
+			" and time >= ", integer_to_list(Begin), 
+			" and time <= ", integer_to_list(End), ";"],
+	Results = [sqlite3:sql_exec(DB, SQL) || DB <- [DB2, DB1, DB0]], 
+	Rows = lists:flatten([Rows || [{columns, _}, {rows, Rows}] <- Results]),
+	Reply = {ok, transform([list_to_binary(F)|| F <- Fields], Rows)},
+    {reply, Reply, State};
+	
+handle_call(_Req, _From, State) ->
     {reply, {error, badreq}, State}.
 
+priorities_call({read, _Object, _Fields, _Begin, _End}, _From, _State) ->
+    10;
 priorities_call(_, _From, _State) ->
     0.
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({write, Key, Fields, Records}, #state{dbdir = Dir} = State) ->
-    FileName = filename(Dir, Key),
-    filelib:ensure_dir(FileName),
-    {ok, File} = file:open(FileName, [read, write, binary, raw, {read_ahead, 1024}]), 
-    case file:read(File, 1024) of
-    {ok, <<"RRDB0001", _/binary>> = Bin} ->
-        Head = decode(head, Bin),
-        #head{lastup=LastUp,lastrow=LastRow,fields=OldFields} = Head,
-        case check_fields(OldFields, Fields) of
-        true ->
-            Lines = lines(Records),
-            {LastUp1, LastRow1, Writes} = 
-            lists:foldl(fun(Line, {_Up, Row, Acc}) -> 
-                <<Time:32,_/binary>> = Line,
-                NextRow =
-                if
-                Row >= 599 -> 0;
-                true -> Row + 1
-                end,
-                Pos = 1024 + size(Line) * NextRow,
-                {Time, NextRow, [{Pos, Line}|Acc]}
-            end, {LastUp, LastRow, []}, Lines),
-            Writes1 = [{8, <<LastUp1:32, LastRow1:32>>}|Writes],
-            file:pwrite(File, Writes1);
-        false ->
-            ?ERROR("fields not match: ~p, ~p", [OldFields, Fields])
-        end;
-    {ok, ErrBin} ->
-        ?ERROR("error file: ~p", [ErrBin]);
-    eof -> %new file
-        {LastUp, _} = lists:last(Records),
-        LastRow = length(Records) - 1,
-        Head = encode(head, Fields),
-        file:write(File, Head),
-        Lines = lines(Records),
-        Writes = [{8, <<LastUp:32, LastRow:32>>},{1024, l2b(Lines)}],
-        file:pwrite(File, Writes);
-    {error, Reason} -> 
-        ?ERROR("failed to open '~p': ~p", [FileName, Reason])
-    end,
-    file:close(File),
-    {noreply, State};
 
-handle_cast({delete, Key}, #state{dbdir = Dir} = State) ->
-    file:del_dir(filename(Dir, Key)),
-    {noreply, State};
-    
+handle_cast({write, Rows}, #state{db0= DB0} = State) ->
+	sqlite3:write_many(DB0, metrics, Rows), 
+	%lists:foreach(fun(Row) -> 
+	%	case sqlite3:write(DB0, metrics, Row) of
+	%	{error, Id, Reason} ->
+	%		?WARNING("sqlite write error, Id: ~p, Reason: ~p", [Id, Reason]),
+	%		?WARNING("error row: ~p", [Row]);
+	%	{error, Reason} ->
+	%		?WARNING("sqlite write error, Reason: ~p", [Reason]),
+	%		?WARNING("error row: ~p", [Row]);
+	%	_ ->
+	%		ok
+	%	end
+	%end, Rows),
+	{noreply, State};
+
 handle_cast(Msg, State) ->
-    ?ERROR("badmsg: ~p", [Msg]),
-    {noreply, State}.
+    {stop, {error, {badmsg, Msg}}, State}.
 
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
+handle_info({commit, hourly}, #state{id = Id, dir = Dir, db0 = DB0, db1 = DB1} = State) ->
+	sched_next_hourly_commit(),
+	File = sqlite3:dbfile(DB0),
+	case filelib:is_file(File) of
+	true ->
+		spawn(fun() -> 
+			sqlite3:sql_exec(DB1, ?ATTACH(File)),
+			sqlite3:sql_exec(DB1, ?IMPORT)
+		end);
+	false ->
+		ignore
+	end,
+	sqlite3:close(DB0),
+	{ok, NewDB0} = opendb(hourly, Id, Dir),
+	{noreply, State#state{db0 = NewDB0}};
+
+handle_info({commit, daily}, #state{id = Id, dir = Dir, db1 = DB1, db2 = DB2} = State) ->
+	sched_next_daily_commit(),
+	sqlite3:close(DB2),
+	{ok, NewDB1} = opendb(today, Id, Dir),
+	{noreply, State#state{db1 = NewDB1, db2 = DB1}};
+	
 handle_info(Info, State) ->
-    ?ERROR("badinfo: ~p", [Info]),
-    {noreply, State}.
+    {stop, {error, {badinfo, Info}}, State}.
 
-%%--------------------------------------------------------------------
-%% Function: terminate(Reason, State) -> void()
-%% Description: This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any necessary
-%% cleaning up. When it returns, the gen_server terminates with Reason.
-%% The return value is ignored.
-%%--------------------------------------------------------------------
+priorities_info({commit, hourly}, _) ->
+	11;
+priorities_info({commit, daily}, _) ->
+	10;
+priorities_info(_, _) ->
+    1.
+
 terminate(_Reason, _State) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
-%%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
-filename(Dir, Key) ->
-    Path = binary:replace(Key, [<<",">>, <<":">>], <<"/">>, [global]),
-    concat([Dir, b2l(Path), ".rrdb"]).
+today() -> date().
 
-check_fields(OldFields, Fields) ->
-    OldFields == Fields.
+hour() -> {H,_,_} = time(), H.
 
-lines(Records) ->
-    [line(Record) || Record <- Records].
+yesterday() -> {Date, _} = datetime(timestamp() - 86400), Date.
 
-line({Time, Values}) ->
-    Line = [<<V/float>> || V <- Values],
-    list_to_binary([<<Time:32>>, <<":">>, Line]).
+sched_next_hourly_commit() ->
+	Ts1 = timestamp(),
+    Ts2 = (Ts1 div 3600 + 1) * 3600,
+	Diff = (Ts2 + 1 - Ts1) * 1000,
+    erlang:send_after(Diff, self(), {commit, hourly}).
 
-decode(Bin) ->
-    <<HeadBin:1024/binary, BodyBin/binary>> = Bin,
-    #head{fields = Fields} = Head = decode(head, HeadBin),
-    Records = decode(body, Fields, BodyBin),
-    {ok, Head, Records}.
+sched_next_daily_commit() ->
+	Ts1 = timestamp(),
+    Ts2 = (Ts1 div 86400 + 1) * 86400,
+	Diff = (Ts2 + 60 - Ts1) * 1000,
+    erlang:send_after(Diff, self(), {commit, daily}).
 
-decode(head, Bin) ->
-    <<"RRDB0001", LastUp:32, LastRow:32, DsCnt:32, DsSize:32, DsBin/binary>> = Bin,
-    <<DsData:DsSize/binary, _/binary>> = DsBin,
-    Fields = [b2l(B) || B <- binary:split(DsData, <<",">>, [global])],
-    #head{lastup=LastUp, lastrow=LastRow, dscnt=DsCnt, dssize=DsSize,fields=Fields};
-
-decode(value, Bin) ->
-    decode(value, Bin, []).
-
-decode(body, Fields, Bin) ->
-    Len = length(Fields) * 8,
-    decode(line, Bin, Len);
-
-decode(line, Bin, Len) ->
-    decode(line, Bin, Len, []);
-
-decode(value, <<>>, Acc) ->
-    reverse(Acc);
-
-decode(value, <<V/float, Bin/binary>>, Acc) ->
-    decode(value, Bin, [V | Acc]).
-
-decode(line, <<>>, _Len, Acc) ->
-    reverse(Acc);
-
-decode(line, <<Time:32, ":", Bin/binary>>, Len, Acc) ->
-    <<ValBin:Len/binary, Left/binary>> = Bin, 
-    Record = {Time, decode(value, ValBin)},
-    decode(line, Left, Len, [Record|Acc]).
-
-encode(head, Fields) ->
-    DsData = l2b(string:join(Fields, ",")),
-    DsCnt = length(Fields),
-    DsSize = size(DsData),
-    <<"RRDB0001", 0:32, 0:32, DsCnt:32, DsSize:32, DsData/binary>>;
-
-encode(line, {Time, Values}) ->
-    ValBin = l2b([<<V/float>> || V <- Values]),
-    <<Time:32, ":", ValBin/binary>>.
+transform(Fields, Rows) ->
+	TimeDict = 
+	lists:foldl(fun({Time, Metric, Value}, Dict) -> 
+		case orddict:find(Time, Dict) of
+		{ok, Metrics} -> orddict:store(Time, [{Metric, Value}|Metrics], Dict);
+		error -> orddict:store(Time, [{Metric, Value}], Dict)
+		end	
+	end, orddict:new(), Rows),
+	Values = fun(Metrics) -> 
+		[get_value(Name, Metrics, "NaN") || Name <- Fields]
+	end,
+	[{Time, Values(Metrics)} || {Time, Metrics} <- orddict:to_list(TimeDict)].
 

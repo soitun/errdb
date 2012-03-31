@@ -5,13 +5,13 @@
 %%% Created : 22 Dec 2009
 %%% License : http://www.opengoss.com
 %%%
-%%% Copyright (C) 2007-2009, www.opengoss.com 
+%%% Copyright (C) 2012, www.opengoss.com 
 %%%----------------------------------------------------------------------
 -module(errdb_monitor).
 
 -author('ery.lee@gmail.com').
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -behavior(gen_server).
 
@@ -56,6 +56,7 @@ init([]) ->
 handle_call(Req, _From, State) ->
     ?ERROR("badreq: ~p", [Req]),
     {reply, {error, badreq}, State}.
+
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
@@ -72,11 +73,13 @@ handle_cast(Msg, State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({monitor, GcPid, long_gc, Info}, State) ->
-    ?ERROR("long_gc warning! ~n ~p ~n ~p", [Info, errdb_misc:pinfo(GcPid)]),
+    ?ERROR("long_gc warning! ~n ~p ~n ~p", 
+		[Info, process_info(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, GcPid, large_heap, Info}, State) ->
-    ?ERROR("large_heap warning! ~n ~p ~n ~p", [Info, errdb_misc:pinfo(GcPid)]),
+    ?ERROR("large_heap warning! ~n ~p ~n ~p", 
+		[Info, process_info(GcPid)]),
     {noreply, State};
 
 handle_info({monitor, SusPid, busy_port, Port}, State) ->

@@ -23,11 +23,17 @@ Errdb生成的Journal文件在WLAN网管中，会通过定时任务导入到Orac
 
 # Errdb启动停止
 
-Errdb安装目录下有start, stop, status三个脚本：
+1. ./errdb_ctl start 启动Errdb进程
+2. ./errdb_ctl status 查询Errdb状态
+3. ./errdb_ctl stop 停止Errdb进程
 
-1. start 启动Errdb进程
-2. status 查询Errdb状态
-3. stop 停止Errdb进程
+# Errdb编译
+
+Errdb采用rebar编译
+
+* make (编译)
+* make clean (清除)
+* make dist (发布包生成在rel/errdb下)
 
 # Errdb文件存储
 
@@ -41,4 +47,10 @@ Errdb缺省情况下把数据文件存储在var/rrdb/目录, journal文件存储
 + [RRDTOOL]: http://oss.oetiker.ch/rrdtool/
 + [Cassandra]: http://cassandra.apache.org/
 + [Mongodb]: http://www.mongodb.org/
++ [Kx System]: http://www.kx.com/
+
+# 文件目录结构
+
+
+
 

@@ -11,14 +11,20 @@
 
 -author('ery.lee@gmail.com').
 
--include("elog.hrl").
+-include_lib("elog/include/elog.hrl").
+
+-import(lists, [concat/1]).
+
+-import(errdb_lib, [str/1, strnum/1]).
 
 -behavior(gen_fsm).
 
--export([start_link/1, 
+-export([start_link/0,
+		start_link/1, 
         status/1, 
         last/2,
-        fetch/4,
+		last/3,
+        fetch/5,
         insert/4,
         stop/1]).
 
@@ -33,7 +39,8 @@
 %% fsm state
 -export([connecting/2,
         connecting/3,
-        connected/2]).
+        connected/2,
+		connected/3]).
 
 -define(TCP_OPTIONS, [binary, 
     {packet, line}, 
@@ -43,21 +50,25 @@
 
 -define(TIMEOUT, 3000).
 
--record(state, {host, port, socket, queue}).
+-record(state, {host, port, socket, queue, reply = []}).
 
+start_link() ->
+	start_link([]).
 start_link(Args) ->
     gen_fsm:start_link(?MODULE, [Args], []).
 
-last(_Pid, Key) when is_binary(Key) ->
-    {error, unsupport}.
+last(Pid, Object) ->
+	gen_fsm:sync_send_event(Pid, {last, Object}).
 
-fetch(_Pid, Key, Begin, End) when is_binary(Key) 
-	and is_integer(Begin) and is_integer(End) ->
-    {error, unsupport}.
+last(Pid, Object, Fields) ->
+	gen_fsm:sync_send_event(Pid, {last, Object, Fields}).
 
-insert(Pid, Key, Time, Data) when is_binary(Key)
-    and is_integer(Time) and is_binary(Data) ->
-    gen_fsm:send_event(Pid, {insert, Key, Time, Data}).
+fetch(Pid, Object, Fields, Begin, End) when is_integer(Begin)
+	and is_integer(End) ->
+	gen_fsm:sync_send_event(Pid, {fetch, Object, Fields, Begin, End}).
+
+insert(Pid, Object, Time, Metrics) when is_integer(Time) ->
+    gen_fsm:send_event(Pid, {insert, Object, Time, Metrics}).
 
 status(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, status).
@@ -79,6 +90,10 @@ connecting(timeout, State) ->
 connecting(_Event, State) ->
     {next_state, connecting, State}.
 
+connecting(Event, _From, State) ->
+    ?ERROR("badevent when connecting: ~p", [Event]),
+	{reply, {error, connecting}, connecting, State}.
+
 connect(#state{host = Host, port = Port} = State) ->
     case gen_tcp:connect(Host, Port, ?TCP_OPTIONS, ?TIMEOUT) of
     {ok, Socket} ->
@@ -89,31 +104,71 @@ connect(#state{host = Host, port = Port} = State) ->
         {next_state, connecting, State#state{socket = undefined}}
     end.
 
-connecting(Event, _From, S) ->
-    ?ERROR("badevent when connecting: ~p", [Event]),
-    {reply, {error, connecting}, connecting, S}.
-
-connected({insert, Key, Time, Data}, #state{socket = Socket} = State) ->
-    Insert = list_to_binary(["insert ", Key, " ", 
-		integer_to_list(Time), " ", Data, "\r\n"]),
+connected({insert, Object, Time, Metrics}, 
+	#state{socket = Socket} = State) ->
+    Insert = ["insert ", Object, 
+		 " ", integer_to_list(Time), 
+		 " ", encode(Metrics), "\r\n"],
     gen_tcp:send(Socket, Insert),
     put(inserted, get(inserted)+1),
     {next_state, connected, State}.
 
-handle_info({tcp, _Socket, Data}, connected, State) ->
-    case Data of
-    <<"OK", _/binary>> -> %ok reply
-        ok; %TODO
-    <<"ERROR:", Reason/binary>> -> %error reply
-		?ERROR("~p", [Reason]),
-        ok; %TODO
-    _ -> %data reply
-        ok %TODO
-    end,
-    {next_state, connected, State};
+connected({last, Object}, From, State) ->
+	send_req(["last ", Object, "\r\n"], From, State);
 
-handle_info({tcp_closed, Socket}, _StateName, #state{socket = Socket} = State) ->
+connected({last, Object, Fields}, From, State) ->
+	Fields1 = string:join([str(F) || F <- Fields], ","),
+	Cmd = ["last ", Object, " ", Fields1, "\r\n"],
+	send_req(Cmd, From, State);
+
+connected({fetch, Object, Fields, Begin, End}, From, State) ->
+	Fields1 = string:join([str(F) || F <- Fields], ","),
+	Cmd = ["fetch", Object, Fields1, integer_to_list(Begin), integer_to_list(End)],
+	Cmd1 = [string:join(Cmd, " "), "\r\n"],
+	send_req(Cmd1, From, State);
+
+connected(Req, _From, State) ->
+	?ERROR("badreq: ~p", [Req]),
+    {next_state, connected, State}.
+
+handle_info({timeout, req, Ref}, connected, #state{queue = Q} = State) ->
+	{{value, Req}, Q1} = queue:out(Q),
+	{req, Ref, From, _Timer, _} = Req,
+	gen_fsm:reply(From, {error, timeout}),
+    {next_state, connected, State#state{queue = Q1}};
+
+handle_info({timeout, req, _Ref}, StateName, State) ->
+	%ignore??
+    {next_state, StateName, State};
+	
+handle_info({tcp, _Socket, Data}, connected, #state{reply = Lines, queue = Q} = State) ->
+    case Data of
+    <<"ERROR:", Reason/binary>> -> 
+		{{value, Req}, Q1} = queue:out(Q),
+		{req, _Ref, From, Timer, _} = Req,
+		erlang:cancel_timer(Timer),
+		gen_fsm:reply(From, {error, binary_to_list(trimlf(Reason))}),
+		{next_state, connected, State#state{queue = Q1}};
+    <<"TIME:", _Fields/binary>> = Line -> 
+		{next_state, connected, State#state{reply = [trimlf(Line)]}};
+	<<"END\r\n">> ->
+		{{value, Req}, Q1} = queue:out(Q),
+		{req, _Ref, From, Timer, _} = Req,
+		erlang:cancel_timer(Timer),
+		Reply = [binary_to_list(Line) || Line <- lists:reverse(Lines)],
+		gen_fsm:reply(From, {ok, Reply}),
+		{next_state, connected, State#state{reply = [], queue = Q1}};
+	Line ->
+		{next_state, connected, State#state{reply = [trimlf(Line)|Lines]}}
+    end;
+
+handle_info({tcp_closed, Socket}, _StateName, 
+	#state{socket = Socket, queue = Q} = State) ->
     ?ERROR("tcp close: ~p", [Socket]),
+	lists:foreach(fun({req, _Ref, From, Timer, _}) -> 
+		erlang:cancel_timer(Timer),
+		gen_fsm:reply(From, {error, tcp_closed})
+	end, queue:to_list(Q)),
     retry_connect(),
     {next_state, connecting, State#state{socket = undefined}};
 
@@ -147,4 +202,24 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 
 retry_connect() ->
     erlang:send_after(30000, self(), {timeout, retry_connect}).
+
+send_req(Cmd, From, #state{socket = Socket, queue = Q} = State) ->
+	gen_tcp:send(Socket, Cmd),
+	Req = newreq(From, Cmd),
+	Q1 = queue:in(Req, Q),
+	{next_state, connected, State#state{queue = Q1}}.
+
+newreq(From, Cmd) ->
+	Ref = make_ref(),
+	Timer = erlang:send_after(10000, self(), {timeout, req, Ref}),
+	{req, Ref, From, Timer, Cmd}.
+
+encode(Metrics) ->
+	Tokens = [concat([str(N), "=", strnum(V)]) || {N, V} <- Metrics],
+	string:join(Tokens, ",").
+
+trimlf(B) when is_binary(B) ->
+	Len = size(B) - 2,
+	<<Line:Len/binary, _/binary>> = B,
+	Line.
 
