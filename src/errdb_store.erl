@@ -154,16 +154,19 @@ handle_cast(Msg, State) ->
 handle_info({commit, hourly}, #state{id = Id, dir = Dir, db0 = DB0, db1 = DB1} = State) ->
 	sched_next_hourly_commit(),
 	File = sqlite3:dbfile(DB0),
+	Res = sqlite3:close(DB0),
+	?ERROR("close hourly db: ~p", [Res]),
 	case filelib:is_file(File) of
 	true ->
-		spawn(fun() -> 
-			sqlite3:sql_exec(DB1, ?ATTACH(File)),
-			sqlite3:sql_exec(DB1, ?IMPORT)
-		end);
+		%spawn(fun() -> 
+			Res1 = sqlite3:sql_exec(DB1, ?ATTACH(File)),
+			?ERROR("attach : ~p", [Res1]),
+			Res2 = sqlite3:sql_exec(DB1, ?IMPORT, 30000),
+			?ERROR("import : ~p", [Res2]);
+		%end);
 	false ->
 		ignore
 	end,
-	sqlite3:close(DB0),
 	{ok, NewDB0} = opendb(hourly, Id, Dir),
 	{noreply, State#state{db0 = NewDB0}};
 
