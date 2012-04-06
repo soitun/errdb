@@ -38,24 +38,17 @@
 				"object TEXT, time INTEGER, "
 				"metric TEXT, value REAL);").
 
--define(INDEX, "CREATE UNIQUE INDEX object_time_metric_idx on "
-			   "metrics(object, time, metric);").
+-define(INDEX, "CREATE UNIQUE INDEX object_time_metric_idx "
+			   "on metrics(object, time, metric);").
 
--define(PRAGMA, "pragma synchronous=normal;").
+-define(PRAGMA, "pragma synchronous=off;").
 
--define(ATTACH(File), ["attach '", File, "' as hourly;"]).
-
--define(IMPORT, "insert into metrics(object,time,metric,value) "
-				"select object,time,metric,value from hourly.metrics").
-
-%db0: hour db
-%db1: today db
-%db2: yesterday db
--record(state, {id, dir, db0, db1, db2}).
+%hdbs: history databases
+-record(state, {id, name, dir, db, hdbs}).
 
 start_link(Id, Dir) ->
     gen_server2:start_link({local, name(Id)}, ?MODULE, 
-		[Id, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
+		[Id, Dir], [{spawn_opt, [{min_heap_size, 409600}]}]).
 
 name(Id) ->
     list_to_atom("errdb_store_" ++ integer_to_list(Id)).
@@ -63,63 +56,68 @@ name(Id) ->
 read(Pid, Object, Fields, Begin, End) ->
 	gen_server2:call(Pid, {read, Object, Fields, Begin, End}).
 
-%Record: {Object, Timestamp, Metrics}
-write(Pid, Records) ->
-	gen_server2:cast(Pid, {write, Records}).
+write(Pid, Rows) ->
+	gen_server2:cast(Pid, {write, Rows}).
 
 init([Id, Dir]) ->
-	{ok, DB0} = opendb(hourly, Id, Dir),
-	{ok, DB1} = opendb(today, Id, Dir),
-	{ok, DB2} = opendb(yesterday, Id, Dir),
-	sched_next_hourly_commit(),
-	sched_next_daily_commit(),
+	Now = timestamp(),
+	DB = open(db, Dir, Now, Id),
+	HDBS = [ open(hdb, Dir, ago(Now, I), Id)
+				|| I <- lists:seq(1, 47) ],
+	sched_next_hourly_rotate(),
 	?INFO("~p is started.", [name(Id)]),
-	{ok, #state{id = Id, dir = Dir,
-		db0=DB0, db1=DB1, db2=DB2}}.
+	{ok, #state{id = Id, name = name(Id),
+		dir = Dir, db = DB, hdbs=HDBS}}.
 
-opendb(hourly, Id, Dir) ->
-	File = concat([Dir, "/", strfdate(today()), 
-		"/", zeropad(hour()), "/", dbfile(Id)]),
-	opendb(dbname("hourly", Id), File);
+open(Type, Dir, Ts, Id) ->
+	{Date, {Hour,_,_}} = extbif:datetime(Ts),
+	Name = dbname(Date, Hour, Id),
+	File = dbfile(Dir, Date, Hour, Id),
+	case {Type, filelib:is_file(File)} of
+	{db, true} ->
+		opendb(Name, File);
+	{db, false} ->
+		filelib:ensure_dir(File),
+		opendb(Name, File);
+	{hdb, true}->
+		opendb(Name, File);
+	{hdb, false} ->
+		undefined
+	end.
 
-opendb(today, Id, Dir) ->
-	File = concat([Dir, "/", strfdate(today()), "/", dbfile(Id)]),
-	opendb(dbname("today", Id), File);
-
-opendb(yesterday, Id, Dir) ->
-	File = concat([Dir, "/", strfdate(yesterday()), "/", dbfile(Id)]),
-	opendb(dbname("yesterday", Id), File).
-	
 opendb(Name, File) ->
-	?INFO("opendb: ~p", [File]),
-	filelib:ensure_dir(File),
+	error_logger:info_msg("opendb: ~p ~p~n", [Name, File]),
 	{ok, DB} = sqlite3:open(Name, [{file, File}]),
 	schema(DB, sqlite3:list_tables(DB)),
-	{ok, DB}.
+	DB.
+
+dbname(Date, Hour, Id) ->
+	list_to_atom(concat([strfdate(Date), zeropad(Hour), zeropad(Id)])).
+
+dbfile(Dir, Date, Hour, Id) ->
+	concat([Dir, "/", strfdate(Date), 
+		"/", zeropad(Hour), "/", 
+		integer_to_list(Id), ".db"]).
 
 schema(DB, []) ->
 	sqlite3:sql_exec(DB, ?PRAGMA),
-	sqlite3:sql_exec(DB, ?SCHEMA);
-	%sqlite3:sql_exec(DB, ?INDEX);
+	sqlite3:sql_exec(DB, ?SCHEMA),
+	sqlite3:sql_exec(DB, ?INDEX);
 
 schema(_DB, [metrics]) ->
 	ok.
 
-dbname(Prefix, Id) when is_list(Prefix) ->
-	list_to_atom(Prefix ++ zeropad(Id)).
-
-dbfile(Id) ->
-	integer_to_list(Id) ++ ".db".
+ago(Now, I) -> Now - I*3600.
 
 handle_call({read, Object, Fields, Begin, End}, _From, 
-	#state{db0 = DB0, db1 = DB1, db2 = DB2} = State) ->
-	%?INFO("read: ~p, ~p, ~p, ~p", [Object, Fields, Begin, End]),
+	#state{db = DB, hdbs = HDBS} = State) ->
 	SQL = ["select time, metric, value from metrics "
 		   "where object = '", Object, "' and metric in ",
 		    "(", string:join(["'"++F++"'" || F <- Fields], ","), ")"
 			" and time >= ", integer_to_list(Begin), 
 			" and time <= ", integer_to_list(End), ";"],
-	Results = [sqlite3:sql_exec(DB, SQL) || DB <- [DB2, DB1, DB0]], 
+	%TODO: should calc the scope
+	Results = [sqlite3:sql_exec(D, SQL) || D <- [DB|HDBS], D =/= undefined], 
 	Rows = lists:flatten([Rows || [{columns, _}, {rows, Rows}] <- Results]),
 	Reply = {ok, transform([list_to_binary(F)|| F <- Fields], Rows)},
     {reply, Reply, State};
@@ -132,57 +130,25 @@ priorities_call({read, _Object, _Fields, _Begin, _End}, _From, _State) ->
 priorities_call(_, _From, _State) ->
     0.
 
-handle_cast({write, Rows}, #state{db0= DB0} = State) ->
-	sqlite3:write_many(DB0, metrics, Rows), 
-	%lists:foreach(fun(Row) -> 
-	%	case sqlite3:write(DB0, metrics, Row) of
-	%	{error, Id, Reason} ->
-	%		?WARNING("sqlite write error, Id: ~p, Reason: ~p", [Id, Reason]),
-	%		?WARNING("error row: ~p", [Row]);
-	%	{error, Reason} ->
-	%		?WARNING("sqlite write error, Reason: ~p", [Reason]),
-	%		?WARNING("error row: ~p", [Row]);
-	%	_ ->
-	%		ok
-	%	end
-	%end, Rows),
+handle_cast({write, Rows}, #state{db = DB} = State) ->
+	sqlite3:write_many(DB, metrics, Rows), 
 	{noreply, State};
 
 handle_cast(Msg, State) ->
     {stop, {error, {badmsg, Msg}}, State}.
 
-handle_info({commit, hourly}, #state{id = Id, dir = Dir, db0 = DB0, db1 = DB1} = State) ->
-	sched_next_hourly_commit(),
-	File = sqlite3:dbfile(DB0),
-	Res = sqlite3:close(DB0),
-	?ERROR("close hourly db: ~p", [Res]),
-	case filelib:is_file(File) of
-	true ->
-		%spawn(fun() -> 
-			Res1 = sqlite3:sql_exec(DB1, ?ATTACH(File)),
-			?ERROR("attach : ~p", [Res1]),
-			Res2 = sqlite3:sql_exec(DB1, ?IMPORT, 30000),
-			?ERROR("import : ~p", [Res2]);
-		%end);
-	false ->
-		ignore
-	end,
-	{ok, NewDB0} = opendb(hourly, Id, Dir),
-	{noreply, State#state{db0 = NewDB0}};
+handle_info(rotate, #state{id = Id, dir = Dir, db = DB, hdbs = HDBS} = State) ->
+	sched_next_hourly_rotate(),
+	NewDB = open(db, Dir, extbif:timestamp(), Id), 
+	sqlite3:close(lists:last(HDBS)),
+	NewHDBS = [DB | lists:sublist(HDBS, 1, length(HDBS)-1)],
+	{noreply, State#state{db = NewDB, hdbs = NewHDBS}};
 
-handle_info({commit, daily}, #state{id = Id, dir = Dir, db1 = DB1, db2 = DB2} = State) ->
-	sched_next_daily_commit(),
-	sqlite3:close(DB2),
-	{ok, NewDB1} = opendb(today, Id, Dir),
-	{noreply, State#state{db1 = NewDB1, db2 = DB1}};
-	
 handle_info(Info, State) ->
     {stop, {error, {badinfo, Info}}, State}.
 
-priorities_info({commit, hourly}, _) ->
+priorities_info(rotate, _) ->
 	11;
-priorities_info({commit, daily}, _) ->
-	10;
 priorities_info(_, _) ->
     1.
 
@@ -192,24 +158,13 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-today() -> date().
-
-hour() -> {H,_,_} = time(), H.
-
-yesterday() -> {Date, _} = datetime(timestamp() - 86400), Date.
-
-sched_next_hourly_commit() ->
+sched_next_hourly_rotate() ->
 	Ts1 = timestamp(),
     Ts2 = (Ts1 div 3600 + 1) * 3600,
 	Diff = (Ts2 + 1 - Ts1) * 1000,
-    erlang:send_after(Diff, self(), {commit, hourly}).
+    erlang:send_after(Diff, self(), rotate).
 
-sched_next_daily_commit() ->
-	Ts1 = timestamp(),
-    Ts2 = (Ts1 div 86400 + 1) * 86400,
-	Diff = (Ts2 + 60 - Ts1) * 1000,
-    erlang:send_after(Diff, self(), {commit, daily}).
-
+%TODO: SHOULD be moved to errdb.erl
 transform(Fields, Rows) ->
 	TimeDict = 
 	lists:foldl(fun({Time, Metric, Value}, Dict) -> 
@@ -222,4 +177,5 @@ transform(Fields, Rows) ->
 		[get_value(Name, Metrics, "NaN") || Name <- Fields]
 	end,
 	[{Time, Values(Metrics)} || {Time, Metrics} <- orddict:to_list(TimeDict)].
+
 
