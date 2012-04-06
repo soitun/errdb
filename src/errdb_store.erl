@@ -140,7 +140,7 @@ handle_cast(Msg, State) ->
 handle_info(rotate, #state{id = Id, dir = Dir, db = DB, hdbs = HDBS} = State) ->
 	sched_next_hourly_rotate(),
 	NewDB = open(db, Dir, extbif:timestamp(), Id), 
-	sqlite3:close(lists:last(HDBS)),
+	close(lists:last(HDBS)),
 	NewHDBS = [DB | lists:sublist(HDBS, 1, length(HDBS)-1)],
 	{noreply, State#state{db = NewDB, hdbs = NewHDBS}};
 
@@ -179,3 +179,6 @@ transform(Fields, Rows) ->
 	[{Time, Values(Metrics)} || {Time, Metrics} <- orddict:to_list(TimeDict)].
 
 
+close(undefined) -> ok;
+
+close(DB) -> sqlite3:close(DB).
