@@ -34,17 +34,9 @@
         terminate/2,
         code_change/3]).
 
--define(SCHEMA, "CREATE TABLE metrics ("
-				"object TEXT, time INTEGER, "
-				"metric TEXT, value REAL);").
-
--define(INDEX, "CREATE UNIQUE INDEX object_time_metric_idx "
-			   "on metrics(object, time, metric);").
-
--define(PRAGMA, "pragma synchronous=off;").
 
 %hdbs: history databases
--record(state, {id, name, dir, db, hdbs}).
+-record(state, {id, name, hour, dir, db, hdbs}).
 
 start_link(Id, Dir) ->
     gen_server2:start_link({local, name(Id)}, ?MODULE, 
@@ -61,12 +53,13 @@ write(Pid, Rows) ->
 
 init([Id, Dir]) ->
 	Now = timestamp(),
+	Hour = Now div 3600,
 	DB = open(db, Dir, Now, Id),
 	HDBS = [ open(hdb, Dir, ago(Now, I), Id)
 				|| I <- lists:seq(1, 47) ],
 	sched_next_hourly_rotate(),
 	?INFO("~p is started.", [name(Id)]),
-	{ok, #state{id = Id, name = name(Id),
+	{ok, #state{id = Id, name = name(Id), hour = Hour, 
 		dir = Dir, db = DB, hdbs=HDBS}}.
 
 open(Type, Dir, Ts, Id) ->
@@ -100,26 +93,53 @@ dbfile(Dir, Date, Hour, Id) ->
 		integer_to_list(Id), ".db"]).
 
 schema(DB, []) ->
-	sqlite3:sql_exec(DB, ?PRAGMA),
-	sqlite3:sql_exec(DB, ?SCHEMA),
-	sqlite3:sql_exec(DB, ?INDEX);
+	sqlite3:sql_exec(DB, "CREATE TABLE metrics ("
+				"object TEXT, time INTEGER, "
+				"metric TEXT, value REAL);"),
+	sqlite3:sql_exec(DB, "CREATE UNIQUE INDEX object_time_metric_idx "
+			   "on metrics(object, time, metric);");
+	%sqlite3:sql_exec(DB, "pragma journal_mode=memory;"),
+	%sqlite3:sql_exec(DB, "pragma synchronous=off;").
 
 schema(_DB, [metrics]) ->
 	ok.
 
 ago(Now, I) -> Now - I*3600.
 
+hourdelta(Hour, Begin, End) ->
+	BeginHour = Begin div 3600,
+	EndHour = End div 3600,
+	
+	EndDelta = Hour - EndHour,
+	EndDelta1 =
+	if
+	EndDelta =< 0 -> 1;
+	true -> EndDelta
+	end,
+
+	BeginDelta = Hour - BeginHour,
+	BeginDelta1 = 
+	if
+	BeginDelta =< 0 -> 1;
+	BeginDelta > 48 -> 48; %only two days
+	BeginDelta -> BeginDelta
+	end,
+	{BeginDelta1, EndDelta1}.
+
 handle_call({read, Object, Fields, Begin, End}, _From, 
-	#state{db = DB, hdbs = HDBS} = State) ->
+	#state{hour = Hour, db = DB, hdbs = HDBS} = State) ->
 	SQL = ["select time, metric, value from metrics "
 		   "where object = '", Object, "' and metric in ",
 		    "(", string:join(["'"++F++"'" || F <- Fields], ","), ")"
 			" and time >= ", integer_to_list(Begin), 
 			" and time <= ", integer_to_list(End), ";"],
-	%TODO: should calc the scope
-	Results = [sqlite3:sql_exec(D, SQL) || D <- [DB|HDBS], D =/= undefined], 
+	{BeginDelta, EndDelta} = hourdelta(Hour, Begin, End),
+	?INFO("~p", [{BeginDelta, EndDelta}]),
+	DbInRange = lists:sublist([DB|HDBS], EndDelta, BeginDelta - EndDelta + 1), 
+	DbInRange1 = [D || D <- DbInRange, D =/= undefined],
+	Results = pmap(fun(D) -> sqlite3:sql_exec(D, SQL) end, DbInRange1),
 	Rows = lists:flatten([Rows || [{columns, _}, {rows, Rows}] <- Results]),
-	Reply = {ok, transform([list_to_binary(F)|| F <- Fields], Rows)},
+	Reply = {ok, Fields, Rows},
     {reply, Reply, State};
 	
 handle_call(_Req, _From, State) ->
@@ -139,10 +159,12 @@ handle_cast(Msg, State) ->
 
 handle_info(rotate, #state{id = Id, dir = Dir, db = DB, hdbs = HDBS} = State) ->
 	sched_next_hourly_rotate(),
-	NewDB = open(db, Dir, extbif:timestamp(), Id), 
+	Now = timestamp(),
+	Hour = Now div 3600,
+	NewDB = open(db, Dir, Now, Id), 
 	close(lists:last(HDBS)),
 	NewHDBS = [DB | lists:sublist(HDBS, 1, length(HDBS)-1)],
-	{noreply, State#state{db = NewDB, hdbs = NewHDBS}};
+	{noreply, State#state{hour = Hour, db = NewDB, hdbs = NewHDBS}};
 
 handle_info(Info, State) ->
     {stop, {error, {badinfo, Info}}, State}.
@@ -164,21 +186,13 @@ sched_next_hourly_rotate() ->
 	Diff = (Ts2 + 1 - Ts1) * 1000,
     erlang:send_after(Diff, self(), rotate).
 
-%TODO: SHOULD be moved to errdb.erl
-transform(Fields, Rows) ->
-	TimeDict = 
-	lists:foldl(fun({Time, Metric, Value}, Dict) -> 
-		case orddict:find(Time, Dict) of
-		{ok, Metrics} -> orddict:store(Time, [{Metric, Value}|Metrics], Dict);
-		error -> orddict:store(Time, [{Metric, Value}], Dict)
-		end	
-	end, orddict:new(), Rows),
-	Values = fun(Metrics) -> 
-		[get_value(Name, Metrics, "NaN") || Name <- Fields]
-	end,
-	[{Time, Values(Metrics)} || {Time, Metrics} <- orddict:to_list(TimeDict)].
-
-
 close(undefined) -> ok;
 
 close(DB) -> sqlite3:close(DB).
+
+pmap(Fun, List) ->
+	Parent = self(),
+	[receive {Pid, Result} -> Result end || 
+		Pid <- [spawn(fun() -> Parent ! {self(), catch Fun(E)} end)  ||
+			 E <- List]].
+

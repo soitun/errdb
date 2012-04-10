@@ -172,8 +172,8 @@ handle_call({fetch, Pid, Object, Fields, Begin, End}, From,
 		spawn_link(fun() -> 
 			Reply = 
 			case errdb_store:read(Store, Object, Fields, Begin, End) of
-			{ok, Records} ->
-				{ok, Records};
+			{ok, Fields, Rows} ->
+				{ok, transform(Fields, Rows)};
 			{error, Reason} ->
 				{error, Reason}
 			end,
@@ -376,3 +376,17 @@ incr(Key, Count) ->
     undefined -> put(Key, Count);
     V -> put(Key, V+Count)
     end.
+
+transform(Fields, Rows) ->
+	TimeDict = 
+	lists:foldl(fun({Time, Metric, Value}, Dict) -> 
+		case orddict:find(Time, Dict) of
+		{ok, Metrics} -> orddict:store(Time, [{binary_to_list(Metric), Value}|Metrics], Dict);
+		error -> orddict:store(Time, [{binary_to_list(Metric), Value}], Dict)
+		end	
+	end, orddict:new(), Rows),
+	Values = fun(Metrics) -> 
+		[get_value(Name, Metrics, "NaN") || Name <- Fields]
+	end,
+	[{Time, Values(Metrics)} || {Time, Metrics} <- orddict:to_list(TimeDict)].
+
