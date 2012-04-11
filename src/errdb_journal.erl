@@ -50,8 +50,8 @@ start_link(Name, Opts) ->
 info(Pid) ->
     gen_server2:call(Pid, info).
 
-write(Pid, Key, Time, Value) ->
-    gen_server2:cast(Pid, {write, Key, Time, Value}).
+write(Pid, Key, Time, Metrics) ->
+    gen_server2:cast(Pid, {write, Key, Time, Metrics}).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -96,15 +96,15 @@ priorities_call(info, _From, _State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({write, Key, Time, Value}, #state{logfile = LogFile, 
+handle_cast({write, Key, Time, Metrics}, #state{logfile = LogFile, 
     buffer_size = MaxSize, queue = Q} = State) ->
     case length(Q) >= MaxSize of
     true ->
         incr(commit),
-        flush_to_disk(LogFile, [{Key, Time, Value}|Q]),
+        flush_to_disk(LogFile, [{Key, Time, Metrics}|Q]),
         {noreply, State#state{queue = []}};
     false ->
-        NewQ = [{Key, Time, Value} | Q],
+        NewQ = [{Key, Time, Metrics} | Q],
         {noreply, State#state{queue = NewQ}}
     end;
     
@@ -184,9 +184,12 @@ flush_queue(File, Q) ->
     flush_to_disk(File, Q).
 
 flush_to_disk(LogFile, Q) ->
-    Lines = [line(K, Ts, V) || {K, Ts, V} <- lists:reverse(Q)],
-    file:write(LogFile, Lines).
+    Lines = [ [line(Key, Metric, Ts, Value) 
+				|| {Metric, Value} <- Metrics] 
+					|| {Key, Ts, Metrics} <- lists:reverse(Q)],
+    file:write(LogFile, list_to_binary(Lines)).
 
-line(Key, Time, Value) ->
-    list_to_binary([Key, <<"@">>, i2b(Time), <<":">>, Value, <<"\n">>]).
+line(Key, Metric, Time, Value) ->
+    list_to_binary([Key, "|", Metric, "|", integer_to_list(Time),
+		"|", errdb_lib:str(Value), "\n"]).
 

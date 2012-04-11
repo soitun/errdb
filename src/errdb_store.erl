@@ -24,7 +24,7 @@
 -export([name/1,
         start_link/2,
         read/2,
-        write/4,
+        write/3,
         delete/2]).
 
 -export([init/1, 
@@ -66,8 +66,8 @@ read(DbDir, Key) ->
         {error, Error}
     end.
     
-write(Pid, Key, Fields, Records) ->
-    gen_server2:cast(Pid, {write, Key, Fields, Records}).
+write(Pid, Key, Records) ->
+    gen_server2:cast(Pid, {write, Key, Records}).
 
 delete(Pid, Key) ->
     gen_server2:cast(Pid, {delete, Key}).
@@ -104,7 +104,8 @@ priorities_call(_, _From, _State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({write, Key, Fields, Records}, #state{dbdir = Dir} = State) ->
+handle_cast({write, Key, [{_, Metrics}|_] = Records}, #state{dbdir = Dir} = State) ->
+	Fields = [F || {F, _V} <- Metrics],
     FileName = filename(Dir, Key),
     filelib:ensure_dir(FileName),
     {ok, File} = file:open(FileName, [read, write, binary, raw, {read_ahead, 1024}]), 
