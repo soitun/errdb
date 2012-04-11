@@ -58,68 +58,29 @@ info() ->
     Pids = chash_pg:get_pids(errdb),
     [gen_server2:call(Pid, info) || Pid <- Pids].
 
-last(Key) when is_binary(Key) ->
+last(Key) when is_list(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:call(Pid, {last, Key}).
 
-last(Obj, Grp) when is_binary(Obj)
-	and is_binary(Grp) -> 
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:call(Pid, {last, Key}).
+last(Key, Fields) when is_list(Object)
+	and is_list(Fields) ->
+    gen_server2:call(chash_pg:get_pid(?MODULE, Object),
+		{last, Object, Fields}).
 
-fetch({Obj, Grp}, Begin, End) when
-	is_binary(Obj) and is_binary(Grp) 
+fetch(Key, Fields, Begin, End) when
+	is_list(Key) and is_list(Fields) 
 	and is_integer(Begin) and is_integer(End) ->
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000);
+    gen_server2:call(chash_pg:get_pid(?MODULE, Key),
+		{fetch, self(), Key, Fields, Begin, End}, 15000).
 
-fetch(Key, Begin, End) when is_binary(Key) 
-    and is_integer(Begin) and is_integer(End) ->
+%metrics: [{k, v}, {k, v}...]
+insert(Key, Time, Metrics) when is_list(Key) 
+	and is_integer(Time) and is_list(Metrics) ->
+    gen_server2:cast(chash_pg:get_pid(?MODULE, Key), 
+		{insert, Key, Time, Metrics}).
+
+delete(Key) when is_list(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:call(Pid, {fetch, self(), Key, Begin, End}, 15000).
-
-%data: "k=v,k1=v1,k2=v2"
-insert({Obj, Grp}, Time, Data) when 
-	is_binary(Obj) and is_binary(Grp)
-    and is_integer(Time) and is_binary(Data) ->
-    {Fields, Values} = decode(Data),
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
-    gen_server2:cast(Pid, {insert, Key, Time, {Fields, Values}});
-
-insert(Key, Time, Data) when is_binary(Key) 
-    and is_integer(Time) and is_binary(Data) ->
-    {Fields, Values} = decode(Data),
-    Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:cast(Pid, {insert, Key, Time, {Fields, Values}}).
-
-%Data: k=v,k1=v1,k2=v2
-%return: {["k","k1","k2"], [v,v1,v2]}
-decode(Data) when is_binary(Data) ->
-    Tokens = binary:split(Data, [<<",">>, <<"=">>], [global]),
-    decode(Tokens, []).
-
-decode([], Acc) ->
-    Sorted = 
-    lists:sort(fun({Name1, _}, {Name2, _}) -> 
-        Name1 =< Name2
-    end, Acc),
-    lists:unzip(Sorted);
-
-decode([Name, Value|T], Acc) ->
-    Tup = {b2l(Name), number(Value)},
-    decode(T, [Tup|Acc]).
-
-delete(Key) when is_binary(Key) ->
-    Pid = chash_pg:get_pid(?MODULE, Key),
-    gen_server2:cast(Pid, {delete, Key}).
-
-delete(Obj, Grp) when is_binary(Obj) 
-	and is_binary(Grp) ->
-    Pid = chash_pg:get_pid(?MODULE, Obj),
-	Key = <<Obj/binary, ":", Grp/binary>>,
     gen_server2:cast(Pid, {delete, Key}).
 
 encode({Fields, Values}) ->
