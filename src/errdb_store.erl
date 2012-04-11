@@ -23,7 +23,7 @@
 
 -export([name/1,
         start_link/2,
-        read/2,
+        read/3, %/FIXME: later
         write/3,
         delete/2]).
 
@@ -49,7 +49,7 @@ name(Id) ->
 start_link(Name, Dir) ->
     gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
 
-read(DbDir, Key) ->
+read(DbDir, Key, _) ->
     FileName = filename(DbDir, Key),
     case file:read_file(FileName) of
     {ok, Binary} ->
@@ -187,7 +187,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 filename(Dir, Key) ->
-    Path = binary:replace(Key, [<<",">>, <<":">>], <<"/">>, [global]),
+    Path = binary:replace(list_to_binary(Key), 
+		[<<",">>, <<":">>], <<"/">>, [global]),
     concat([Dir, b2l(Path), ".rrdb"]).
 
 check_fields(OldFields, Fields) ->
@@ -196,8 +197,9 @@ check_fields(OldFields, Fields) ->
 lines(Records) ->
     [line(Record) || Record <- Records].
 
+%FIXME: CRITICAL BUG
 line({Time, Values}) ->
-    Line = [<<V/float>> || V <- Values],
+    Line = [<<V/float>> || {_,V} <- Values],
     list_to_binary([<<Time:32>>, <<":">>, Line]).
 
 decode(Bin) ->

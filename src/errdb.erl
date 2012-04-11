@@ -70,7 +70,7 @@ fetch(Key, Fields, Begin, End) when
 	and is_integer(Begin) and is_integer(End) ->
 	Pid = chash_pg:get_pid(?MODULE, Key),
     case gen_server2:call(Pid, {fetch, Key, Fields}) of
-	{ok, DataInMem, DbDir} ->
+	{ok, DataInMem, DbDir} -> %FIXME: SHOULD RETURN {TIME, VALUES}
 		case errdb_store:read(DbDir, Key, Fields) of
 		{ok, DataInDb} ->
 			Data = [{Time, values(Fields, Metrics)} || {Time, Metrics} 
