@@ -49,5 +49,5 @@ init([]) ->
     Monitor = {errdb_monitor, {errdb_monitor, start_link, []},
             permanent, 10, worker, [errdb_monitor]},
 
-    {ok, {{one_for_all, 0, 1}, Errdbs ++ [Httpd, Socket, Monitor]}}.
+    {ok, {{one_for_one, 10, 1000}, Errdbs ++ [Httpd, Socket, Monitor]}}.
 

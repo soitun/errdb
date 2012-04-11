@@ -17,15 +17,16 @@
 
 -import(lists, [concat/1,reverse/1]).
 
+-import(proplists, [get_value/3]).
+
 -import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,str/1,number/1]).
 
 -export([info/0,
         last/1,
 		last/2,
-        fetch/3,
+        fetch/4,
         insert/3,
-        delete/1,
-		delete/2]).
+        delete/1]).
 
 -behavior(gen_server).
 
@@ -42,10 +43,7 @@
 
 -record(state, {dbtab, reqtab, journal, store, cache, threshold = 1, timeout, dbdir}).
 
-%ref: timer ref
--record(read_req, {id, mon, timer, from, reader}). 
-
--record(errdb, {key, first=0, last=0, timer, fields = [], list=[]}).
+-record(errdb, {key, first=0, last=0, timer, list=[]}). %fields = [], 
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -62,16 +60,28 @@ last(Key) when is_list(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:call(Pid, {last, Key}).
 
-last(Key, Fields) when is_list(Object)
+last(Key, Fields) when is_list(Key)
 	and is_list(Fields) ->
-    gen_server2:call(chash_pg:get_pid(?MODULE, Object),
-		{last, Object, Fields}).
+	Pid = chash_pg:get_pid(?MODULE, Key),
+    gen_server2:call(Pid, {last, Key, Fields}).
 
 fetch(Key, Fields, Begin, End) when
 	is_list(Key) and is_list(Fields) 
 	and is_integer(Begin) and is_integer(End) ->
-    gen_server2:call(chash_pg:get_pid(?MODULE, Key),
-		{fetch, self(), Key, Fields, Begin, End}, 15000).
+	Pid = chash_pg:get_pid(?MODULE, Key),
+    case gen_server2:call(Pid, {fetch, Key, Fields}) of
+	{ok, DataInMem, DbDir} ->
+		case errdb_store:read(DbDir, Key, Fields) of
+		{ok, DataInDb} ->
+			Data = [{Time, values(Fields, Metrics)} || {Time, Metrics} 
+				<- filter(Begin, End, DataInMem++DataInDb)],
+			{ok, Data};
+		{error, Reason} ->
+			{error, Reason}
+		end;
+	{error, Reason1} ->
+		{error, Reason1}
+	end.
 
 %metrics: [{k, v}, {k, v}...]
 insert(Key, Time, Metrics) when is_list(Key) 
@@ -82,11 +92,6 @@ insert(Key, Time, Metrics) when is_list(Key)
 delete(Key) when is_list(Key) ->
     Pid = chash_pg:get_pid(?MODULE, Key),
     gen_server2:cast(Pid, {delete, Key}).
-
-encode({Fields, Values}) ->
-    TupList = lists:zip(Fields, Values),
-    Tokens = [concat([Name, "=", str(Val)]) || {Name, Val} <- TupList],
-    string:join(Tokens, ",").
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -144,46 +149,52 @@ handle_call(info, _From, #state{store=Store, journal=Journal} = State) ->
 handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
     Reply = 
     case ets:lookup(DbTab, Key) of
-    [#errdb{fields=Fields, list=[Last|_]}] -> 
-        {ok, Fields, Last};
+    [#errdb{list=[{Time, Metrics}|_]}] -> 
+		{Fields, Values} = lists:unzip(Metrics),	
+        {ok, Time, Fields, Values};
     [] -> 
         {error, notfound}
     end,
     {reply, Reply, State};
 
-handle_call({fetch, Pid, Key, Begin, End}, From, #state{dbtab = DbTab} = State) ->
+handle_call({last, Key, Fields}, _From, #state{dbtab = DbTab} = State) ->
+    Reply = 
     case ets:lookup(DbTab, Key) of
-    [#errdb{first=First, last=Last, fields=Fields, list=List}] -> 
-        case (Begin >= First) and (End =< Last) of
-        true ->
-            Reply = {ok, Fields, filter(Begin, End, List)},
-            {reply, Reply, State};
-        false -> 
-            fetch_from_store({Pid, Key, Begin, End}, {Fields, List}, From, State),
-            {noreply, State}
-        end;
+    [#errdb{list=[{Time, Metrics}|_]}] -> 
+        {ok, Time, Fields, values(Fields, Metrics)};
+    [] ->
+        {error, notfound}
+    end,
+    {reply, Reply, State};
+
+handle_call({fetch, Key, Fields}, _From, 
+	#state{dbdir= DbDir, dbtab = DbTab} = State) ->
+    case ets:lookup(DbTab, Key) of
+    [#errdb{list=List}] -> 
+		Records = [{Time, values(Fields, Metrics)}
+				|| {Time, Metrics} <- List],
+		{reply, {ok, Records, DbDir}, State};
     [] -> 
         {reply, {error, notfound}, State}
     end;
 
-
 handle_call(Req, _From, State) ->
     ?ERROR("badreq: ~p", [Req]),
-    {reply, {error, bagreq}, State}.
+    {stop, {error, {bagreq, Req}}, State}.
 
 priorities_call(info, _From, _State) ->
     10;
 priorities_call({last, _}, _From, _State) ->
     10;
-priorities_call({fetch,_,_,_,_}, _From, _State) ->
+priorities_call({last, _, _}, _From, _State) ->
+    10;
+priorities_call({fetch, _, _, _}, _From, _State) ->
     10;
 priorities_call(_, _From, _State) ->
     0.
 
 check_time(Last, Time) ->
     Time > Last.
-check_fields(OldFields, Fields) ->
-    OldFields == Fields.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
@@ -191,37 +202,34 @@ check_fields(OldFields, Fields) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({insert, Key, Time, {Fields, Values}}, #state{dbtab = DbTab, 
+handle_cast({insert, Key, Time, Metrics}, #state{dbtab = DbTab, 
     journal = Journal, store = Store, cache = CacheSize,
 	timeout = Timeout, threshold = Threshold} = State) ->
     Result =
     case ets:lookup(DbTab, Key) of
-    [#errdb{last=Last, fields=OldFields, list=List, timer=Timer} = OldRecord] ->
-        case [check_time(Last, Time), check_fields(OldFields, Fields)] of
-        [true, true] ->
+    [#errdb{last=Last, list=List, timer=Timer} = OldRecord] ->
+        case check_time(Last, Time) of
+        true ->
             case length(List) >= (CacheSize+Threshold) of
             true ->
 				NewTimer = reset_timer(Timer, Key, Timeout),
-                errdb_store:write(Store, Key, Fields, reverse(List)),
+                errdb_store:write(Store, Key, reverse(List)),
                 {ok, OldRecord#errdb{first = Time, last = Time, 
-					timer = NewTimer, list = [{Time, Values}]}};
+					timer = NewTimer, list = [{Time, Metrics}]}};
             false ->
-                {ok, OldRecord#errdb{last = Time, list = [{Time, Values}|List]}}
+                {ok, OldRecord#errdb{last = Time, list = [{Time, Metrics}|List]}}
             end;
-        [false, _] ->
+        false ->
             ?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
-            {error, badtime};
-        [_, false] ->
-            ?ERROR("key: ~p, badfield: fields=~p, oldfields=~p ", [Key, Fields, OldFields]),
-            {error, badfield}
+            {error, badtime}
         end;
     [] ->
-        {ok, #errdb{key=Key, first=Time, last=Time, fields=Fields, list=[{Time, Values}]}}
+        {ok, #errdb{key=Key, first=Time, last=Time, list=[{Time, Metrics}]}}
     end,
     case Result of
     {ok, NewRecord} ->
         ets:insert(DbTab, NewRecord),
-        errdb_journal:write(Journal, Key, Time, encode({Fields, Values}));
+        errdb_journal:write(Journal, Key, Time, Metrics);
     {error, _Reason} ->
         ignore %here
     end,
@@ -236,59 +244,9 @@ handle_cast(Msg, State) ->
     ?ERROR("badmsg: ~p", [Msg]),
     {noreply, State}.
 
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-handle_info({read_rep, ReqId, Reply}, #state{reqtab = ReqTab} = State) ->
-    case ets:lookup(ReqTab, ReqId) of
-    [#read_req{from = From, timer = Timer, mon = MonRef}] ->
-        cancel_timer(Timer),
-        erlang:demonitor(MonRef),
-        gen_server2:reply(From, Reply),
-        ets:delete(ReqTab, ReqId);
-    [] ->
-        ?ERROR("delay read_req: ~p, ~p", [ReqId, Reply])
-    end,
-    {noreply, State};
-
-handle_info({read_timeout, ReqId, From}, #state{reqtab = ReqTab} = State) ->
-    case ets:lookup(ReqTab, ReqId) of
-    [#read_req{from = From, mon = MonRef}] ->
-        erlang:demonitor(MonRef),
-        gen_server2:reply(From, {error, timeout}),
-        ets:delete(ReqTab, ReqId);
-    [] ->
-        ?ERROR("unexepected read_timeout: ~p", [ReqId])
-    end,
-    {noreply, State};
-
-handle_info({'DOWN', MonRef, process, _Pid, _Reason}, #state{reqtab = ReqTab} = State) ->
-    Pat = #read_req{id = '$1', timer = '$2', mon = MonRef, _ = '_'},
-    Match = ets:match(ReqTab, Pat),
-    lists:foreach(fun([ReqId, Timer]) -> 
-        cancel_timer(Timer),
-        ets:delete(ReqTab, ReqId)
-	end, Match),
-    {noreply, State};
-
 %TODO: DEPRECATED CODE???
 handle_info({'EXIT', _Pid, normal}, State) ->
     %Reader pid is normaly down 
-    {noreply, State};
-
-handle_info({'EXIT', Pid, Reason}, #state{reqtab = ReqTab} = State) ->
-    ?ERROR("~p", [Reason]),
-    Pat = #read_req{id = '$1', timer = '$2', mon = '$3', from = '$4', reader = Pid},
-    Match = ets:match(ReqTab, Pat),
-    lists:foreach(fun([ReqId, Timer, MonRef, From]) -> 
-        cancel_timer(Timer),
-        erlang:demonitor(MonRef),
-        gen_server2:reply(From, {error, Reason}),
-        ets:delete(ReqTab, ReqId)
-	end, Match),
     {noreply, State};
 
 handle_info({timeout, Key}, State) ->
@@ -328,37 +286,13 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-fetch_from_store({Pid, Key, Begin, End}, {MemFields, MemList}, From, 
-    #state{dbdir = Dir, reqtab = ReqTab}) ->
-    Parent = self(),
-    ReqId = make_ref(),
-    MonRef = erlang:monitor(process, Pid),
-    Timer = erlang:send_after(4000, self, {read_timeout, ReqId, From}),
-    Reader = 
-    spawn_link(fun() -> 
-        Reply = 
-        case errdb_store:read(Dir, Key) of
-        {ok, Fields, Records} ->
-            {ok, Fields, filter(Begin, End, MemList ++ Records)};
-        {ok, []} ->
-            {ok, MemFields, filter(Begin, End, MemList)};
-        {error, Reason} ->
-            {error, Reason}
-        end,
-        Parent ! {read_rep, ReqId, Reply}  
-    end),
-    Req = #read_req{id = ReqId, 
-        mon = MonRef, 
-        timer = Timer,
-        from = From,
-        reader = Reader},
-    ets:insert(ReqTab, Req).
+values(Fields, Metrics) ->
+	[get_value(F, Metrics, "NaN") || F <- Fields].
 
 filter(Begin, End, List) ->
-    Match = [{Time, Data} || {Time, Data} <- List, Time >= Begin, Time =< End],
-    lists:sort(fun({T1,_}, {T2,_}) -> 
-        T1 =< T2
-    end, Match).
+	Compare = fun({T1,_}, {T2,_}) -> T1 =< T2 end,
+    lists:sort(Compare, [E || {Time, _} = E <- List,
+		Time >= Begin, Time =< End]).
 
 dbtab(Id) ->
     l2a("errdb_" ++ i2l(Id)).
@@ -366,13 +300,13 @@ dbtab(Id) ->
 reqtab(Id) ->
     l2a("read_req_" ++ i2l(Id)).
 
-
 reset_timer(Ref, Key, Timeout) ->
 	cancel_timer(Ref),
 	erlang:send_after(Timeout, self(), {timeout, Key}).
 
 cancel_timer(undefined) ->
     ok;
+
 cancel_timer(Ref) ->
     (catch erlang:cancel_timer(Ref)).
 
