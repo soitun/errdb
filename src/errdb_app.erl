@@ -16,8 +16,6 @@
 -export([start/2, stop/1]).
 
 start() ->
-	application:start(crypto),
-	application:start(extlib),
 	application:start(errdb).
 
 start(_Type, _Args) ->
