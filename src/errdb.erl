@@ -71,8 +71,10 @@ fetch(Key, Fields, Begin, End) when
 	Pid = chash_pg:get_pid(?MODULE, Key),
     case gen_server2:call(Pid, {fetch, Key, Fields}) of
 	{ok, DataInMem, DbDir} -> %FIXME: SHOULD RETURN {TIME, VALUES}
+		?INFO("DataInMem: ~p", [DataInMem]),
 		case errdb_store:read(DbDir, Key, Fields) of
 		{ok, DataInDb} ->
+			?INFO("data in db: ~p", [DataInDb]),
 			Data = [{Time, values(Fields, Metrics)} || {Time, Metrics} 
 				<- filter(Begin, End, DataInMem++DataInDb)],
 			{ok, Data};
@@ -171,9 +173,7 @@ handle_call({fetch, Key, Fields}, _From,
 	#state{dbdir= DbDir, dbtab = DbTab} = State) ->
     case ets:lookup(DbTab, Key) of
     [#errdb{list=List}] -> 
-		Records = [{Time, values(Fields, Metrics)}
-				|| {Time, Metrics} <- List],
-		{reply, {ok, Records, DbDir}, State};
+		{reply, {ok, List, DbDir}, State};
     [] -> 
         {reply, {error, notfound}, State}
     end;

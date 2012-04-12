@@ -54,9 +54,11 @@ read(DbDir, Key, _) ->
     case file:read_file(FileName) of
     {ok, Binary} ->
         case decode(Binary) of
-        {ok, #head{fields=Fields}=Head, Records} ->
-            ?INFO("~p", [Head]),
-            {ok, Fields, Records};
+        {ok, #head{fields=Fields}=Head, DataItems} ->
+			Records = [{Time, lists:zip(Fields, Values)} 
+						|| {Time, Values} <- DataItems],
+            ?INFO("~p ~n~p", [Head, Records]),
+            {ok, Records};
         {error, Reason} ->
             {error, Reason}
         end;
