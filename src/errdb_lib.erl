@@ -1,8 +1,25 @@
 -module(errdb_lib).
 
+%rows <-> columns translate
+-export([transform/1]).
+
 -export([decode/1, encode/1, encode/2, line/2]).
 
 -export([binary/1, number/1, str/1, strnum/1]).
+
+transform(XData) ->
+	YData = 
+	lists:foldl(fun({X, XList}, Dict) -> 
+		lists:foldl(fun({Y, V}, Dict0) -> 
+			case dict:find(Y, Dict0) of
+			{ok, YList} ->
+				dict:store(Y, [{X, V}|YList], Dict0); 
+			error -> 
+				dict:store(Y, [{X, V}], Dict0)
+			end
+		end, Dict, XList)
+	end, dict:new(), XData),
+	dict:to_list(YData).
 
 %Data: "k=v,k1=v1,k2=v2"
 %return: [{"k",v}, {"k1", v1}]
@@ -20,7 +37,7 @@ encode(Fields, Rows) ->
 	list_to_binary([Head, "\r\n", Lines, "\r\nEND\r\n"]).
 
 line(Time, Values) ->
-	Line = string:join([str(V) || V <- Values], ","),
+	Line = string:join([format(V) || V <- Values], ","),
 	lists:concat([integer_to_list(Time), ":", Line]).
 
 binary(A) when is_atom(A) ->
@@ -40,6 +57,11 @@ number(L) when is_list(L) ->
         {error,no_float} -> list_to_integer(L);
         {F,_Rest} -> F 
     end.
+
+format(undefined) ->
+	"";
+format(V) ->
+	str(V).
 
 str(V) when is_integer(V) ->
     integer_to_list(V);

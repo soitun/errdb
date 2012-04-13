@@ -19,5 +19,5 @@
   {registered, [errdb_httpd, errdb_socket]},
   {mod, {errdb_app, []}},
   {env, []},
-  {applications, [kernel, stdlib, sasl, crypto, extlib]}]}.
+  {applications, [kernel, stdlib, sasl]}]}.
 

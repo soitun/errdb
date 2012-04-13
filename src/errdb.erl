@@ -17,7 +17,7 @@
 
 -import(lists, [concat/1,reverse/1]).
 
--import(proplists, [get_value/3]).
+-import(proplists, [get_value/2, get_value/3]).
 
 -import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,str/1,number/1]).
 
@@ -43,7 +43,7 @@
 
 -record(state, {dbtab, journal, store, cache, threshold = 1, timeout, dbdir}).
 
--record(errdb, {key, first=0, last=0, timer, list=[]}). %fields = [], 
+-record(errdb, {key, first=0, last=0, timer, rows=[]}). %fields = [], 
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -70,18 +70,26 @@ fetch(Key, Fields, Begin, End) when
 	and is_integer(Begin) and is_integer(End) ->
 	Pid = chash_pg:get_pid(?MODULE, Key),
     case gen_server2:call(Pid, {fetch, Key, Fields}) of
-	{ok, DataInMem, DbDir} -> %FIXME: SHOULD RETURN {TIME, VALUES}
+	{ok, DataInMem, DbDir} -> 
 		case errdb_store:read(DbDir, Key, Fields) of
-		{ok, DataInDb} ->
-			Data = [{Time, values(Fields, Metrics)} || {Time, Metrics} 
-				<- filter(Begin, End, DataInMem++DataInDb)],
-			{ok, Data};
+		{ok, DataInFile} ->
+			Filter = fun(L) -> filter(Begin, End, L) end,
+			YData = [{Field, Filter(Values)} || {Field, Values} 
+						<- merge(Fields, DataInFile, DataInMem)],
+			XData = errdb_lib:transform(YData),
+			Values = fun(L) -> [get_value(F, L) || F <- Fields] end,
+			{ok, lists:sort([{Time, Values(Row)} || {Time, Row} <- XData])};
 		{error, Reason} ->
 			{error, Reason}
 		end;
 	{error, Reason1} ->
 		{error, Reason1}
 	end.
+
+merge(Fields, Data1, Data2) ->
+	Values1 = fun(F) -> get_value(F, Data1, []) end,
+	Values2 = fun(F) -> get_value(F, Data2, []) end,
+	[{F, Values1(F) ++ Values2(F)} || F <- Fields].
 
 %metrics: [{k, v}, {k, v}...]
 insert(Key, Time, Metrics) when is_list(Key) 
@@ -147,7 +155,7 @@ handle_call(info, _From, #state{store=Store, journal=Journal} = State) ->
 handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
     Reply = 
     case ets:lookup(DbTab, Key) of
-    [#errdb{list=[{Time, Metrics}|_]}] -> 
+    [#errdb{rows=[{Time, Metrics}|_]}] -> 
 		{Fields, Values} = lists:unzip(Metrics),	
         {ok, Time, Fields, Values};
     [] -> 
@@ -158,18 +166,23 @@ handle_call({last, Key}, _From, #state{dbtab = DbTab} = State) ->
 handle_call({last, Key, Fields}, _From, #state{dbtab = DbTab} = State) ->
     Reply = 
     case ets:lookup(DbTab, Key) of
-    [#errdb{list=[{Time, Metrics}|_]}] -> 
+    [#errdb{rows=[{Time, Metrics}|_]}] -> 
         {ok, Time, Fields, values(Fields, Metrics)};
     [] ->
         {error, notfound}
     end,
     {reply, Reply, State};
 
-handle_call({fetch, Key, _Fields}, _From, 
+handle_call({fetch, Key, Fields}, _From, 
 	#state{dbdir= DbDir, dbtab = DbTab} = State) ->
     case ets:lookup(DbTab, Key) of
-    [#errdb{list=List}] -> 
-		{reply, {ok, List, DbDir}, State};
+    [#errdb{rows=Rows}] -> 
+		Data = lists:map(fun(Field) -> 
+			Value = fun(Row) -> get_value(Field, Row) end,
+			Values = [{T, Value(Row)} || {T, Row} <- Rows],
+			{Field, lists:sort(Values)}
+		end, Fields),
+		{reply, {ok, Data, DbDir}, State};
     [] -> 
         {reply, {error, notfound}, State}
     end;
@@ -203,7 +216,7 @@ handle_cast({insert, Key, Time, Metrics}, #state{dbtab = DbTab,
 	timeout = Timeout, threshold = Threshold} = State) ->
     Result =
     case ets:lookup(DbTab, Key) of
-    [#errdb{last=Last, list=List, timer=Timer} = OldRecord] ->
+    [#errdb{last=Last, rows=List, timer=Timer} = OldRecord] ->
         case check_time(Last, Time) of
         true ->
             case length(List) >= (CacheSize+Threshold) of
@@ -211,16 +224,16 @@ handle_cast({insert, Key, Time, Metrics}, #state{dbtab = DbTab,
 				NewTimer = reset_timer(Timer, Key, Timeout),
                 errdb_store:write(Store, Key, reverse(List)),
                 {ok, OldRecord#errdb{first = Time, last = Time, 
-					timer = NewTimer, list = [{Time, Metrics}]}};
+					timer = NewTimer, rows = [{Time, Metrics}]}};
             false ->
-                {ok, OldRecord#errdb{last = Time, list = [{Time, Metrics}|List]}}
+                {ok, OldRecord#errdb{last = Time, rows = [{Time, Metrics}|List]}}
             end;
         false ->
             ?WARNING("key: ~p, badtime: time=~p =< last=~p", [Key, Time, Last]),
             {error, badtime}
         end;
     [] ->
-        {ok, #errdb{key=Key, first=Time, last=Time, list=[{Time, Metrics}]}}
+        {ok, #errdb{key=Key, first=Time, last=Time, rows=[{Time, Metrics}]}}
     end,
     case Result of
     {ok, NewRecord} ->
@@ -283,12 +296,10 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 values(Fields, Metrics) ->
-	[get_value(F, Metrics, "NaN") || F <- Fields].
+	[get_value(F, Metrics) || F <- Fields].
 
 filter(Begin, End, List) ->
-	Compare = fun({T1,_}, {T2,_}) -> T1 =< T2 end,
-    lists:sort(Compare, [E || {Time, _} = E <- List,
-		Time >= Begin, Time =< End]).
+    [E || {Time, _} = E <- List, Time >= Begin, Time =< End].
 
 dbtab(Id) ->
     l2a("errdb_" ++ i2l(Id)).

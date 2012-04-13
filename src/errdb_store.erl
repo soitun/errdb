@@ -75,7 +75,12 @@ read(DbDir, Key, Fields) ->
 	{ok, File} ->
 		case read_head(File) of
 		{ok, Head} -> 
-			read_data(File, Head, Fields);
+			case check_fields(Fields, Head#rrdb_head.dslist) of
+			ok -> 
+				{ok, read_data(File, Head, Fields)};
+			Error -> 
+				Error
+			end;
 		Error -> 
 			Error
 		end;
@@ -85,6 +90,14 @@ read(DbDir, Key, Fields) ->
         {error, Error}
 	end.
 
+check_fields([], _DsList) ->
+	ok;
+check_fields([F|Fields], DsList) ->
+	case lists:keysearch(F, 2, DsList) of
+	{value, _} -> check_fields(Fields, DsList);
+	false -> {error, badfield}
+	end.
+	
 read_head(File) ->
 	case file:read(File, 4096) of
     {ok, <<"RRDB0002", _/binary>> = HeadData} ->
@@ -155,7 +168,7 @@ handle_cast({write, Key, Rows}, #state{dbdir = Dir} = State) ->
     filelib:ensure_dir(FileName),
     case file:open(FileName, [read, write | ?OPEN_MODES]) of
 	{ok, File} ->
-		Columns = transform(Rows),
+		Columns = errdb_lib:transform(Rows),
 		case read_head(File) of
 		{ok, Head} ->
 			case check_columns(Head, Columns) of
@@ -204,7 +217,6 @@ filename(Dir, Key) ->
 
 create_rrdb(_File, Columns) when length(Columns) > ?MAX_COLUMNS ->
 	?ERROR("too many columns: ~p, cannot create rrdb file!", [length(Columns)]);
-
 
 create_rrdb(File, Columns) ->
 	?INFO("create rrdb with data: ~n~p", [Columns]),
@@ -331,17 +343,4 @@ encode_value({T, V}) ->
 ds_head_pos(Idx) ->
 	16 + ?DS_HEAD_SIZE * Idx.
 
-transform(XData) ->
-	YData = 
-	lists:foldl(fun({X, XList}, Dict) -> 
-		lists:foldl(fun({Y, V}, Dict0) -> 
-			case dict:find(Y, Dict0) of
-			{ok, YList} ->
-				dict:store(Y, [{X, V}|YList], Dict0); 
-			error -> 
-				dict:store(Y, [{X, V}], Dict0)
-			end
-		end, Dict, XList)
-	end, dict:new(), XData),
-	dict:to_list(YData).
 
