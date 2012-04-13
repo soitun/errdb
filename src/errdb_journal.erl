@@ -11,11 +11,7 @@
 
 -author('ery.lee@gmail.com').
 
--import(errdb_misc, [i2b/1]).
-
 -import(extbif, [timestamp/0, zeropad/1]).
-
--import(errdb_misc, [i2l/1, l2a/1]).
 
 -include_lib("elog/include/elog.hrl").
 
@@ -38,7 +34,7 @@
 -record(state, {id, logdir, logfile, thishour, buffer_size = 100, queue = []}).
 
 name(Id) ->
-    l2a("errdb_journal_" ++ i2l(Id)).
+    list_to_atom("errdb_journal_" ++ integer_to_list(Id)).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}

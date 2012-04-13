@@ -1,6 +1,6 @@
 -module(errdb_lib).
 
-%rows <-> columns translate
+%rows <-> columns transform
 -export([transform/1]).
 
 -export([decode/1, encode/1, encode/2, line/2]).

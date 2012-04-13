@@ -19,9 +19,8 @@
 
 -import(proplists, [get_value/2, get_value/3]).
 
--import(errdb_misc, [b2l/1,i2l/1,l2b/1,l2a/1,str/1,number/1]).
-
--export([info/0,
+-export([name/1,
+		info/0,
         last/1,
 		last/2,
         fetch/4,
@@ -51,6 +50,9 @@
 %%--------------------------------------------------------------------
 start_link(Name, Opts) ->
     gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 4096}]}]).
+
+name(Id) ->
+	list_to_atom("errdb_" ++ integer_to_list(Id)).
 
 info() ->
     Pids = chash_pg:get_pids(errdb),
@@ -302,7 +304,7 @@ filter(Begin, End, List) ->
     [E || {Time, _} = E <- List, Time >= Begin, Time =< End].
 
 dbtab(Id) ->
-    l2a("errdb_" ++ i2l(Id)).
+    list_to_atom("errdb_" ++ integer_to_list(Id)).
 
 reset_timer(Ref, Key, Timeout) ->
 	cancel_timer(Ref),

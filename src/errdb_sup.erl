@@ -11,8 +11,6 @@
 
 -author('<ery.lee@gmail.com>').
 
--import(errdb_misc, [l2a/1, i2l/1]).
-
 -behaviour(supervisor).
 
 -export([start_link/0]).
@@ -27,7 +25,7 @@ init([]) ->
 	{ok, PoolSize} = application:get_env(pool_size),
     {ok, RrdbOpts} = application:get_env(rrdb),
     Errdbs = [begin 
-        Name = l2a("errdb_" ++ i2l(Id)),
+        Name = errdb:name(Id),
         Opts = [{id, Id} | RrdbOpts],
         {Name, {errdb, start_link, [Name, Opts]},
            permanent, 100, worker, [errdb]}
