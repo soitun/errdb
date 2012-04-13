@@ -41,7 +41,7 @@
         terminate/2,
         code_change/3]).
 
--record(state, {dbtab, reqtab, journal, store, cache, threshold = 1, timeout, dbdir}).
+-record(state, {dbtab, journal, store, cache, threshold = 1, timeout, dbdir}).
 
 -record(errdb, {key, first=0, last=0, timer, list=[]}). %fields = [], 
 
@@ -71,10 +71,8 @@ fetch(Key, Fields, Begin, End) when
 	Pid = chash_pg:get_pid(?MODULE, Key),
     case gen_server2:call(Pid, {fetch, Key, Fields}) of
 	{ok, DataInMem, DbDir} -> %FIXME: SHOULD RETURN {TIME, VALUES}
-		?INFO("DataInMem: ~p", [DataInMem]),
 		case errdb_store:read(DbDir, Key, Fields) of
 		{ok, DataInDb} ->
-			?INFO("data in db: ~p", [DataInDb]),
 			Data = [{Time, values(Fields, Metrics)} || {Time, Metrics} 
 				<- filter(Begin, End, DataInMem++DataInDb)],
 			{ok, Data};
@@ -107,7 +105,7 @@ init([Name, Opts]) ->
     {value, Id} = dataset:get_value(id, Opts),
     {value, Dir} = dataset:get_value(dir, Opts),
 	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
-	{value, Timeout} = dataset:get_value(timeout, Opts, 48),
+	Timeout = get_value(timeout, Opts, 48)*3600*1000,
     %start store process
     {ok, Store} = errdb_store:start_link(errdb_store:name(Id), Dir),
 
@@ -116,8 +114,6 @@ init([Name, Opts]) ->
     {ok, Journal} = errdb_journal:start_link(errdb_journal:name(Id), [{id, Id} | JournalOpts]),
 
     DbTab = ets:new(dbtab(Id), [set, protected, 
-        named_table, {keypos, 2}]),
-    ReqTab = ets:new(reqtab(Id), [set, protected, 
         named_table, {keypos, 2}]),
 
     chash_pg:create(errdb),
@@ -128,10 +124,10 @@ init([Name, Opts]) ->
 
     erlang:send_after(1000, self(), cron),
 
-    {ok, #state{dbtab = DbTab, reqtab = ReqTab,
-		dbdir = Dir, store = Store,
-		journal = Journal, cache = CacheSize,
-		timeout = Timeout*3600*1000}}.
+    {ok, #state{dbtab = DbTab, dbdir = Dir,
+		store = Store, journal = Journal,
+		cache = CacheSize,
+		timeout = Timeout}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -169,7 +165,7 @@ handle_call({last, Key, Fields}, _From, #state{dbtab = DbTab} = State) ->
     end,
     {reply, Reply, State};
 
-handle_call({fetch, Key, Fields}, _From, 
+handle_call({fetch, Key, _Fields}, _From, 
 	#state{dbdir= DbDir, dbtab = DbTab} = State) ->
     case ets:lookup(DbTab, Key) of
     [#errdb{list=List}] -> 
@@ -296,9 +292,6 @@ filter(Begin, End, List) ->
 
 dbtab(Id) ->
     l2a("errdb_" ++ i2l(Id)).
-
-reqtab(Id) ->
-    l2a("read_req_" ++ i2l(Id)).
 
 reset_timer(Ref, Key, Timeout) ->
 	cancel_timer(Ref),
