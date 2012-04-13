@@ -23,7 +23,7 @@
 
 -export([name/1,
         start_link/2,
-        read/3, %/FIXME: later
+        read/3, 
         write/3,
         delete/2]).
 
