@@ -37,7 +37,20 @@
 
 -record(state, {dbdir}).
 
--record(head, {lastup, lastrow, dscnt, dssize, fields}).
+-record(head, {ver, dscnt, dslist}).
+
+%name length 24
+-record(ds, {name, pos, lastrow, lastup, lastval}).
+
+-define(HEAD_SIZE, 4096).
+
+-define(MAX_DS_NAME_LEN, 24).
+
+-define(MAX_DS_ROWS, 600).
+
+-define(DS_HEAD_LEN, 45).
+
+-define(PAGE_SIZE, (?MAX_DS_ROWS*12)).
 
 name(Id) ->
     l2a("errdb_store_" ++ i2l(Id)).
@@ -47,26 +60,43 @@ name(Id) ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Name, Dir) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir], [{spawn_opt, [{min_heap_size, 204800}]}]).
+    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir],
+		[{spawn_opt, [{min_heap_size, 204800}]}]).
 
-read(DbDir, Key, _) ->
+read(DbDir, Key, Fields) ->
     FileName = filename(DbDir, Key),
-    case file:read_file(FileName) of
-    {ok, Binary} ->
-        case decode(Binary) of
-        {ok, #head{fields=Fields}=Head, DataItems} ->
-			Records = [{Time, lists:zip(Fields, Values)} 
-						|| {Time, Values} <- DataItems],
-            ?INFO("~p ~n~p", [Head, Records]),
-            {ok, Records};
-        {error, Reason} ->
-            {error, Reason}
-        end;
-    {error, enoent} ->
-        {ok, []}; %no file and data.
+	case file:open(FileName, [read, binary, raw, {read_ahead, 4096}] of
+	{ok, File} ->
+		case read_head(File, Fields) of
+		{ok, Head} -> read_data(File, Head, Fields);
+		Error -> Error
+		end;
+	{error, enoent} ->
+		{ok, []};
     {error, Error} -> 
         {error, Error}
-    end.
+	end.
+
+read_head(File, Fields) ->
+	case file:read(File, 4096) of
+    {ok, <<"RRDB0002", _/binary>> = Data} ->
+		{ok, decode(head, Data)};
+	{ok, _} ->
+		{error, badhead};
+	eof ->
+		{error, nohead};
+	{error, Reason} ->
+		{error, Reason}
+	end.
+
+read_data(File, Head, Fields) ->
+	Reads = [ {get_ds_pos(Ds), ?PAGE_SIZE} || 
+		Ds <- [get_ds(F, Head) || F <- Fields] ],
+	{ok, DataList} = file:pread(File, Reads),
+	lists:zip(Fields, [decode_data(Data) || Data <- DataList]).
+
+get_ds_pos(#ds{pos = Pos}) ->
+	?HEAD_SIZE + Pos * ?PAGE_SIZE.
     
 write(Pid, Key, Records) ->
     gen_server2:cast(Pid, {write, Key, Records}).
@@ -95,8 +125,7 @@ init([Name, Dir]) ->
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
 handle_call(Req, _From, State) ->
-    ?ERROR("badreq: ~p", [Req]),
-    {reply, {error, badreq}, State}.
+    {stor, {error, {badreq, Req}}, State}.
 
 priorities_call(_, _From, _State) ->
     0.
@@ -106,44 +135,17 @@ priorities_call(_, _From, _State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({write, Key, [{_, Metrics}|_] = Records}, #state{dbdir = Dir} = State) ->
-	Fields = [F || {F, _V} <- Metrics],
+handle_cast({write, Key, Rows}, #state{dbdir = Dir} = State) ->
     FileName = filename(Dir, Key),
     filelib:ensure_dir(FileName),
-    {ok, File} = file:open(FileName, [read, write, binary, raw, {read_ahead, 1024}]), 
-    case file:read(File, 1024) of
-    {ok, <<"RRDB0001", _/binary>> = Bin} ->
-        Head = decode(head, Bin),
-        #head{lastup=LastUp,lastrow=LastRow,fields=OldFields} = Head,
-        case check_fields(OldFields, Fields) of
-        true ->
-            Lines = lines(Records),
-            {LastUp1, LastRow1, Writes} = 
-            lists:foldl(fun(Line, {_Up, Row, Acc}) -> 
-                <<Time:32,_/binary>> = Line,
-                NextRow =
-                if
-                Row >= 599 -> 0;
-                true -> Row + 1
-                end,
-                Pos = 1024 + size(Line) * NextRow,
-                {Time, NextRow, [{Pos, Line}|Acc]}
-            end, {LastUp, LastRow, []}, Lines),
-            Writes1 = [{8, <<LastUp1:32, LastRow1:32>>}|Writes],
-            file:pwrite(File, Writes1);
-        false ->
-            ?ERROR("fields not match: ~p, ~p", [OldFields, Fields])
-        end;
+    {ok, File} = file:open(FileName, [read, write, binary, raw, {read_ahead, 4096}]), 
+    case file:read(File, 4096) of
+    {ok, <<"RRDB0002", _/binary>> = Bin} ->
+		update_rrdb(File, decode(head, Bin), Datalogs);
     {ok, ErrBin} ->
         ?ERROR("error file: ~p", [ErrBin]);
     eof -> %new file
-        {LastUp, _} = lists:last(Records),
-        LastRow = length(Records) - 1,
-        Head = encode(head, Fields),
-        file:write(File, Head),
-        Lines = lines(Records),
-        Writes = [{8, <<LastUp:32, LastRow:32>>},{1024, l2b(Lines)}],
-        file:pwrite(File, Writes);
+		create_rrdb(File, Datalogs);
     {error, Reason} -> 
         ?ERROR("failed to open '~p': ~p", [FileName, Reason])
     end,
@@ -155,33 +157,14 @@ handle_cast({delete, Key}, #state{dbdir = Dir} = State) ->
     {noreply, State};
     
 handle_cast(Msg, State) ->
-    ?ERROR("badmsg: ~p", [Msg]),
-    {noreply, State}.
+    {stop, {error, {badcast, Msg}}, State}.
 
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
 handle_info(Info, State) ->
-    ?ERROR("badinfo: ~p", [Info]),
-    {noreply, State}.
+    {stop, {error, {badinfo, Info}}, State}.
 
-%%--------------------------------------------------------------------
-%% Function: terminate(Reason, State) -> void()
-%% Description: This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any necessary
-%% cleaning up. When it returns, the gen_server terminates with Reason.
-%% The return value is ignored.
-%%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
-%%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
@@ -196,55 +179,92 @@ filename(Dir, Key) ->
 check_fields(OldFields, Fields) ->
     OldFields == Fields.
 
-lines(Records) ->
-    [line(Record) || Record <- Records].
+create_rrdb(File, Rows) ->
+	{DsCnt, DsList, Writes} 
+	list:foldl(fun({Col, Values}, {Idx, DsAcc, ValAcc}) -> 
+		LastRow = length(Values),
+		{LastUp, LastVal} = lists:last(Values),
+		Ds = #ds{name = Col, pos = Idx, lastrow = LastRow,
+				 lastup = LastUp, lastval = LastVal}, 
+		Write = {4096+Idx*600*12, lines(Values),
+		{Idx+1, [Ds|DsAcc], [Write|ValAcc]}
+	end, {0, [], []}, row2column(Rows)),
+	Head = #head{ver = <<"RRDB0002">>, dscnt = DsCnt,
+				dslist = lists:reverse(DsList)},
+	file:write(File, encode(Head)),
+	file:pwrite(File, Writes);
 
-%FIXME: CRITICAL BUG
-line({Time, Values}) ->
-    Line = [<<V/float>> || {_,V} <- Values],
-    list_to_binary([<<Time:32>>, <<":">>, Line]).
+update_rrdb(File, #head{dslist = DsList} = Head, Rows) ->
+	Columns = row2column(Rows),
+	Fields = [Name || {Name,_} <- Columns],
+	OldFields = [Name || #ds{name=Name} <- DsList],
+	Added = Fields -- OldFields,
+	case length(Added) > 0 of
+	true -> add_column(File, Added, Columns);
+	false -> ignore
+	end,
+	
+	%TODO:
+	Writes = 
+	lists:foldl(fun({Column, Vales}) -> 
 
-decode(Bin) ->
-    <<HeadBin:1024/binary, BodyBin/binary>> = Bin,
-    #head{fields = Fields} = Head = decode(head, HeadBin),
-    Records = decode(body, Fields, BodyBin),
-    {ok, Head, Records}.
+	end, Columns),
+		Lines = lines(Records),
+		{LastUp1, LastRow1, Writes} = 
+		lists:foldl(fun(Line, {_Up, Row, Acc}) -> 
+			<<Time:32,_/binary>> = Line,
+			NextRow =
+			if
+			Row >= 599 -> 0;
+			true -> Row + 1
+			end,
+			Pos = 1024 + size(Line) * NextRow,
+			{Time, NextRow, [{Pos, Line}|Acc]}
+		end, {LastUp, LastRow, []}, Lines),
+		Writes1 = [{8, <<LastUp1:32, LastRow1:32>>}|Writes],
+		file:pwrite(File, Writes);
 
-decode(head, Bin) ->
-    <<"RRDB0001", LastUp:32, LastRow:32, DsCnt:32, DsSize:32, DsBin/binary>> = Bin,
-    <<DsData:DsSize/binary, _/binary>> = DsBin,
-    Fields = [b2l(B) || B <- binary:split(DsData, <<",">>, [global])],
-    #head{lastup=LastUp, lastrow=LastRow, dscnt=DsCnt, dssize=DsSize,fields=Fields};
+row2column(Rows) ->
+	ok.
 
-decode(value, Bin) ->
-    decode(value, Bin, []).
+lines(Values) ->
+	list_to_binary([<<T:32,V:64/float>> || {T, V} <- Values]).
 
-decode(body, Fields, Bin) ->
-    Len = length(Fields) * 8,
-    decode(line, Bin, Len);
+decode(head, HeadData) ->
+    <<"RRDB0002", 0:32, DsCnt:32, DsListData/binary>> = HeadData,
+	DsList = decode(dslist, DsCnt, DsListData),
+	#head{ver = "RRDB0002", dscnt = DsCnt, dslist = DsList};
 
-decode(line, Bin, Len) ->
-    decode(line, Bin, Len, []);
+decode(dslist, DsCnt, DsListData) ->
+	[decode(ds, I, DsListData) || 
+		I <- lists:seq(0, DsCnt-1)].
 
-decode(value, <<>>, Acc) ->
-    reverse(Acc);
+decode(ds, I, DsListData) ->
+	Offset = I*45,
+	<<_:Offset/binary, DsData:45/binary,_/binary>> = DsListData,
+	<<NameLen, NameData:24/binary, Pos:32, LastRow:32,LastUp:32,LastVal/float>> = DsData,
+	<<Name:NameLen/binary>> = NameData,
+	#ds{name = binary_to_list(Name), pos = Pos, lastrow = LastRow, lastup = LastUp, lastval = LastVal}.
 
-decode(value, <<V/float, Bin/binary>>, Acc) ->
-    decode(value, Bin, [V | Acc]).
+decode_data(Data) ->
+	decode_data(Data, []).
 
-decode(line, <<>>, _Len, Acc) ->
-    reverse(Acc);
+decode_data(<<0:32,_/binary>>, Acc) ->
+	lists:reverse(Acc);
+decode_data(<<>>, Acc);
+	lists:reverse(Acc);
+decode_data(<<Time:32,Value/float,Data/binary>>, Acc) ->
+	decode_data(Data, [{Time, Value}|Acc]).
 
-decode(line, <<Time:32, ":", Bin/binary>>, Len, Acc) ->
-    <<ValBin:Len/binary, Left/binary>> = Bin, 
-    Record = {Time, decode(value, ValBin)},
-    decode(line, Left, Len, [Record|Acc]).
+encode(#head{ver=Ver, dscnt=DsCnt, dslist=DsList} = Head) ->
+	DsHead = list_to_binary([encode(Ds) || Ds <- DsList]),
+	<<"RRDB0002", 0:32, DsCnt:32, DsHead/binary>>;
 
-encode(head, Fields) ->
-    DsData = l2b(string:join(Fields, ",")),
-    DsCnt = length(Fields),
-    DsSize = size(DsData),
-    <<"RRDB0001", 0:32, 0:32, DsCnt:32, DsSize:32, DsData/binary>>;
+encode(#ds{name=Name,pos=Pos,lastrow=Row,lastup=Up,lastVal=Val}) ->
+	NameBin = list_to_binary(Name),
+	NameLen = size(NameBin),
+	ZeroLen = (?MAX_DS_NAME_LEN - NameLen) * 8,
+	<<NameLen, NameBin/binary,0:ZeroLen,Pos:32,Row:32,Up:32,Val/float>>;
 
 encode(line, {Time, Values}) ->
     ValBin = l2b([<<V/float>> || V <- Values]),
