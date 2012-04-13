@@ -48,8 +48,9 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 4096}]}]).
+start_link(Id, Opts) ->
+    gen_server2:start_link({local, name(Id)}, ?MODULE, [Id, Opts],
+		[{spawn_opt, [{min_heap_size, 4096}]}]).
 
 name(Id) ->
 	list_to_atom("errdb_" ++ integer_to_list(Id)).
@@ -110,9 +111,8 @@ delete(Key) when is_list(Key) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Name, Opts]) ->
+init([Id, Opts]) ->
     process_flag(trap_exit, true),
-    {value, Id} = dataset:get_value(id, Opts),
     {value, Dir} = dataset:get_value(dir, Opts),
 	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
 	Timeout = get_value(timeout, Opts, 48)*3600*1000,
@@ -130,7 +130,7 @@ init([Name, Opts]) ->
     chash_pg:join(errdb, self(), VNodes),
 
     CacheSize = proplists:get_value(cache, Opts),
-    io:format("~n~p is started.~n ", [Name]),
+    io:format("~n~p is started.~n ", [name(Id)]),
 
     erlang:send_after(1000, self(), cron),
 

@@ -1,8 +1,2 @@
-1. support key timeout timer!
-2. how to store delay data?
-3. refactor errdb_client
-OK 4. rebar support
 5. documents
 6. design documents
-7. errdb client refactor
-8. errdb_http refactor
