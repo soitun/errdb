@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Errdb : Extensible Round Robin Database" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Errdb</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/erylee/errdb">Fork Me on GitHub</a>
+
+          <h1 id="project_title">Errdb</h1>
+          <h2 id="project_tagline">Extensible Round Robin Database</h2>
+
+          <section id="downloads">
+            <a class="zip_download_link" href="https://github.com/erylee/errdb/zipball/master">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="https://github.com/erylee/errdb/tarball/master">Download this project as a tar.gz file</a>
+          </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>什么是Errdb</h1>
+
+<p>Errdb(Extensible Round Robin Database)是可扩展的环形的数据库，用于存储储时间序列性能指标数据。</p>
+
+<h1>Errdb架构</h1>
+
+<p>Errdb采用内存+文件的方式存储最近一段时间(T0~Tn)之间的指标数据，概念模型：</p>
+
+<p><img src="https://github.com/erylee/errdb/raw/master/design/concept.png" alt="Architecture" title="Concept"></p>
+
+<p>Errdb实现上每个Key对应一个Round Robbin的存储文件，时间序列的性能数据先写入
+内存，然后定期DUMP到文件。</p>
+
+<p>实现模型如下：</p>
+
+<p><img src="https://github.com/erylee/errdb/raw/master/design/arch.png" alt="Architecture" title="Architecture"></p>
+
+<h1>Errdb应用</h1>
+
+<p>Errdb在WLAN网管用于存储原始的性能数据，一般存储最近两天，WLAN网管界面上的所有实时性能图表，都来自ERRDB。</p>
+
+<p>Errdb生成的Journal文件在WLAN网管中，会通过定时任务导入到Oracle进行聚合归并生成报表数据。</p>
+
+<h1>Errdb启动停止</h1>
+
+<ol>
+<li>./errdb_ctl start 启动Errdb进程</li>
+<li>./errdb_ctl status 查询Errdb状态</li>
+<li>./errdb_ctl stop 停止Errdb进程</li>
+</ol><h1>Errdb编译</h1>
+
+<p>Errdb采用rebar编译</p>
+
+<ul>
+<li>make (编译)</li>
+<li>make clean (清除)</li>
+<li>make dist (发布包生成在rel/errdb下)</li>
+</ul><h1>Errdb文件存储</h1>
+
+<p>Errdb缺省情况下把数据文件存储在var/rrdb/目录, journal文件存储在var/journal/目录。</p>
+
+<p>通过etc/errdb.config配置文件，可重设相关存储目录。</p>
+
+<h1>Errdb设计参考</h1>
+
+<ul>
+<li>[Redis]: <a href="http://redis.io">http://redis.io</a></li>
+<li>[RRDTOOL]: <a href="http://oss.oetiker.ch/rrdtool/">http://oss.oetiker.ch/rrdtool/</a></li>
+<li>[Cassandra]: <a href="http://cassandra.apache.org/">http://cassandra.apache.org/</a></li>
+<li>[Mongodb]: <a href="http://www.mongodb.org/">http://www.mongodb.org/</a></li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Errdb maintained by <a href="https://github.com/erylee">erylee</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
