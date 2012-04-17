@@ -9,6 +9,7 @@
     errdb_httpd,
     errdb_journal,
 	errdb_misc,
+	errdb_lib,
 	errdb_monitor,
 	errdb_client,
     errdb_socket,

@@ -6,9 +6,7 @@
 
 -include_lib("elog/include/elog.hrl").
 
-%%TODO: FIXME
-
--import(errdb_misc, [line/1]).
+-import(string, [join/2, tokens/2]).
 
 -export([start/1, 
         loop/1, 
@@ -28,26 +26,35 @@ loop(Req) ->
 	handle(Method, Path, Req).
 
 handle('GET', {"rrdb", Key, "last"}, Req) ->
-	case errdb:last(list_to_binary(Key)) of
-    {ok, Fields, Record} -> 
-        Head = string:join(Fields, ","),
-        Line = line(Record),
-        Resp = list_to_binary(["time:", Head, "\n", Line]),
+	case errdb:last(Key) of
+    {ok, Time, Fields, Values} ->
+        Resp = ["TIME:", join(Fields, ","), "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
+		?ERROR("~p", [Reason]),
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
-handle('GET', {"rrdb", Key, Range}, Req) ->
-    [Begin,End|_] = string:tokens(Range, "-"),
-	case errdb:fetch(list_to_binary(Key), 
-        list_to_integer(Begin), list_to_integer(End)) of
-    {ok, Fields, Records} -> 
-        Head = string:join(Fields, ","),
-        Lines = string:join([line(Record) || Record <- Records], "\n"),
-        Resp = list_to_binary(["time:", Head, "\n", Lines]),
+handle('GET', {"rrdb", Key, "last", Fields}, Req) ->
+	case errdb:last(Key, tokens(Fields, ",")) of
+    {ok, Time, Values} -> 
+        Resp = ["TIME:", Fields, "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
     {error, Reason} ->
+		?ERROR("~p", [Reason]),
+        Req:respond({500, [], atom_to_list(Reason)})
+	end;
+
+handle('GET', {"rrdb", Key, Fields, Range}, Req) ->
+    [Begin, End] = tokens(Range, "-"),
+	case errdb:fetch(Key, tokens(Fields, ","),
+        list_to_integer(Begin), list_to_integer(End)) of
+    {ok, Records} -> 
+        Lines = join([errdb_lib:line(Time, Values) || {Time, Values} <- Records], "\n"),
+        Resp = ["TIME:", Fields, "\n", Lines],
+        Req:ok({"text/plain", Resp});
+    {error, Reason} ->
+		?ERROR("~p", [Reason]),
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
