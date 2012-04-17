@@ -16,14 +16,11 @@
 -export([start/2, stop/1]).
 
 start() ->
-	application:start(crypto),
-	application:start(extlib),
 	application:start(errdb).
 
 start(_Type, _Args) ->
-    init_elog(),
-	application:start(crypto),
-	application:start(extlib),
+	[application:start(App) || App <- [crypto, compiler, 
+		syntax_tools, lager, extlib, elog]],
     case erts_version_check() of
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),
@@ -33,11 +30,6 @@ start(_Type, _Args) ->
     Error ->
         Error
     end.
-
-init_elog() ->
-    {ok, [[LogLevel]]} = init:get_argument(log_level),
-    {ok, [[LogPath]]} = init:get_argument(log_path),
-	elog:init(list_to_integer(LogLevel), LogPath).
 
 erts_version_check() ->
     FoundVer = erlang:system_info(version),

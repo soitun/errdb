@@ -1,7 +1,7 @@
 {application, errdb,
  [{description, "Extended Round-Robin Database"},
   {id, "Errdb"},
-  {vsn, "0.6.0"},
+  {vsn, "2.0"},
   {modules, [
     errdb,
     errdb_app,
@@ -18,5 +18,5 @@
   {registered, [errdb_httpd, errdb_socket]},
   {mod, {errdb_app, []}},
   {env, []},
-  {applications, [kernel, stdlib, sasl, crypto, extlib]}]}.
+  {applications, [kernel, stdlib, sasl]}]}.
 

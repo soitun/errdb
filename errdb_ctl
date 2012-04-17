@@ -21,25 +21,26 @@ while [ $# -ne 0 ] ; do
         --db_node) DB_NODE=$1; shift ;;                                                                                                                                                                      
         *) ARGS="$ARGS $PARAM" ;;                                                                                                                                                                           
     esac                                                                                                                                                                                                    
-done          
+done 
 
 # define environment variables
 ERRDB_HOME=$ROOTDIR
 DATETIME=`date "+%Y%m%d-%H%M%S"`
 ERRDB_SO_PATH="$ROOTDIR/priv/lib"
-ERRDB_CONFIG_PATH="${ROOTDIR}/etc/errdb"
+ERRDB_CONFIG_FILE="${ROOTDIR}/etc/errdb"
 ERRDB_LOG="${ROOTDIR}/log"
-SASL_LOG_PATH="$ERRDB_LOG/${NODE_NAME}_sasl.log"
+SASL_LOG_FILE="$ERRDB_LOG/${NODE_NAME}_sasl.log"
 ERL_CRASH_DUMP="$ERRDB_LOG/${NODE_NAME}_crash_$DATETIME.dump"
-ERRDB_LOG_LEVEL=3
-ERRDB_LOG_PATH="$ERRDB_LOG/${NODE_NAME}.log"
+LAGER_LOG_LEVEL=info
+LAGER_LOG_FILE="$ERRDB_LOG/${NODE_NAME}_$LAGER_LOG_LEVEL.log"
+CRASH_LOG_FILE="$ERRDB_LOG/${NODE_NAME}_crash.log"
 RUNAPP=errdb_app
 CTLAPP=errdb_ctl
 
 # export global variables
 export ERRDB_HOME
 export ERRDB_SO_PATH
-export SASL_LOG_PATH
+export SASL_LOG_FILE
 export ERL_MAX_PORTS
 export ERL_MAX_ETS_TABLES
 export ERL_CRASH_DUMP
@@ -58,10 +59,13 @@ start ()
     -sname $NODE_NAME \
     -pa $EBINS \
     -setcookie public \
-	-config $ERRDB_CONFIG_PATH \
-	-sasl sasl_error_logger \{file,\"$SASL_LOG_PATH\"\} \
+	-config $ERRDB_CONFIG_FILE \
+	-sasl sasl_error_logger \{file,\"$SASL_LOG_FILE\"\} \
+	-lager error_logger_redirect false \
+	-lager crash_log \"$CRASH_LOG_FILE\" \
+	-lager handlers \[\{lager_console_backend,info\},\{lager_file_backend,\[\{\"$LAGER_LOG_FILE\",$LAGER_LOG_LEVEL,20485760,\"\$D0\",5\}\]\}\] \
 	-boot start_sasl \
-	-s errdb_app start -log_level $ERRDB_LOG_LEVEL -log_path $ERRDB_LOG_PATH
+	-s errdb_app start
 }
 
 stop()
