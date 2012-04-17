@@ -6,3 +6,4 @@ OK 4. rebar support
 6. design documents
 7. errdb client refactor
 8. errdb_http refactor
+9. master_slave achitecture?
