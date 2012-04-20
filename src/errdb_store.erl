@@ -63,8 +63,8 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Name, Dir) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Dir],
+start_link(Id, Dir) ->
+    gen_server2:start_link({local, name(Id)}, ?MODULE, [Id, Dir],
 		[{spawn_opt, [{min_heap_size, 204800}]}]).
 
 name(Id) ->
@@ -138,9 +138,10 @@ delete(Pid, Key) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Name, Dir]) ->
-    io:format("~n~p is started.~n", [Name]),
-    {ok, #state{dbdir = Dir}}.
+init([Id, Dir]) ->
+    io:format("~n~p is started.~n", [name(Id)]),
+	DbDir = Dir ++ "/" ++ integer_to_list(Id),
+    {ok, #state{dbdir = DbDir}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |

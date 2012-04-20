@@ -33,15 +33,15 @@
 
 -record(state, {id, logdir, logfile, thishour, buffer_size = 100, queue = []}).
 
-name(Id) ->
+name(Id) when is_integer(Id) ->
     list_to_atom("errdb_journal_" ++ integer_to_list(Id)).
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Name, Opts) ->
-    gen_server2:start_link({local, Name}, ?MODULE, [Name, Opts], [{spawn_opt, [{min_heap_size, 20480}]}]).
+start_link(Id, Opts) ->
+    gen_server2:start_link({local, name(Id)}, ?MODULE, [Id, Opts], [{spawn_opt, [{min_heap_size, 20480}]}]).
 
 info(Pid) ->
     gen_server2:call(Pid, info).
@@ -56,14 +56,13 @@ write(Pid, Key, Time, Metrics) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Name, Opts]) ->
-    Id = proplists:get_value(id, Opts),
+init([Id, Opts]) ->
     Dir = proplists:get_value(dir, Opts),
     BufferSize = proplists:get_value(buffer, Opts, 100),
     State = #state{id = Id, logdir = Dir, buffer_size = BufferSize},
     {noreply, NewState} = handle_info(journal_rotation, State),
     erlang:send_after(3000, self(), flush_queue),
-    io:format("~n~p is started.~n", [Name]),
+    io:format("~n~p is started.~n", [name(Id)]),
     {ok, NewState}.
 
 %%--------------------------------------------------------------------
@@ -118,7 +117,7 @@ handle_info(journal_rotation, #state{id = Id, logdir = Dir, logfile = File, queu
     close_file(File),
     Now = timestamp(),
     {Hour,_,_} = time(),
-    FilePath = lists:concat([Dir, extbif:strfdate(date()), "/", 
+    FilePath = lists:concat([Dir, "/", extbif:strfdate(date()), "/", 
 		zeropad(Hour), "/", integer_to_list(Id), ".journal"]),
     filelib:ensure_dir(FilePath),
     {ok, NewFile} = file:open(FilePath, [write]),

@@ -117,11 +117,11 @@ init([Id, Opts]) ->
 	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
 	Timeout = get_value(timeout, Opts, 48)*3600*1000,
     %start store process
-    {ok, Store} = errdb_store:start_link(errdb_store:name(Id), Dir),
+    {ok, Store} = errdb_store:start_link(Id, Dir),
 
     %start journal process
     JournalOpts = proplists:get_value(journal, Opts),
-    {ok, Journal} = errdb_journal:start_link(errdb_journal:name(Id), [{id, Id} | JournalOpts]),
+    {ok, Journal} = errdb_journal:start_link(Id, JournalOpts),
 
     DbTab = ets:new(dbtab(Id), [set, protected, 
         named_table, {keypos, 2}]),
