@@ -52,12 +52,12 @@ ERLANG_OPTS="-smp $SMP +P $ERL_PROCESSES +K $POLL +A 32 "
 [ -d $ERRDB_LOG ] || mkdir -p $ERRDB_LOG
 
 # start server
-# $DETACHED \
 start ()
 {
     $ERL $ERLANG_OPTS \
     -sname $NODE_NAME \
     -pa $EBINS \
+	$DETACHED \
     -setcookie public \
 	-config $ERRDB_CONFIG_FILE \
 	-sasl sasl_error_logger \{file,\"$SASL_LOG_FILE\"\} \
