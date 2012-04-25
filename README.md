@@ -23,9 +23,9 @@ Errdb生成的Journal文件在WLAN网管中，会通过定时任务导入到Orac
 
 # Errdb启动停止
 
-1. ./errdb_ctl start 启动Errdb进程
-2. ./errdb_ctl status 查询Errdb状态
-3. ./errdb_ctl stop 停止Errdb进程
+1. ./bin/errdb start 启动Errdb进程
+2. ./bin/errdb_ctl status 查询Errdb状态
+3. ./bin/errdb stop 停止Errdb进程
 
 # Errdb编译
 

@@ -1,4 +1,5 @@
-
 #!/bin/bash
 
-tar
+cd ..
+
+tar czvf errdb/errdb-2.0.3.tgz errdb/bin errdb/ebin errdb/etc errdb/lib/elog/ebin errdb/lib/extlib/ebin errdb/lib/lager/ebin errdb/lib/mochiweb/ebin  errdb/log errdb/var

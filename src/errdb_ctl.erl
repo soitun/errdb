@@ -16,7 +16,7 @@ cluster(Node) ->
 		?PRINT("cluster with ~p successfully.~n", [Node]);
 	pang ->
         ?PRINT("failed to cluster with ~p~n", [Node])
-	end;
+	end.
 
 status() ->
     Infos = lists:flatten(errdb:info()),
