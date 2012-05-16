@@ -19,11 +19,9 @@
 
 -behavior(gen_fsm).
 
--export([start_link/0,
-		start_link/1, 
+-export([start_link/0, start_link/1, start_link/2, 
         status/1, 
-        last/2,
-		last/3,
+        last/2, last/3,
         fetch/5,
         insert/4,
         stop/1]).
