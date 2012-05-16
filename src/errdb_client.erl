@@ -57,7 +57,7 @@ start_link() ->
 start_link(Args) ->
 	start_link(errdb_client, Args).
 start_link(Name, Args) ->
-    gen_fsm:start_link({local, Name}, ?MODULE, [Args], []).
+    gen_fsm:start_link({local, Name}, ?MODULE, [Name, Args], []).
 
 last(Pid, Object) ->
 	gen_fsm:sync_send_event(Pid, {last, Object}).
@@ -78,11 +78,12 @@ status(Pid) ->
 stop(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, stop).
 
-init([Args]) ->
+init([Name, Args]) ->
     put(inserted, 0),
     put(datetime, {date(), time()}),
     Host = proplists:get_value(host, Args, "localhost"),
     Port = proplists:get_value(port, Args, 7272),
+	?INFO("~p is started.", [Name]),
     State = #state{host = Host, port = Port, queue = queue:new()},
     {ok, connecting, State, 0}.
 
