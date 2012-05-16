@@ -36,11 +36,7 @@ init([]) ->
     Socket = {errdb_socket, {errdb_socket, start, [SocketConf]},
            permanent, 10, worker, [errdb_socket]},
 
-    %%system monitor
-    Monitor = {errdb_monitor, {errdb_monitor, start_link, []},
-            permanent, 10, worker, [errdb_monitor]},
-
-    {ok, {{one_for_one, 10, 1000}, Errdbs ++ [Httpd, Socket, Monitor]}}.
+    {ok, {{one_for_one, 10, 1000}, Errdbs ++ [Httpd, Socket]}}.
 
 worker(Id, Opts) ->
 	{errdb:name(Id), {errdb, start_link, [Id, Opts]},

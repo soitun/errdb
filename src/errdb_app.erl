@@ -19,8 +19,8 @@ start() ->
 	application:start(errdb).
 
 start(_Type, _Args) ->
-	[application:start(App) || App <- [crypto, compiler, 
-		syntax_tools, lager, extlib, elog]],
+	[application:start(App) || App <- 
+		[sasl, crypto, extlib, elog, evmon]],
     case erts_version_check() of
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),
