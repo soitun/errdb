@@ -14,7 +14,7 @@
 
 %% External API
 start(Options) ->
-    io:format("~nerrdb_httpd is started.~n", []),
+    ?INFO_MSG("errdb_httpd is started."),
     mochiweb_http:start([{name, ?MODULE}, {loop, fun loop/1} | Options]).
 
 stop() ->

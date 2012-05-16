@@ -14,7 +14,7 @@
 
 %% External API
 start(Options) ->
-    io:format("~nerrdb_socket is started.~n"),
+    ?INFO_MSG("errdb_socket is started."),
     mochiweb_socket_server:start([{name, ?MODULE}, 
         {loop, fun loop/1} | Options]).
 

@@ -139,7 +139,7 @@ delete(Pid, Key) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([Id, Dir]) ->
-    io:format("~n~p is started.~n", [name(Id)]),
+    ?INFO("~p is started.", [name(Id)]),
 	DbDir = Dir ++ "/" ++ integer_to_list(Id),
     {ok, #state{dbdir = DbDir}}.
 

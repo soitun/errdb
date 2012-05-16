@@ -130,7 +130,7 @@ init([Id, Opts]) ->
     chash_pg:join(errdb, self(), VNodes),
 
     CacheSize = proplists:get_value(cache, Opts),
-    io:format("~n~p is started.~n ", [name(Id)]),
+    ?INFO("~p is started.~n ", [name(Id)]),
 
     erlang:send_after(1000, self(), cron),
 

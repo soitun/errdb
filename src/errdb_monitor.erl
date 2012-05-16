@@ -42,7 +42,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
     erlang:system_monitor(self(), [{long_gc, 500}, {large_heap, 10000000}, busy_port]),
-    io:format("~nerrdb_monitor is started.~n", []),
+    ?INFO_MSG("errdb_monitor is started."),
     {ok, #state{}}.
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |

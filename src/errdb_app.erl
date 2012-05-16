@@ -25,7 +25,7 @@ start(_Type, _Args) ->
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),
         true = register(errdb, self()),
-        io:format("~nerrdb is running~n"),
+        ?INFO_MSG("errdb is running~n"),
         {ok, SupPid};
     Error ->
         Error

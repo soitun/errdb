@@ -62,7 +62,7 @@ init([Id, Opts]) ->
     State = #state{id = Id, logdir = Dir, buffer_size = BufferSize},
     {noreply, NewState} = handle_info(journal_rotation, State),
     erlang:send_after(3000, self(), flush_queue),
-    io:format("~n~p is started.~n", [name(Id)]),
+    ?INFO("~p is started.", [name(Id)]),
     {ok, NewState}.
 
 %%--------------------------------------------------------------------
