@@ -55,7 +55,9 @@
 start_link() ->
 	start_link([]).
 start_link(Args) ->
-    gen_fsm:start_link(?MODULE, [Args], []).
+	start_link(errdb_client, Args).
+start_link(Name, Args) ->
+    gen_fsm:start_link({local, Name}, ?MODULE, [Args], []).
 
 last(Pid, Object) ->
 	gen_fsm:sync_send_event(Pid, {last, Object}).
