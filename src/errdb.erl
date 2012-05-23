@@ -112,6 +112,7 @@ delete(Key) when is_list(Key) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([Id, Opts]) ->
+	random:seed(now()),
     process_flag(trap_exit, true),
     {value, Dir} = dataset:get_value(dir, Opts),
 	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),

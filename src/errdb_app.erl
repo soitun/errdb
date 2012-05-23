@@ -24,7 +24,7 @@ start(_Type, _Args) ->
     case erts_version_check() of
     ok ->
         {ok, SupPid} = errdb_sup:start_link(),
-        true = register(errdb, self()),
+        true = register(errdb_app, self()),
         ?INFO_MSG("errdb is running~n"),
         {ok, SupPid};
     Error ->

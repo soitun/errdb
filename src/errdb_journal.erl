@@ -57,11 +57,14 @@ write(Pid, Key, Time, Metrics) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([Id, Opts]) ->
+	random:seed(now()),
     Dir = proplists:get_value(dir, Opts),
     BufferSize = proplists:get_value(buffer, Opts, 100),
-    State = #state{id = Id, logdir = Dir, buffer_size = BufferSize},
+	BufferSize1 = BufferSize + random:uniform(BufferSize),
+    ?INFO("~p buffer_size: ~p", [name(Id), BufferSize1]),
+    State = #state{id = Id, logdir = Dir, buffer_size = BufferSize1},
     {noreply, NewState} = handle_info(journal_rotation, State),
-    erlang:send_after(3000, self(), flush_queue),
+    erlang:send_after(2000+Id*40, self(), flush_queue),
     ?INFO("~p is started.", [name(Id)]),
     {ok, NewState}.
 
@@ -127,7 +130,7 @@ handle_info(journal_rotation, #state{id = Id, logdir = Dir, logfile = File, queu
 
 handle_info(flush_queue, #state{logfile = File, queue = Q} = State) ->
     flush_queue(File, Q),
-    erlang:send_after(3000, self(), flush_queue),
+    erlang:send_after(2000, self(), flush_queue),
     {noreply, State#state{queue = []}};
 
 handle_info(Info, State) ->

@@ -20,7 +20,12 @@ start_link() ->
 
 init([]) ->
     %rrdb cluster
-	{ok, Pool} = application:get_env(pool_size),
+	Pool = 
+	case application:get_env(pool_size) of
+	{ok, schedulers} -> erlang:system_info(schedulers);
+	{ok, Val} when is_integer(Val) -> Val;
+	undefined -> erlang:system_info(schedulers)
+	end,
     {ok, Opts} = application:get_env(rrdb),
     Errdbs = [worker(Id, Opts) || Id <- lists:seq(1, Pool)],
 
