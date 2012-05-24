@@ -12,3 +12,4 @@ lib/mochiweb
 lib/extlib
 lib/lager
 lib/evmon
+log/*

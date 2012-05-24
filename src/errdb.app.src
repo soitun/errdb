@@ -1,7 +1,7 @@
 {application, errdb,
  [{description, "Extended Round-Robin Database"},
   {id, "Errdb"},
-  {vsn, "2.0.3"},
+  {vsn, "2.0.5"},
   {modules, [
     errdb,
     errdb_app,
@@ -10,7 +10,6 @@
     errdb_journal,
 	errdb_misc,
 	errdb_lib,
-	errdb_monitor,
 	errdb_client,
     errdb_socket,
     errdb_store,
