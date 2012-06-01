@@ -138,9 +138,8 @@ delete(Pid, Key) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([Id, Dir]) ->
+init([Id, DbDir]) ->
     ?INFO("~p is started.", [name(Id)]),
-	DbDir = Dir ++ "/" ++ integer_to_list(Id),
     {ok, #state{dbdir = DbDir}}.
 
 %%--------------------------------------------------------------------
