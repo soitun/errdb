@@ -1,3 +1,5 @@
+2012-06-01 release v2.0.6(erylee): fix critical DbDir bug.
+
 2012-05-23 release v2.0.5(erylee): fix random:uniform
 
 2012-05-16 release v2.0.4(erylee): evmon to replace errdb_monitor, add errdb_client:start_link/2
