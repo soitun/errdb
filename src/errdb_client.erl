@@ -81,7 +81,7 @@ init([Name, Args]) ->
     put(datetime, {date(), time()}),
     Host = proplists:get_value(host, Args, "localhost"),
     Port = proplists:get_value(port, Args, 7272),
-	?INFO("~p is started.", [Name]),
+	?INFO("~p is connecting to ~p:~p.", [Name, Host, Port]),
     State = #state{host = Host, port = Port, queue = queue:new()},
     {ok, connecting, State, 0}.
 

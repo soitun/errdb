@@ -118,7 +118,8 @@ init([Id, Opts]) ->
 	{value, VNodes} = dataset:get_value(vnodes, Opts, 40),
 	Timeout = get_value(timeout, Opts, 48)*3600*1000,
     %start store process
-    {ok, Store} = errdb_store:start_link(Id, Dir),
+	DbDir = Dir ++ "/" ++ integer_to_list(Id),
+    {ok, Store} = errdb_store:start_link(Id, DbDir),
 
     %start journal process
     JournalOpts = proplists:get_value(journal, Opts),
@@ -135,7 +136,7 @@ init([Id, Opts]) ->
 
     erlang:send_after(1000, self(), cron),
 
-    {ok, #state{dbtab = DbTab, dbdir = Dir,
+    {ok, #state{dbtab = DbTab, dbdir = DbDir,
 		store = Store, journal = Journal,
 		cache = CacheSize,
 		timeout = Timeout}}.
