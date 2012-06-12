@@ -4,4 +4,4 @@ DATE=`date +%Y%m%d`
 
 cd ..
 
-tar czvf errdb/errdb-2.0.3-$DATE.tgz errdb/bin errdb/ebin errdb/etc errdb/lib/elog/ebin errdb/lib/extlib/ebin errdb/lib/lager/ebin errdb/lib/mochiweb/ebin  errdb/log errdb/var errdb/README.md
+tar czvf errdb/errdb-2.0.6-$DATE.tgz errdb/bin errdb/ebin errdb/etc errdb/lib/elog/ebin errdb/lib/extlib/ebin errdb/lib/lager/ebin errdb/lib/mochiweb/ebin  errdb/log errdb/var errdb/README.md
