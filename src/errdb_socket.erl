@@ -28,10 +28,8 @@ loop(Socket) ->
     inet:setopts(Socket, [{packet, line},{keepalive, true}]),
     case gen_tcp:recv(Socket, 0, ?TIMEOUT) of
     {ok, Line} -> 
-		%?INFO("Req: ~p", [Line]),
         case handle_req(binary_to_list(trim(Line))) of
 		{reply, Reply} ->
-			%?INFO("Reply: ~p", [Reply]),
 			case gen_tcp:send(Socket, Reply) of
 			ok -> loop(Socket);
 			_ -> exit(normal)

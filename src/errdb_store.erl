@@ -219,7 +219,7 @@ create_rrdb(_File, Columns) when length(Columns) > ?MAX_COLUMNS ->
 	?ERROR("too many columns: ~p, cannot create rrdb file!", [length(Columns)]);
 
 create_rrdb(File, Columns) ->
-	?INFO("create rrdb with data: ~n~p", [Columns]),
+	?DEBUG("create rrdb with data: ~n~p", [Columns]),
 	{DsCnt, DsList, Writes} =
 	lists:foldl(fun({Col, Values}, {Idx, DsAcc, WirteAcc}) -> 
 		SortedValues = lists:sort(Values),
@@ -270,18 +270,9 @@ write_rrdb(File, Head, Columns) ->
 		#rrdb_ds{name=Name,idx=Idx,rowptr=RowPtr} = Ds,
 		Values = lists:sort(proplists:get_value(Name, Columns)), 
 		{LastUp, LastVal} = lists:last(Values),
-
-		?INFO("before write: rowptr=~p,", [RowPtr]),
-		
 		{NewRowPtr, PageWrites} = write_page(Idx, RowPtr, Values),
-		
-		?INFO("after write: rowptr=~p, ~n~p", [NewRowPtr, PageWrites]),
-
 		DsLoc = ds_head_pos(Idx) + 1 + ?DS_NAME_SIZE + 4,
 		DsData = <<NewRowPtr:32, LastUp:32, LastVal:64/float>>,
-
-		?INFO("~p", [{DsLoc, DsData}]),
-		
 		{[{DsLoc, DsData}|HeadAcc], [PageWrites|DataAcc]}
 	end, {[], []}, DsList),
 	file:pwrite(File, HeadWrites),
