@@ -1,3 +1,5 @@
+2012-06-01 release v2.0.7(erylee): errdb_http.erl replace 'get(path)' with 'get(raw_path)'
+
 2012-06-01 release v2.0.6(erylee): fix critical DbDir bug.
 
 2012-05-23 release v2.0.5(erylee): fix random:uniform
@@ -25,3 +27,4 @@
 2011-05-04 release v0.1.2(erylee)
 
 2011-04-22 clone from redis(erylee)
+
