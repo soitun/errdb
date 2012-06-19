@@ -8,8 +8,10 @@
 
 -import(string, [join/2, tokens/2]).
 
--export([start/1, 
-        loop/1, 
+-import(mochiweb_util, [unquote/1]).
+
+-export([start/1,
+        loop/1,
         stop/0]).
 
 %% External API
@@ -22,11 +24,12 @@ stop() ->
 
 loop(Req) ->
     Method = Req:get(method),
-	Path = list_to_tuple(string:tokens(Req:get(path), "/")),
+	?INFO("~s ~s", [Method, Req:get(raw_path)]),
+	Path = list_to_tuple(string:tokens(Req:get(raw_path), "/")),
 	handle(Method, Path, Req).
 
 handle('GET', {"rrdb", Key, "last"}, Req) ->
-	case errdb:last(Key) of
+	case errdb:last(unquote(Key)) of
     {ok, Time, Fields, Values} ->
         Resp = ["TIME:", join(Fields, ","), "\n", errdb_lib:line(Time, Values)],
         Req:ok({"text/plain", Resp});
@@ -35,7 +38,9 @@ handle('GET', {"rrdb", Key, "last"}, Req) ->
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
-handle('GET', {"rrdb", Key, "last", Fields}, Req) ->
+handle('GET', {"rrdb", RawKey, "last", RawFields}, Req) ->
+	Key = unquote(RawKey),
+	Fields = unquote(RawFields),
 	case errdb:last(Key, tokens(Fields, ",")) of
     {ok, Time, Values} -> 
         Resp = ["TIME:", Fields, "\n", errdb_lib:line(Time, Values)],
@@ -45,7 +50,10 @@ handle('GET', {"rrdb", Key, "last", Fields}, Req) ->
         Req:respond({500, [], atom_to_list(Reason)})
 	end;
 
-handle('GET', {"rrdb", Key, Fields, Range}, Req) ->
+handle('GET', {"rrdb", RawKey, RawFields, RawRange}, Req) ->
+	Key = unquote(RawKey),
+	Fields = unquote(RawFields),
+	Range = unquote(RawRange),
     [Begin, End] = tokens(Range, "-"),
 	case errdb:fetch(Key, tokens(Fields, ","),
         list_to_integer(Begin), list_to_integer(End)) of
